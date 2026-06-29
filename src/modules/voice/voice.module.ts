@@ -4,6 +4,7 @@ import { TOKENS } from '../../core/container/tokens.js';
 import { ConnectionManager } from './services/ConnectionManager.js';
 import type { ILogger } from '../../core/logger/logger.service.js';
 import type { IEventBus } from '../../core/event-bus/types.js';
+import type { VoiceMemberJoinedEvent } from '../../core/event-bus/events.js';
 import type { Client, VoiceState } from 'discord.js';
 import { Events } from 'discord.js';
 
@@ -28,6 +29,10 @@ export class VoiceModule implements IModule {
       void this.handleReady(standbyChannelId, config.guildId, logger);
     });
 
+    eventBus.subscribe('voice.memberJoined', (event) => {
+      void this.handleMemberJoined(event);
+    });
+
     this.registerVoiceStateHandler(client, eventBus, logger);
   }
 
@@ -46,6 +51,11 @@ export class VoiceModule implements IModule {
 
     logger.info({ channelId: standbyChannelId, guildId }, 'Voice module joining standby channel');
     await this.connectionManager!.joinStandby(standbyChannelId, guildId);
+  }
+
+  private async handleMemberJoined(event: VoiceMemberJoinedEvent): Promise<void> {
+    if (!this.connectionManager) return;
+    await this.connectionManager.moveTo(event.channelId, event.guildId);
   }
 
   private registerVoiceStateHandler(client: Client, eventBus: IEventBus, logger: ILogger): void {

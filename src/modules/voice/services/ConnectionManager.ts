@@ -1,5 +1,5 @@
 import { joinVoiceChannel, VoiceConnectionStatus, type VoiceConnection } from '@discordjs/voice';
-import type { Client } from 'discord.js';
+import { PermissionFlagsBits, ChannelType, type Client, type VoiceChannel } from 'discord.js';
 import type { ILogger } from '../../../core/logger/logger.service.js';
 
 export class ConnectionManager {
@@ -23,6 +23,18 @@ export class ConnectionManager {
     await this.connect(standbyChannelId, guildId);
   }
 
+  async moveTo(targetChannelId: string, guildId: string): Promise<void> {
+    const validationError = this.validateChannel(targetChannelId, guildId);
+    if (validationError) {
+      this.logger.warn({ targetChannelId, guildId, reason: validationError }, 'Cannot move to voice channel');
+      return;
+    }
+
+    this.logger.info({ currentChannelId: this.standbyChannelId, targetChannelId }, 'Moving to user voice channel');
+    await this.connect(targetChannelId, guildId);
+    this.logger.info({ channelId: targetChannelId }, 'Successfully moved to voice channel');
+  }
+
   async disconnect(): Promise<void> {
     this.clearReconnectTimer();
     if (this.connection) {
@@ -34,6 +46,33 @@ export class ConnectionManager {
 
   isConnected(): boolean {
     return this.connection?.state.status === VoiceConnectionStatus.Ready;
+  }
+
+  getConnection(): VoiceConnection | null {
+    return this.connection;
+  }
+
+  private validateChannel(channelId: string, guildId: string): string | null {
+    const guild = this.client.guilds.cache.get(guildId);
+    if (!guild) return 'Guild not found';
+
+    const channel = guild.channels.cache.get(channelId);
+    if (!channel) return 'Channel not found';
+    if (channel.type !== ChannelType.GuildVoice) return 'Channel is not a voice channel';
+
+    const voiceChannel = channel as VoiceChannel;
+    const botMember = guild.members.me;
+    if (!botMember) return 'Bot member not found in guild';
+
+    const permissions = voiceChannel.permissionsFor(botMember);
+
+    if (permissions) {
+      if (!permissions.has(PermissionFlagsBits.ViewChannel)) return 'Missing View Channel permission';
+      if (!permissions.has(PermissionFlagsBits.Connect)) return 'Missing Connect permission';
+      if (!permissions.has(PermissionFlagsBits.Speak)) return 'Missing Speak permission';
+    }
+
+    return null;
   }
 
   private async connect(channelId: string, guildId: string): Promise<void> {
@@ -50,6 +89,8 @@ export class ConnectionManager {
       selfDeaf: true,
       selfMute: false,
     });
+
+    this.standbyChannelId = channelId;
 
     this.connection.on(VoiceConnectionStatus.Ready, () => {
       this.reconnectAttempts = 0;

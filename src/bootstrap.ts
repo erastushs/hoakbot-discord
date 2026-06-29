@@ -9,6 +9,7 @@ import { SupabaseAdapter } from './core/database/supabase.adapter.js';
 import { HealthService } from './core/health/health.service.js';
 import { MetricsService } from './core/metrics/metrics.service.js';
 import { createDiscordClient } from './adapters/discord-client.js';
+import { GeneralModule } from './modules/general/general.module.js';
 
 const bootstrapLogger = pino({
   level: 'info',
@@ -54,11 +55,14 @@ try {
   dbTimer.stop();
   container.registerSingleton(TOKENS.DatabaseAdapter, () => databaseAdapter);
 
+  logger.info('Creating Discord client...');
+  const client = createDiscordClient(appConfig, logger, eventBus, metricsService);
+  container.registerSingleton(TOKENS.DiscordClient, () => client);
+
   logger.info('Loading modules...');
   const moduleLoader = new ModuleLoader(logger, appConfig.featureFlags.modules);
 
-  // Modules will be registered here in later phases
-  // moduleLoader.registerModule(new GeneralModule());
+  moduleLoader.registerModule(new GeneralModule());
   // moduleLoader.registerModule(new VoiceModule());
   // moduleLoader.registerModule(new ModerationModule());
 
@@ -72,10 +76,6 @@ try {
   registerHealthChecks(healthService, configService, databaseAdapter, eventBus, moduleLoader, logger);
   const report = await healthService.runAll();
   healthTimer.stop();
-
-  logger.info('Creating Discord client...');
-  const client = createDiscordClient(appConfig, logger, eventBus, metricsService);
-  container.registerSingleton(TOKENS.DiscordClient, () => client);
 
   registerShutdownHandlers(logger, client, moduleLoader, databaseAdapter, eventBus);
 

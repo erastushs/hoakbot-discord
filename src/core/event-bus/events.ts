@@ -39,7 +39,10 @@ export interface MemberLeftEvent {
 export interface VoiceMemberJoinedEvent {
   guildId: string;
   userId: string;
+  username: string;
   channelId: string;
+  channelName: string;
+  joinedAt: number;
 }
 
 export interface VoiceSoundPlayedEvent {

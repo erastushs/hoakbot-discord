@@ -12,7 +12,7 @@
     "perUser": 3000
   },
   "voice": {
-    "standbyChannelId": "",
+    "standbyChannelId": "504877260021694464",
     "cooldownMs": 5000,
     "reconnectDelayMs": 3000,
     "maxReconnectRetries": 5

@@ -25,6 +25,10 @@ export class CommandRouter {
       return;
     }
 
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferReply();
+    }
+
     const ctx = this.createSlashContext(interaction);
     await this.executeCommand(command, ctx, interaction.commandName);
   }
@@ -93,7 +97,7 @@ export class CommandRouter {
       logger: this.logger,
       eventBus: this.eventBus,
       createdAt: interaction.createdAt,
-      reply: (content) => interaction.reply(content as never),
+      reply: (content) => interaction.editReply(content as never),
       deferReply: () => interaction.deferReply(),
     };
   }

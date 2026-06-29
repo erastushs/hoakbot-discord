@@ -4,6 +4,7 @@ import {
   AudioPlayerStatus,
   NoSubscriberBehavior,
   type AudioPlayer,
+  VoiceConnectionStatus,
 } from '@discordjs/voice';
 import type { VoiceConnection } from '@discordjs/voice';
 import type { ILogger } from '../../../core/logger/logger.service.js';
@@ -13,26 +14,53 @@ export class AudioManager {
 
   async play(connection: VoiceConnection | null, soundFile: string, volume: number): Promise<void> {
     if (!connection) {
-      this.logger.error('Cannot play audio — no voice connection');
+      this.logger.error({ reason: 'No voice connection' }, 'Cannot play audio');
       return;
     }
 
-    this.logger.info({ soundFile, volume }, 'Starting audio playback');
+    const connectionState = connection.state.status;
+    this.logger.info({ soundFile, volume, connectionState }, 'Starting audio playback');
+
+    if (connectionState !== VoiceConnectionStatus.Ready) {
+      await this.waitForReady(connection);
+    }
 
     const player: AudioPlayer = createAudioPlayer({
       behaviors: { noSubscriber: NoSubscriberBehavior.Pause },
     });
 
-    const resource = createAudioResource(soundFile, { inlineVolume: true });
-    resource.volume?.setVolume(volume);
+    try {
+      const resource = createAudioResource(soundFile, { inlineVolume: true });
+      if (resource.volume) {
+        resource.volume.setVolume(volume);
+      }
 
-    player.play(resource);
-    connection.subscribe(player);
+      player.play(resource);
+      connection.subscribe(player);
 
-    await this.waitForPlayback(player);
+      await this.waitForPlayback(player);
+      this.logger.info({ soundFile }, 'Audio playback completed');
+    } catch (err) {
+      const errorDetail = err instanceof Error ? { message: err.message, stack: err.stack } : { error: String(err) };
+      this.logger.error({ ...errorDetail, soundFile, connectionState }, 'Audio playback failed');
+      throw err;
+    } finally {
+      player.stop(true);
+    }
+  }
 
-    player.stop();
-    this.logger.info('Audio playback completed');
+  private waitForReady(connection: VoiceConnection): Promise<void> {
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        this.logger.warn('Timed out waiting for voice connection ready');
+        resolve();
+      }, 10000);
+
+      connection.once(VoiceConnectionStatus.Ready, () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
   }
 
   private waitForPlayback(player: AudioPlayer): Promise<void> {
@@ -42,7 +70,14 @@ export class AudioManager {
       });
 
       player.once('error', (error: Error) => {
-        this.logger.error({ error }, 'Audio playback failed');
+        this.logger.error(
+          {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+          },
+          'Audio player error',
+        );
         reject(error);
       });
     });

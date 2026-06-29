@@ -30,9 +30,8 @@ export class ConnectionManager {
       return;
     }
 
-    this.logger.info({ currentChannelId: this.standbyChannelId, targetChannelId }, 'Moving to user voice channel');
+    this.logger.info({ from: this.currentChannelId(), to: targetChannelId }, 'Moving to user voice channel');
     await this.connect(targetChannelId, guildId);
-    this.logger.info({ channelId: targetChannelId }, 'Successfully moved to voice channel');
   }
 
   returnToStandby(): void {
@@ -43,7 +42,7 @@ export class ConnectionManager {
 
     this.logger.info({ standbyChannelId: this.standbyChannelId }, 'Returning to standby channel');
     this.connect(this.standbyChannelId, this.guildId).catch((err) => {
-      this.logger.error({ error: err }, 'Failed to return to standby');
+      this.logger.error({ error: this.serializeError(err) }, 'Failed to return to standby');
     });
   }
 
@@ -52,7 +51,7 @@ export class ConnectionManager {
     if (this.connection) {
       this.connection.destroy();
       this.connection = null;
-      this.logger.info({ channelId: this.standbyChannelId }, 'Voice connection destroyed');
+      this.logger.info('Voice connection destroyed');
     }
   }
 
@@ -62,6 +61,14 @@ export class ConnectionManager {
 
   getConnection(): VoiceConnection | null {
     return this.connection;
+  }
+
+  getStandbyChannelId(): string {
+    return this.standbyChannelId;
+  }
+
+  currentChannelId(): string | null {
+    return this.connection?.joinConfig.channelId ?? null;
   }
 
   private validateChannel(channelId: string, guildId: string): string | null {
@@ -102,35 +109,38 @@ export class ConnectionManager {
       selfMute: false,
     });
 
-    this.standbyChannelId = channelId;
-
     this.connection.on(VoiceConnectionStatus.Ready, () => {
       this.reconnectAttempts = 0;
-      this.logger.info({ channelId }, 'Voice connection ready');
+      this.logger.info({ channelId: this.connection?.joinConfig.channelId }, 'Voice connection ready');
     });
 
     this.connection.on(VoiceConnectionStatus.Disconnected, () => {
-      this.logger.warn({ channelId }, 'Voice connection disconnected');
+      this.logger.warn({ channelId: this.connection?.joinConfig.channelId }, 'Voice connection disconnected');
       this.scheduleReconnect();
     });
 
     this.connection.on(VoiceConnectionStatus.Connecting, () => {
-      this.logger.debug({ channelId }, 'Voice connection connecting');
+      this.logger.debug({ channelId: this.connection?.joinConfig.channelId }, 'Voice connection connecting');
     });
 
     this.connection.on(VoiceConnectionStatus.Destroyed, () => {
-      this.logger.info({ channelId }, 'Voice connection destroyed');
+      this.logger.info({ channelId: this.connection?.joinConfig.channelId }, 'Voice connection destroyed');
     });
 
     this.connection.on('error', (error: Error) => {
-      this.logger.error({ error, channelId }, 'Voice connection error');
+      this.logger.error(
+        { error: this.serializeError(error), channelId: this.connection?.joinConfig.channelId },
+        'Voice connection error',
+      );
     });
   }
 
   private scheduleReconnect(): void {
+    if (!this.standbyChannelId || !this.guildId) return;
+
     if (this.reconnectAttempts >= this.maxReconnectRetries) {
       this.logger.error(
-        { channelId: this.standbyChannelId, attempts: this.reconnectAttempts },
+        { standbyChannelId: this.standbyChannelId, attempts: this.reconnectAttempts },
         'Max reconnection attempts reached',
       );
       return;
@@ -141,17 +151,17 @@ export class ConnectionManager {
 
     this.logger.warn(
       {
-        channelId: this.standbyChannelId,
+        standbyChannelId: this.standbyChannelId,
         attempt: this.reconnectAttempts,
         maxRetries: this.maxReconnectRetries,
         delay,
       },
-      'Scheduling voice reconnection',
+      'Scheduling voice reconnection to standby',
     );
 
     this.reconnectTimer = setTimeout(() => {
       this.connect(this.standbyChannelId, this.guildId).catch((err) => {
-        this.logger.error({ error: err }, 'Reconnection attempt failed');
+        this.logger.error({ error: this.serializeError(err) }, 'Reconnection attempt failed');
       });
     }, delay);
   }
@@ -161,5 +171,12 @@ export class ConnectionManager {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
+  }
+
+  private serializeError(err: unknown): { message: string; stack?: string } {
+    if (err instanceof Error) {
+      return { message: err.message, stack: err.stack };
+    }
+    return { message: String(err) };
   }
 }

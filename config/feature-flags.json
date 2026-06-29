@@ -1,0 +1,13 @@
+{
+  "modules": {
+    "general": true,
+    "voice": true,
+    "moderation": true,
+    "metrics": true,
+    "tickets": false,
+    "ai": false,
+    "economy": false,
+    "leveling": false,
+    "dashboard": false
+  }
+}

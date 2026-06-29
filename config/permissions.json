@@ -1,0 +1,7 @@
+{
+  "roles": {
+    "administrator": ["Admin", "Hoak Admin"],
+    "moderator": ["Moderator", "Hoak Mod", "Admin", "Hoak Admin"],
+    "trusted": ["Trusted Member"]
+  }
+}

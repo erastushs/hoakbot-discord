@@ -1,0 +1,14 @@
+{
+  "prefix": "hoak",
+  "guildId": "",
+  "ownerIds": [],
+  "defaultLanguage": "en",
+  "presence": {
+    "type": "WATCHING",
+    "text": "the Hoak Family"
+  },
+  "cooldowns": {
+    "global": 1000,
+    "perUser": 3000
+  }
+}

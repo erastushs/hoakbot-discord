@@ -1,0 +1,37 @@
+{
+  "name": "hoakbot",
+  "version": "1.0.0",
+  "description": "Hoak Bot — A modular Discord bot for the Hoak Family community",
+  "private": true,
+  "main": "dist/bootstrap.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/bootstrap.ts",
+    "start": "node dist/bootstrap.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
+    "typecheck": "tsc --noEmit",
+    "deploy:commands": "tsx scripts/deploy-commands.ts",
+    "migrate": "tsx scripts/migrate.ts"
+  },
+  "keywords": [
+    "discord",
+    "bot"
+  ],
+  "author": "",
+  "license": "UNLICENSED",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "@typescript-eslint/eslint-plugin": "^8.62.0",
+    "@typescript-eslint/parser": "^8.62.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^9.1.2",
+    "prettier": "^3.9.3",
+    "tsx": "^4.22.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.62.0"
+  }
+}

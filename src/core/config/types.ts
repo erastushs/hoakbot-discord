@@ -8,6 +8,13 @@ export interface CooldownsConfig {
   perUser: number;
 }
 
+export interface VoiceConfig {
+  standbyChannelId: string;
+  cooldownMs: number;
+  reconnectDelayMs: number;
+  maxReconnectRetries: number;
+}
+
 export interface BotConfig {
   prefix: string;
   guildId: string;
@@ -15,6 +22,7 @@ export interface BotConfig {
   defaultLanguage: string;
   presence: PresenceConfig;
   cooldowns: CooldownsConfig;
+  voice: VoiceConfig;
 }
 
 export interface PermissionsConfig {

@@ -10,5 +10,11 @@
   "cooldowns": {
     "global": 1000,
     "perUser": 3000
+  },
+  "voice": {
+    "standbyChannelId": "",
+    "cooldownMs": 5000,
+    "reconnectDelayMs": 3000,
+    "maxReconnectRetries": 5
   }
 }

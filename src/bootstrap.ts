@@ -10,6 +10,7 @@ import { HealthService } from './core/health/health.service.js';
 import { MetricsService } from './core/metrics/metrics.service.js';
 import { createDiscordClient } from './adapters/discord-client.js';
 import { GeneralModule } from './modules/general/general.module.js';
+import { VoiceModule } from './modules/voice/voice.module.js';
 
 const bootstrapLogger = pino({
   level: 'info',
@@ -63,7 +64,7 @@ try {
   const moduleLoader = new ModuleLoader(logger, appConfig.featureFlags.modules);
 
   moduleLoader.registerModule(new GeneralModule());
-  // moduleLoader.registerModule(new VoiceModule());
+  moduleLoader.registerModule(new VoiceModule());
   // moduleLoader.registerModule(new ModerationModule());
 
   await moduleLoader.loadAll(container);

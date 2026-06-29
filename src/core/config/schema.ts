@@ -10,6 +10,13 @@ const cooldownsSchema = z.object({
   perUser: z.number().int().positive(),
 });
 
+const voiceSchema = z.object({
+  standbyChannelId: z.string(),
+  cooldownMs: z.number().int().positive(),
+  reconnectDelayMs: z.number().int().positive(),
+  maxReconnectRetries: z.number().int().positive(),
+});
+
 const botSchema = z.object({
   prefix: z.string(),
   guildId: z.string(),
@@ -17,6 +24,7 @@ const botSchema = z.object({
   defaultLanguage: z.string(),
   presence: presenceSchema,
   cooldowns: cooldownsSchema,
+  voice: voiceSchema,
 });
 
 const permissionsSchema = z.object({

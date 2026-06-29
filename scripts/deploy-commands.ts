@@ -22,8 +22,6 @@ async function main(): Promise<void> {
   }
 
   const registry = new CommandRegistry();
-
-  // Register all commands that have slash options
   const commands = [new PingCommand(), new HelpCommand(registry)];
 
   for (const cmd of commands) {
@@ -43,10 +41,20 @@ async function main(): Promise<void> {
 
   try {
     await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commandData });
-    console.log(`Successfully deployed ${commandData.length} guild commands.`);
-    commandData.forEach((cmd: Record<string, unknown>) => {
-      console.log(`  /${cmd['name']} — ${cmd['description']}`);
-    });
+
+    for (const cmd of commandData) {
+      console.log(`  /${(cmd as Record<string, unknown>)['name']} — ${(cmd as Record<string, unknown>)['description']}`);
+    }
+    console.log(`\nGuild commands deployed successfully.\n`);
+
+    const globalCommands = (await rest.get(Routes.applicationCommands(clientId))) as unknown[];
+    if (globalCommands.length > 0) {
+      console.log('⚠ Warning: Found global commands that may conflict:');
+      for (const cmd of globalCommands) {
+        console.log(`  /${(cmd as Record<string, unknown>)['name']} — ${(cmd as Record<string, unknown>)['description']}`);
+      }
+      console.log(`\nRun: npm run clear:global-commands\n`);
+    }
   } catch (err) {
     console.error('Failed to deploy commands:', err);
     process.exit(1);

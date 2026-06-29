@@ -11,6 +11,7 @@ import { MetricsService } from './core/metrics/metrics.service.js';
 import { createDiscordClient } from './adapters/discord-client.js';
 import { GeneralModule } from './modules/general/general.module.js';
 import { VoiceModule } from './modules/voice/voice.module.js';
+import type { HealthReport } from './core/health/types.js';
 
 const bootstrapLogger = pino({
   level: 'info',
@@ -84,19 +85,41 @@ try {
   await client.login(appConfig.discord.token);
 
   startupTimer.stop();
-  logger.info(
-    {
-      nodeVersion: process.version,
-      moduleCount: moduleLoader.getLoadedModules().length,
-      healthStatus: report.status,
-      startupMs: Math.round(startupTimer.duration()),
-      healthMs: Math.round(healthTimer.duration()),
-    },
-    'Hoak Bot startup complete',
-  );
+
+  printStartupSummary(report, moduleLoader, metricsService, logger);
 } catch (err) {
   bootstrapLogger.fatal({ error: err }, 'Failed to start Hoak Bot');
   process.exit(1);
+}
+
+function printStartupSummary(
+  report: HealthReport,
+  moduleLoader: ModuleLoader,
+  metrics: MetricsService,
+  logger: ReturnType<typeof createLogger>,
+): void {
+  const icon = (status: string) => (status === 'healthy' ? '✓' : '✗');
+  const lines = [
+    '',
+    '╔══════════════════════════╗',
+    '║     Hoak Bot Startup     ║',
+    '╠══════════════════════════╣',
+    `║  Configuration    ${icon(report.subsystems['config']?.status ?? 'unhealthy')}      ║`,
+    `║  Logger           ${icon(report.subsystems['logger']?.status ?? 'unhealthy')}      ║`,
+    `║  Database         ${icon(report.subsystems['database']?.status ?? 'unhealthy')}      ║`,
+    `║  Event Bus        ${icon(report.subsystems['eventBus']?.status ?? 'unhealthy')}      ║`,
+    `║  Module Loader    ${icon(report.subsystems['moduleLoader']?.status ?? 'unhealthy')}      ║`,
+    '╠══════════════════════════╣',
+    `║  Status: ${report.status.toUpperCase()}${' '.repeat(Math.max(0, 9 - report.status.length))}║`,
+    `║  Modules: ${String(moduleLoader.getLoadedModules().length)}${' '.repeat(Math.max(0, 12 - String(moduleLoader.getLoadedModules().length).length))}║`,
+    `║  Startup: ${String(Math.round(metrics.timer('startup').duration()))}ms${' '.repeat(Math.max(0, 13 - String(Math.round(metrics.timer('startup').duration())).length - 2))}║`,
+    '╚══════════════════════════╝',
+    '',
+  ];
+
+  for (const line of lines) {
+    logger.info(line);
+  }
 }
 
 function registerShutdownHandlers(

@@ -31,9 +31,12 @@ export class SupabaseAdapter implements IDatabaseAdapter {
         debug: false,
       });
 
-      await this.checkConnection();
+      const result = await this.checkConnection();
+      if (!result.success) {
+        throw new DatabaseConnectionError(`Database connection check failed: ${result.error ?? 'Unknown error'}`);
+      }
       this.connected = true;
-      this.logger.info('Supabase PostgreSQL connected');
+      this.logger.info({ latencyMs: result.latencyMs }, 'Supabase PostgreSQL connected');
     } catch (error) {
       this.logger.error({ error }, 'Failed to connect to Supabase PostgreSQL');
       throw new DatabaseConnectionError('Failed to connect to Supabase PostgreSQL', error);

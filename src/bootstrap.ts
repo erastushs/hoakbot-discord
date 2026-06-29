@@ -1,6 +1,9 @@
 import { pino } from 'pino';
 import { ConfigService } from './core/config/config.service.js';
 import { createLogger } from './core/logger/logger.service.js';
+import { Container } from './core/container/container.js';
+import { TOKENS } from './core/container/tokens.js';
+import { ModuleLoader } from './modules/module-loader.js';
 
 const bootstrapLogger = pino({
   level: 'info',
@@ -11,12 +14,34 @@ const bootstrapLogger = pino({
 });
 
 try {
-  const config = new ConfigService();
-  config.load();
-  bootstrapLogger.info('Configuration loaded');
+  bootstrapLogger.info('Loading configuration...');
+  const configService = new ConfigService();
+  const appConfig = configService.load();
 
-  const logger = createLogger(config);
-  logger.info({ nodeVersion: process.version }, 'Hoak Bot started');
+  bootstrapLogger.info('Creating logger...');
+  const logger = createLogger(configService);
+
+  logger.info('Registering core services...');
+  const container = new Container();
+  container.registerSingleton(TOKENS.Config, () => configService);
+  container.registerSingleton(TOKENS.Logger, () => logger);
+  container.registerSingleton(TOKENS.AppConfig, () => appConfig);
+
+  logger.info('Loading modules...');
+  const moduleLoader = new ModuleLoader(logger, appConfig.featureFlags.modules);
+
+  // Modules will be registered here in later phases
+  // moduleLoader.registerModule(new GeneralModule());
+  // moduleLoader.registerModule(new VoiceModule());
+  // moduleLoader.registerModule(new ModerationModule());
+
+  await moduleLoader.loadAll(container);
+  await moduleLoader.startAll();
+
+  logger.info(
+    { nodeVersion: process.version, moduleCount: moduleLoader.getLoadedModules().length },
+    'Hoak Bot started',
+  );
 } catch (err) {
   bootstrapLogger.fatal({ error: err }, 'Failed to start Hoak Bot');
   process.exit(1);

@@ -10,6 +10,14 @@ import type { VoiceMemberJoinedEvent } from '../../core/event-bus/events.js';
 import type { Client, VoiceState } from 'discord.js';
 import { Events } from 'discord.js';
 
+enum VoiceStateEnum {
+  IDLE = 'IDLE',
+  MOVING = 'MOVING',
+  PLAYING = 'PLAYING',
+  RETURNING = 'RETURNING',
+  COOLDOWN = 'COOLDOWN',
+}
+
 export class VoiceModule implements IModule {
   readonly name = 'voice';
   readonly version = '1.0.0';
@@ -19,6 +27,9 @@ export class VoiceModule implements IModule {
   private audioManager: AudioManager | null = null;
   private defaultSound = '';
   private volume = 1.0;
+  private cooldownMs = 5000;
+  private state: VoiceStateEnum = VoiceStateEnum.IDLE;
+  private cooldownTimer: ReturnType<typeof setTimeout> | null = null;
 
   register(container: IContainer): void {
     const config = container.resolve(TOKENS.AppConfig);
@@ -26,9 +37,11 @@ export class VoiceModule implements IModule {
     const client = container.resolve(TOKENS.DiscordClient);
     const eventBus = container.resolve(TOKENS.EventBus);
 
-    const { standbyChannelId, reconnectDelayMs, maxReconnectRetries, defaultSound, volume } = config.bot.voice;
+    const { standbyChannelId, reconnectDelayMs, maxReconnectRetries, defaultSound, volume, cooldownMs } =
+      config.bot.voice;
     this.defaultSound = defaultSound;
     this.volume = volume;
+    this.cooldownMs = cooldownMs;
 
     this.connectionManager = new ConnectionManager(client, logger, maxReconnectRetries, reconnectDelayMs);
     this.audioManager = new AudioManager(logger);
@@ -45,6 +58,7 @@ export class VoiceModule implements IModule {
   }
 
   onShutdown(): Promise<void> {
+    if (this.cooldownTimer) clearTimeout(this.cooldownTimer);
     if (this.connectionManager) {
       return this.connectionManager.disconnect();
     }
@@ -59,11 +73,18 @@ export class VoiceModule implements IModule {
 
     logger.info({ channelId: standbyChannelId, guildId }, 'Voice module joining standby channel');
     await this.connectionManager!.joinStandby(standbyChannelId, guildId);
+    this.transition(VoiceStateEnum.IDLE, logger);
   }
 
   private async handleMemberJoined(event: VoiceMemberJoinedEvent, logger: ILogger): Promise<void> {
     if (!this.connectionManager || !this.audioManager) return;
 
+    if (this.state !== VoiceStateEnum.IDLE) {
+      logger.info({ user: event.username, state: this.state }, 'Ignored voice event while busy');
+      return;
+    }
+
+    this.transition(VoiceStateEnum.MOVING, logger);
     logger.info({ user: event.username, channelId: event.channelId }, 'Processing voice.memberJoined');
 
     await this.connectionManager.moveTo(event.channelId, event.guildId);
@@ -71,14 +92,32 @@ export class VoiceModule implements IModule {
     const connection = this.connectionManager.getConnection();
     const soundPath = resolve('assets', 'sounds', `${this.defaultSound}.mp3`);
 
+    this.transition(VoiceStateEnum.PLAYING, logger);
+
     try {
       await this.audioManager.play(connection, soundPath, this.volume);
-      logger.info({ sound: this.defaultSound }, 'Playback finished, returning to standby');
+      logger.info({ sound: this.defaultSound }, 'Playback finished');
     } catch (err) {
-      logger.error({ error: err }, 'Playback error — returning to standby');
+      logger.error({ error: err }, 'Playback error');
     }
 
+    this.transition(VoiceStateEnum.RETURNING, logger);
     this.connectionManager.returnToStandby();
+    this.enterCooldown(logger);
+  }
+
+  private enterCooldown(logger: ILogger): void {
+    this.transition(VoiceStateEnum.COOLDOWN, logger);
+
+    this.cooldownTimer = setTimeout(() => {
+      this.transition(VoiceStateEnum.IDLE, logger);
+    }, this.cooldownMs);
+  }
+
+  private transition(newState: VoiceStateEnum, logger: ILogger): void {
+    const prev = this.state;
+    this.state = newState;
+    logger.info({ from: prev, to: newState }, `Voice state: ${prev} → ${newState}`);
   }
 
   private registerVoiceStateHandler(client: Client, eventBus: IEventBus, logger: ILogger): void {
@@ -94,9 +133,6 @@ export class VoiceModule implements IModule {
       const oldChannelId = oldState.channelId;
       const newChannelId = newState.channelId;
 
-      // LEAVE: was in a channel, now not — ignore
-      // MOVE: was in a channel, now in different channel — ignore
-      // JOIN: was not in a channel, now is
       if (oldChannelId || !newChannelId) return;
 
       const channelName = newState.channel?.name ?? 'Unknown';

@@ -8,6 +8,7 @@ import { EventBus } from './core/event-bus/event-bus.js';
 import { SupabaseAdapter } from './core/database/supabase.adapter.js';
 import { HealthService } from './core/health/health.service.js';
 import { MetricsService } from './core/metrics/metrics.service.js';
+import { createDiscordClient } from './adapters/discord-client.js';
 
 const bootstrapLogger = pino({
   level: 'info',
@@ -16,6 +17,8 @@ const bootstrapLogger = pino({
     options: { colorize: true, translateTime: 'HH:MM:ss.l', ignore: 'pid,hostname' },
   },
 });
+
+let shuttingDown = false;
 
 try {
   const metricsService = new MetricsService();
@@ -41,8 +44,6 @@ try {
   const healthService = new HealthService(logger);
   container.registerSingleton(TOKENS.HealthService, () => healthService);
 
-  // Track initial metrics
-  metricsService.gauge('guild_count').set(1);
   metricsService.gauge('module_count').set(0);
 
   logger.info('Connecting to database...');
@@ -72,8 +73,16 @@ try {
   const report = await healthService.runAll();
   healthTimer.stop();
 
+  logger.info('Creating Discord client...');
+  const client = createDiscordClient(appConfig, logger, eventBus, metricsService);
+  container.registerSingleton(TOKENS.DiscordClient, () => client);
+
+  registerShutdownHandlers(logger, client, moduleLoader, databaseAdapter, eventBus);
+
+  logger.info('Logging in to Discord...');
+  await client.login(appConfig.discord.token);
+
   startupTimer.stop();
-  const snapshot = metricsService.snapshot();
   logger.info(
     {
       nodeVersion: process.version,
@@ -81,13 +90,52 @@ try {
       healthStatus: report.status,
       startupMs: Math.round(startupTimer.duration()),
       healthMs: Math.round(healthTimer.duration()),
-      metrics: snapshot,
     },
-    'Hoak Bot started',
+    'Hoak Bot startup complete',
   );
 } catch (err) {
   bootstrapLogger.fatal({ error: err }, 'Failed to start Hoak Bot');
   process.exit(1);
+}
+
+function registerShutdownHandlers(
+  logger: ReturnType<typeof createLogger>,
+  client: ReturnType<typeof createDiscordClient>,
+  moduleLoader: ModuleLoader,
+  databaseAdapter: SupabaseAdapter,
+  eventBus: EventBus,
+): void {
+  const shutdown = async () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+
+    logger.info('Shutting down...');
+    eventBus.emit('system.shutdown');
+
+    try {
+      client.destroy();
+    } catch (err) {
+      logger.error({ error: err }, 'Error destroying Discord client');
+    }
+
+    try {
+      await moduleLoader.shutdownAll();
+    } catch (err) {
+      logger.error({ error: err }, 'Error shutting down modules');
+    }
+
+    try {
+      await databaseAdapter.disconnect();
+    } catch (err) {
+      logger.error({ error: err }, 'Error disconnecting database');
+    }
+
+    logger.info('Shutdown complete');
+    process.exit(0);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }
 
 function registerHealthChecks(

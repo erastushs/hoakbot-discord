@@ -1,1 +1,1 @@
-export {};
+export { createDiscordClient } from './discord-client.js';

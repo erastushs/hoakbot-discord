@@ -7,6 +7,7 @@ import { ModuleLoader } from './modules/module-loader.js';
 import { EventBus } from './core/event-bus/event-bus.js';
 import { SupabaseAdapter } from './core/database/supabase.adapter.js';
 import { HealthService } from './core/health/health.service.js';
+import { MetricsService } from './core/metrics/metrics.service.js';
 
 const bootstrapLogger = pino({
   level: 'info',
@@ -17,6 +18,10 @@ const bootstrapLogger = pino({
 });
 
 try {
+  const metricsService = new MetricsService();
+  const startupTimer = metricsService.timer('startup');
+  startupTimer.start();
+
   bootstrapLogger.info('Loading configuration...');
   const configService = new ConfigService();
   const appConfig = configService.load();
@@ -31,13 +36,21 @@ try {
   container.registerSingleton(TOKENS.Logger, () => logger);
   container.registerSingleton(TOKENS.AppConfig, () => appConfig);
   container.registerSingleton(TOKENS.EventBus, () => eventBus);
+  container.registerSingleton(TOKENS.MetricsService, () => metricsService);
 
   const healthService = new HealthService(logger);
   container.registerSingleton(TOKENS.HealthService, () => healthService);
 
+  // Track initial metrics
+  metricsService.gauge('guild_count').set(1);
+  metricsService.gauge('module_count').set(0);
+
   logger.info('Connecting to database...');
+  const dbTimer = metricsService.timer('database.connect');
+  dbTimer.start();
   const databaseAdapter = new SupabaseAdapter(appConfig, logger);
   await databaseAdapter.connect();
+  dbTimer.stop();
   container.registerSingleton(TOKENS.DatabaseAdapter, () => databaseAdapter);
 
   logger.info('Loading modules...');
@@ -50,16 +63,25 @@ try {
 
   await moduleLoader.loadAll(container);
   await moduleLoader.startAll();
+  metricsService.gauge('module_count').set(moduleLoader.getLoadedModules().length);
 
   logger.info('Running health checks...');
+  const healthTimer = metricsService.timer('health');
+  healthTimer.start();
   registerHealthChecks(healthService, configService, databaseAdapter, eventBus, moduleLoader, logger);
   const report = await healthService.runAll();
+  healthTimer.stop();
 
+  startupTimer.stop();
+  const snapshot = metricsService.snapshot();
   logger.info(
     {
       nodeVersion: process.version,
       moduleCount: moduleLoader.getLoadedModules().length,
       healthStatus: report.status,
+      startupMs: Math.round(startupTimer.duration()),
+      healthMs: Math.round(healthTimer.duration()),
+      metrics: snapshot,
     },
     'Hoak Bot started',
   );

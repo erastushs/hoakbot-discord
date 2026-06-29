@@ -4,6 +4,7 @@ import { createLogger } from './core/logger/logger.service.js';
 import { Container } from './core/container/container.js';
 import { TOKENS } from './core/container/tokens.js';
 import { ModuleLoader } from './modules/module-loader.js';
+import { EventBus } from './core/event-bus/event-bus.js';
 
 const bootstrapLogger = pino({
   level: 'info',
@@ -22,10 +23,12 @@ try {
   const logger = createLogger(configService);
 
   logger.info('Registering core services...');
+  const eventBus = new EventBus(logger);
   const container = new Container();
   container.registerSingleton(TOKENS.Config, () => configService);
   container.registerSingleton(TOKENS.Logger, () => logger);
   container.registerSingleton(TOKENS.AppConfig, () => appConfig);
+  container.registerSingleton(TOKENS.EventBus, () => eventBus);
 
   logger.info('Loading modules...');
   const moduleLoader = new ModuleLoader(logger, appConfig.featureFlags.modules);

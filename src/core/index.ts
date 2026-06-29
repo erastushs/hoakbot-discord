@@ -1,4 +1,10 @@
 export { ConfigService } from './config/config.service.js';
 export { createLogger } from './logger/logger.service.js';
+export { Container } from './container/container.js';
+export { TOKENS } from './container/tokens.js';
+export { EventBus } from './event-bus/event-bus.js';
 export type { ILogger } from './logger/logger.service.js';
 export type { AppConfig, BotConfig, PermissionsConfig, FeatureFlagsConfig } from './config/types.js';
+export type { IContainer, InjectionToken, Factory } from './container/types.js';
+export type { IEventBus, EventHandler, EventName, Subscription } from './event-bus/types.js';
+export type { EventMap } from './event-bus/events.js';

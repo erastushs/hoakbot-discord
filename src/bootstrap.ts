@@ -5,6 +5,7 @@ import { Container } from './core/container/container.js';
 import { TOKENS } from './core/container/tokens.js';
 import { ModuleLoader } from './modules/module-loader.js';
 import { EventBus } from './core/event-bus/event-bus.js';
+import { SupabaseAdapter } from './core/database/supabase.adapter.js';
 
 const bootstrapLogger = pino({
   level: 'info',
@@ -29,6 +30,11 @@ try {
   container.registerSingleton(TOKENS.Logger, () => logger);
   container.registerSingleton(TOKENS.AppConfig, () => appConfig);
   container.registerSingleton(TOKENS.EventBus, () => eventBus);
+
+  logger.info('Connecting to database...');
+  const databaseAdapter = new SupabaseAdapter(appConfig, logger);
+  await databaseAdapter.connect();
+  container.registerSingleton(TOKENS.DatabaseAdapter, () => databaseAdapter);
 
   logger.info('Loading modules...');
   const moduleLoader = new ModuleLoader(logger, appConfig.featureFlags.modules);

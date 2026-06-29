@@ -35,6 +35,18 @@ export class ConnectionManager {
     this.logger.info({ channelId: targetChannelId }, 'Successfully moved to voice channel');
   }
 
+  returnToStandby(): void {
+    if (!this.standbyChannelId || !this.guildId) {
+      this.logger.warn('Cannot return to standby — no standby configured');
+      return;
+    }
+
+    this.logger.info({ standbyChannelId: this.standbyChannelId }, 'Returning to standby channel');
+    this.connect(this.standbyChannelId, this.guildId).catch((err) => {
+      this.logger.error({ error: err }, 'Failed to return to standby');
+    });
+  }
+
   async disconnect(): Promise<void> {
     this.clearReconnectTimer();
     if (this.connection) {

@@ -15,6 +15,8 @@ const voiceSchema = z.object({
   cooldownMs: z.number().int().positive(),
   reconnectDelayMs: z.number().int().positive(),
   maxReconnectRetries: z.number().int().positive(),
+  defaultSound: z.string(),
+  volume: z.number().min(0).max(2),
 });
 
 const botSchema = z.object({

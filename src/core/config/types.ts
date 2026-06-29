@@ -13,6 +13,8 @@ export interface VoiceConfig {
   cooldownMs: number;
   reconnectDelayMs: number;
   maxReconnectRetries: number;
+  defaultSound: string;
+  volume: number;
 }
 
 export interface BotConfig {

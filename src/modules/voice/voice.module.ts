@@ -1,7 +1,9 @@
+import { resolve } from 'node:path';
 import type { IModule } from '../module.interface.js';
 import type { IContainer } from '../../core/container/types.js';
 import { TOKENS } from '../../core/container/tokens.js';
 import { ConnectionManager } from './services/ConnectionManager.js';
+import { AudioManager } from './services/AudioManager.js';
 import type { ILogger } from '../../core/logger/logger.service.js';
 import type { IEventBus } from '../../core/event-bus/types.js';
 import type { VoiceMemberJoinedEvent } from '../../core/event-bus/events.js';
@@ -14,6 +16,9 @@ export class VoiceModule implements IModule {
   readonly enabled = true;
 
   private connectionManager: ConnectionManager | null = null;
+  private audioManager: AudioManager | null = null;
+  private defaultSound = '';
+  private volume = 1.0;
 
   register(container: IContainer): void {
     const config = container.resolve(TOKENS.AppConfig);
@@ -21,16 +26,19 @@ export class VoiceModule implements IModule {
     const client = container.resolve(TOKENS.DiscordClient);
     const eventBus = container.resolve(TOKENS.EventBus);
 
-    const { standbyChannelId, reconnectDelayMs, maxReconnectRetries } = config.bot.voice;
+    const { standbyChannelId, reconnectDelayMs, maxReconnectRetries, defaultSound, volume } = config.bot.voice;
+    this.defaultSound = defaultSound;
+    this.volume = volume;
 
     this.connectionManager = new ConnectionManager(client, logger, maxReconnectRetries, reconnectDelayMs);
+    this.audioManager = new AudioManager(logger);
 
     eventBus.subscribe('bot.ready', () => {
       void this.handleReady(standbyChannelId, config.guildId, logger);
     });
 
     eventBus.subscribe('voice.memberJoined', (event) => {
-      void this.handleMemberJoined(event);
+      void this.handleMemberJoined(event, logger);
     });
 
     this.registerVoiceStateHandler(client, eventBus, logger);
@@ -53,9 +61,24 @@ export class VoiceModule implements IModule {
     await this.connectionManager!.joinStandby(standbyChannelId, guildId);
   }
 
-  private async handleMemberJoined(event: VoiceMemberJoinedEvent): Promise<void> {
-    if (!this.connectionManager) return;
+  private async handleMemberJoined(event: VoiceMemberJoinedEvent, logger: ILogger): Promise<void> {
+    if (!this.connectionManager || !this.audioManager) return;
+
+    logger.info({ user: event.username, channelId: event.channelId }, 'Processing voice.memberJoined');
+
     await this.connectionManager.moveTo(event.channelId, event.guildId);
+
+    const connection = this.connectionManager.getConnection();
+    const soundPath = resolve('assets', 'sounds', `${this.defaultSound}.mp3`);
+
+    try {
+      await this.audioManager.play(connection, soundPath, this.volume);
+      logger.info({ sound: this.defaultSound }, 'Playback finished, returning to standby');
+    } catch (err) {
+      logger.error({ error: err }, 'Playback error — returning to standby');
+    }
+
+    this.connectionManager.returnToStandby();
   }
 
   private registerVoiceStateHandler(client: Client, eventBus: IEventBus, logger: ILogger): void {

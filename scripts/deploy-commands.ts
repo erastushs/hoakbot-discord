@@ -44,7 +44,7 @@ async function main(): Promise<void> {
     remove: async () => false,
     clear: async () => 0,
   } satisfies WarningService;
-  const commands = [new PingCommand(), new HelpCommand(registry), new AvatarCommand(), new UserInfoCommand(), new ServerInfoCommand(), new BotInfoCommand(config), new CleanCommand(), new KickCommand(metricsStub), new BanCommand(metricsStub), new TimeoutCommand(metricsStub), new WarnCommand(warningServiceStub), new WarningsCommand(warningServiceStub), new WarnRemoveCommand(warningServiceStub), new WarnClearCommand(warningServiceStub)];
+  const commands = [new PingCommand(), new HelpCommand(registry, config), new AvatarCommand(), new UserInfoCommand(), new ServerInfoCommand(), new BotInfoCommand(config), new CleanCommand(), new KickCommand(metricsStub), new BanCommand(metricsStub), new TimeoutCommand(metricsStub), new WarnCommand(warningServiceStub), new WarningsCommand(warningServiceStub), new WarnRemoveCommand(warningServiceStub), new WarnClearCommand(warningServiceStub)];
 
   for (const cmd of commands) {
     if (cmd.slashOptions) {

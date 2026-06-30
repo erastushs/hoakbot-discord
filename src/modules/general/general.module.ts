@@ -1,7 +1,6 @@
 import type { IModule } from '../module.interface.js';
 import type { IContainer } from '../../core/container/types.js';
 import { TOKENS } from '../../core/container/tokens.js';
-import { CommandRegistry } from '../../shared/command-registry.js';
 import { Events } from 'discord.js';
 import { CommandRouter } from '../../adapters/command-router.js';
 import { PingCommand } from './commands/ping.command.js';
@@ -17,7 +16,7 @@ export class GeneralModule implements IModule {
   readonly enabled = true;
 
   register(container: IContainer): void {
-    const registry = new CommandRegistry();
+    const registry = container.resolve(TOKENS.CommandRegistry);
     const config = container.resolve(TOKENS.AppConfig);
     const logger = container.resolve(TOKENS.Logger);
     const eventBus = container.resolve(TOKENS.EventBus);
@@ -25,7 +24,7 @@ export class GeneralModule implements IModule {
     const client = container.resolve(TOKENS.DiscordClient);
 
     const pingCommand = new PingCommand();
-    const helpCommand = new HelpCommand(registry);
+    const helpCommand = new HelpCommand(registry, config);
     const avatarCommand = new AvatarCommand();
     const userInfoCommand = new UserInfoCommand();
     const serverInfoCommand = new ServerInfoCommand();

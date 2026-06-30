@@ -12,6 +12,7 @@ import { createDiscordClient } from './adapters/discord-client.js';
 import { GeneralModule } from './modules/general/general.module.js';
 import { VoiceModule } from './modules/voice/voice.module.js';
 import { ModerationModule } from './modules/moderation/moderation.module.js';
+import { CommandRegistry } from './shared/command-registry.js';
 import type { HealthReport } from './core/health/types.js';
 
 const bootstrapLogger = pino({
@@ -64,6 +65,9 @@ try {
 
   logger.info('Loading modules...');
   const moduleLoader = new ModuleLoader(logger, appConfig.featureFlags.modules);
+
+  const sharedRegistry = new CommandRegistry();
+  container.registerSingleton(TOKENS.CommandRegistry, () => sharedRegistry);
 
   moduleLoader.registerModule(new GeneralModule());
   moduleLoader.registerModule(new VoiceModule());

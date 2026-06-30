@@ -29,6 +29,7 @@ export interface ICommand {
   readonly name: string;
   readonly description: string;
   readonly category: string;
+  readonly hidden?: boolean;
   readonly cooldown?: number;
   readonly guildOnly?: boolean;
   readonly requiredPermissions?: bigint[];

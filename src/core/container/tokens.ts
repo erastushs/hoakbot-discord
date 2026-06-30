@@ -7,6 +7,7 @@ import type { IDatabaseAdapter } from '../database/database-adapter.js';
 import type { IHealthService } from '../health/types.js';
 import type { IMetrics } from '../metrics/types.js';
 import type { Client } from 'discord.js';
+import type { CommandRegistry } from '../../shared/command-registry.js';
 
 export const TOKENS = {
   Config: Symbol('config') as InjectionToken<ConfigService>,
@@ -17,4 +18,5 @@ export const TOKENS = {
   HealthService: Symbol('healthService') as InjectionToken<IHealthService>,
   MetricsService: Symbol('metricsService') as InjectionToken<IMetrics>,
   DiscordClient: Symbol('discordClient') as InjectionToken<Client>,
+  CommandRegistry: Symbol('commandRegistry') as InjectionToken<CommandRegistry>,
 } as const;

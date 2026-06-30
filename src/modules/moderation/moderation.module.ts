@@ -8,6 +8,9 @@ import { CleanCommand } from './commands/clean.command.js';
 import { KickCommand } from './commands/kick.command.js';
 import { BanCommand } from './commands/ban.command.js';
 import { TimeoutCommand } from './commands/timeout.command.js';
+import { WarnCommand } from './commands/warn.command.js';
+import { WarningRepository } from './repositories/warning.repository.js';
+import { WarningService } from './services/warning.service.js';
 
 export class ModerationModule implements IModule {
   readonly name = 'moderation';
@@ -30,6 +33,12 @@ export class ModerationModule implements IModule {
     registry.register(kickCommand);
     registry.register(banCommand);
     registry.register(timeoutCommand);
+
+    const databaseAdapter = container.resolve(TOKENS.DatabaseAdapter);
+    const warningRepository = new WarningRepository(databaseAdapter);
+    const warningService = new WarningService(warningRepository, logger, eventBus, metrics);
+    const warnCommand = new WarnCommand(warningService);
+    registry.register(warnCommand);
 
     const router = new CommandRouter(registry, config, logger, eventBus, metrics);
 

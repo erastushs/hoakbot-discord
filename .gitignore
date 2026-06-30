@@ -25,5 +25,8 @@ Thumbs.db
 *.swo
 *~
 
+# Deploy state
+.deploy/
+
 # Debug
 npm-debug.log*

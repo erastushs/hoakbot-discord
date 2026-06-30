@@ -35,4 +35,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
 
           script: |
-            ~/deploy-hoakbot.sh
+            cd ~/hoakbot
+            git fetch origin main
+            git reset --hard origin/main
+            chmod +x scripts/deploy.sh
+            ./scripts/deploy.sh

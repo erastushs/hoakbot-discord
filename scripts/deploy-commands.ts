@@ -9,6 +9,7 @@ import { ServerInfoCommand } from '../src/modules/general/commands/serverinfo.co
 import { BotInfoCommand } from '../src/modules/general/commands/botinfo.command.js';
 import { CleanCommand } from '../src/modules/moderation/commands/clean.command.js';
 import { KickCommand } from '../src/modules/moderation/commands/kick.command.js';
+import { BanCommand } from '../src/modules/moderation/commands/ban.command.js';
 import { MetricsService } from '../src/core/metrics/metrics.service.js';
 
 async function main(): Promise<void> {
@@ -30,7 +31,7 @@ async function main(): Promise<void> {
 
   const registry = new CommandRegistry();
   const metricsStub = new MetricsService();
-  const commands = [new PingCommand(), new HelpCommand(registry), new AvatarCommand(), new UserInfoCommand(), new ServerInfoCommand(), new BotInfoCommand(config), new CleanCommand(), new KickCommand(metricsStub)];
+  const commands = [new PingCommand(), new HelpCommand(registry), new AvatarCommand(), new UserInfoCommand(), new ServerInfoCommand(), new BotInfoCommand(config), new CleanCommand(), new KickCommand(metricsStub), new BanCommand(metricsStub)];
 
   for (const cmd of commands) {
     if (cmd.slashOptions) {

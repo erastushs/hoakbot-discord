@@ -6,6 +6,7 @@ import { Events } from 'discord.js';
 import { CommandRouter } from '../../adapters/command-router.js';
 import { CleanCommand } from './commands/clean.command.js';
 import { KickCommand } from './commands/kick.command.js';
+import { BanCommand } from './commands/ban.command.js';
 
 export class ModerationModule implements IModule {
   readonly name = 'moderation';
@@ -22,8 +23,10 @@ export class ModerationModule implements IModule {
 
     const cleanCommand = new CleanCommand();
     const kickCommand = new KickCommand(metrics);
+    const banCommand = new BanCommand(metrics);
     registry.register(cleanCommand);
     registry.register(kickCommand);
+    registry.register(banCommand);
 
     const router = new CommandRouter(registry, config, logger, eventBus, metrics);
 

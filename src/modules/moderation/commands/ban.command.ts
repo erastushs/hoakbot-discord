@@ -3,22 +3,22 @@ import type { ICommand, CommandContext } from '../../../shared/types/command.js'
 import type { IMetrics } from '../../../core/metrics/types.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
 
-export class KickCommand implements ICommand {
-  readonly name = 'kick';
-  readonly description = 'Kicks a member from the server';
+export class BanCommand implements ICommand {
+  readonly name = 'ban';
+  readonly description = 'Bans a member from the server';
   readonly category = 'moderation';
   readonly guildOnly = true;
-  readonly requiredPermissions = [PermissionFlagsBits.KickMembers];
+  readonly requiredPermissions = [PermissionFlagsBits.BanMembers];
   readonly slashOptions = new SlashCommandBuilder()
-    .setName('kick')
-    .setDescription('Kicks a member from the server')
+    .setName('ban')
+    .setDescription('Bans a member from the server')
     .addUserOption((option) =>
-      option.setName('user').setDescription('The member to kick').setRequired(true),
+      option.setName('user').setDescription('The member to ban').setRequired(true),
     )
     .addStringOption((option) =>
-      option.setName('reason').setDescription('Reason for the kick').setRequired(false),
+      option.setName('reason').setDescription('Reason for the ban').setRequired(false),
     );
-  readonly prefixAliases = ['k'];
+  readonly prefixAliases = ['b'];
 
   private readonly guard = new ModerationGuard();
 
@@ -31,21 +31,21 @@ export class KickCommand implements ICommand {
     const member = await this.guard.resolveMember(target, ctx);
     if (!member) return;
 
-    const error = this.guard.validateCommon(member, ctx, 'kick');
+    const error = this.guard.validateCommon(member, ctx, 'ban');
     if (error) {
       await ctx.reply(error);
       return;
     }
 
-    if (!member.kickable) {
-      await ctx.reply('I cannot kick this member.');
+    if (!member.bannable) {
+      await ctx.reply('I cannot ban this member.');
       return;
     }
 
     const reason = this.guard.resolveReason(ctx);
 
     try {
-      await member.kick(reason);
+      await member.ban({ reason });
 
       this.metrics.counter('moderation_actions').increment();
 
@@ -53,18 +53,18 @@ export class KickCommand implements ICommand {
         guildId: ctx.guild!.id,
         moderatorId: ctx.user.id,
         targetId: target.id,
-        action: 'kick',
+        action: 'ban',
         reason,
       });
 
       ctx.logger.info(
         { command: this.name, guildId: ctx.guild!.id, moderatorId: ctx.user.id, targetId: target.id, reason },
-        'Kick command executed',
+        'Ban command executed',
       );
 
       const embed = new EmbedBuilder()
-        .setColor(0xf59e0b)
-        .setTitle('Member Kicked')
+        .setColor(0xef4444)
+        .setTitle('Member Banned')
         .addFields(
           { name: 'User', value: `${target.displayName} (\`${target.id}\`)`, inline: false },
           { name: 'Moderator', value: ctx.user.displayName, inline: true },
@@ -73,8 +73,8 @@ export class KickCommand implements ICommand {
 
       await ctx.reply({ embeds: [embed] });
     } catch (err) {
-      ctx.logger.error({ error: err, targetId: target.id }, 'Failed to kick member');
-      await ctx.reply('Failed to kick the member. Check my permissions and role hierarchy.');
+      ctx.logger.error({ error: err, targetId: target.id }, 'Failed to ban member');
+      await ctx.reply('Failed to ban the member. Check my permissions and role hierarchy.');
     }
   }
 }

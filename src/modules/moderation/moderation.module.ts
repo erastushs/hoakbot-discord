@@ -5,6 +5,7 @@ import { CommandRegistry } from '../../shared/command-registry.js';
 import { Events } from 'discord.js';
 import { CommandRouter } from '../../adapters/command-router.js';
 import { CleanCommand } from './commands/clean.command.js';
+import { KickCommand } from './commands/kick.command.js';
 
 export class ModerationModule implements IModule {
   readonly name = 'moderation';
@@ -20,7 +21,9 @@ export class ModerationModule implements IModule {
     const client = container.resolve(TOKENS.DiscordClient);
 
     const cleanCommand = new CleanCommand();
+    const kickCommand = new KickCommand(metrics);
     registry.register(cleanCommand);
+    registry.register(kickCommand);
 
     const router = new CommandRouter(registry, config, logger, eventBus, metrics);
 

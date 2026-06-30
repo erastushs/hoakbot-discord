@@ -8,6 +8,7 @@ import { PingCommand } from './commands/ping.command.js';
 import { HelpCommand } from './commands/help.command.js';
 import { AvatarCommand } from './commands/avatar.command.js';
 import { UserInfoCommand } from './commands/userinfo.command.js';
+import { ServerInfoCommand } from './commands/serverinfo.command.js';
 
 export class GeneralModule implements IModule {
   readonly name = 'general';
@@ -26,10 +27,12 @@ export class GeneralModule implements IModule {
     const helpCommand = new HelpCommand(registry);
     const avatarCommand = new AvatarCommand();
     const userInfoCommand = new UserInfoCommand();
+    const serverInfoCommand = new ServerInfoCommand();
     registry.register(pingCommand);
     registry.register(helpCommand);
     registry.register(avatarCommand);
     registry.register(userInfoCommand);
+    registry.register(serverInfoCommand);
 
     const router = new CommandRouter(registry, config, logger, eventBus, metrics);
 

@@ -9,6 +9,7 @@ import { KickCommand } from './commands/kick.command.js';
 import { BanCommand } from './commands/ban.command.js';
 import { TimeoutCommand } from './commands/timeout.command.js';
 import { WarnCommand } from './commands/warn.command.js';
+import { WarningsCommand } from './commands/warnings.command.js';
 import { WarningRepository } from './repositories/warning.repository.js';
 import { WarningService } from './services/warning.service.js';
 
@@ -38,7 +39,9 @@ export class ModerationModule implements IModule {
     const warningRepository = new WarningRepository(databaseAdapter);
     const warningService = new WarningService(warningRepository, logger, eventBus, metrics);
     const warnCommand = new WarnCommand(warningService);
+    const warningsCommand = new WarningsCommand(warningService);
     registry.register(warnCommand);
+    registry.register(warningsCommand);
 
     const router = new CommandRouter(registry, config, logger, eventBus, metrics);
 

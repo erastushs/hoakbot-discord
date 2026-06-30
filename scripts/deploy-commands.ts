@@ -12,6 +12,7 @@ import { KickCommand } from '../src/modules/moderation/commands/kick.command.js'
 import { BanCommand } from '../src/modules/moderation/commands/ban.command.js';
 import { TimeoutCommand } from '../src/modules/moderation/commands/timeout.command.js';
 import { WarnCommand } from '../src/modules/moderation/commands/warn.command.js';
+import { WarningsCommand } from '../src/modules/moderation/commands/warnings.command.js';
 import type { WarningService } from '../src/modules/moderation/services/warning.service.js';
 import { MetricsService } from '../src/core/metrics/metrics.service.js';
 
@@ -41,7 +42,7 @@ async function main(): Promise<void> {
     remove: async () => false,
     clear: async () => 0,
   } satisfies WarningService;
-  const commands = [new PingCommand(), new HelpCommand(registry), new AvatarCommand(), new UserInfoCommand(), new ServerInfoCommand(), new BotInfoCommand(config), new CleanCommand(), new KickCommand(metricsStub), new BanCommand(metricsStub), new TimeoutCommand(metricsStub), new WarnCommand(warningServiceStub)];
+  const commands = [new PingCommand(), new HelpCommand(registry), new AvatarCommand(), new UserInfoCommand(), new ServerInfoCommand(), new BotInfoCommand(config), new CleanCommand(), new KickCommand(metricsStub), new BanCommand(metricsStub), new TimeoutCommand(metricsStub), new WarnCommand(warningServiceStub), new WarningsCommand(warningServiceStub)];
 
   for (const cmd of commands) {
     if (cmd.slashOptions) {

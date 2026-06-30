@@ -44,8 +44,7 @@ const featureFlagsSchema = z.object({
 export const envSchema = z.object({
   BOT_TOKEN: z.string().min(1, 'BOT_TOKEN is required'),
   CLIENT_ID: z.string().min(1, 'CLIENT_ID is required'),
-  SUPABASE_URL: z.string().url('SUPABASE_URL must be a valid URL'),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   NODE_ENV: z.enum(['development', 'production']).default('production'),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   GUILD_ID: z.string().optional(),
@@ -60,10 +59,7 @@ export const appConfigSchema = z.object({
     token: z.string(),
     clientId: z.string(),
   }),
-  supabase: z.object({
-    url: z.string(),
-    serviceRoleKey: z.string(),
-  }),
+  databaseUrl: z.string(),
   env: z.object({
     nodeEnv: z.string(),
     logLevel: z.string(),

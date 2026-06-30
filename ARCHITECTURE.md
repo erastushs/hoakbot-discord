@@ -350,7 +350,7 @@ hoakbot/
 │   │   │
 │   │   ├── database/             # Database adapter layer
 │   │   │   ├── database-adapter.ts   # IDatabaseAdapter interface
-│   │   │   ├── supabase.adapter.ts   # Supabase PostgreSQL implementation
+│   │   │   ├── supabase.adapter.ts   # PostgreSQL implementation
 │   │   │   ├── migrations/           # Migration scripts (numbered)
 │   │   │   │   ├── 001_initial.ts
 │   │   │   │   └── runner.ts         # Migration execution engine
@@ -878,11 +878,11 @@ EventBus.publish(VoiceMemberJoinedEvent, {
                  │
                  ▼
 ┌──────────────────────────────────────┐
-│         Supabase PostgreSQL           │
+│         PostgreSQL                    │
 └──────────────────────────────────────┘
 ```
 
-The application never directly imports the Supabase SDK outside of `core/database/supabase.adapter.ts`. All modules depend only on repository interfaces.
+The application uses the `postgres` npm package directly with a `DATABASE_URL` connection string. All modules depend only on repository interfaces.
 
 ### Entity-Relationship Diagram
 
@@ -1075,7 +1075,7 @@ CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
 
 ### Database Provider
 
-Supabase PostgreSQL is the only supported database. The `IDatabaseAdapter` interface exists to keep the Supabase implementation details confined to `core/database/supabase.adapter.ts`, not to support multiple providers. All modules depend only on repository interfaces, never on the adapter or Supabase SDK directly.
+PostgreSQL is the only supported database, configured via a single `DATABASE_URL` environment variable. The `IDatabaseAdapter` interface exists to keep the implementation details confined to `core/database/supabase.adapter.ts`. All modules depend only on repository interfaces, never on the adapter directly.
 
 ---
 
@@ -1098,9 +1098,8 @@ Supabase PostgreSQL is the only supported database. The `IDatabaseAdapter` inter
 BOT_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 CLIENT_ID=123456789012345678
 
-# Required — Supabase PostgreSQL
-SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Required — Database
+DATABASE_URL=postgresql://postgres.xxx:PASSWORD@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
 
 # Environment
 NODE_ENV=production              # development | production
@@ -2058,7 +2057,7 @@ docs/
 ├── deployment/                    # Deployment guides
 │   ├── vps-setup.md               # Ubuntu VPS initial setup
 │   ├── pm2.md                     # PM2 configuration
-│   └── supabase-setup.md          # Supabase project setup
+│   └── database-setup.md          # Database setup
 │
 ├── modules/                       # Per-module documentation
 │   ├── module-guide.md            # How to create a new module
@@ -2145,8 +2144,7 @@ No ORM. Raw SQL with parameterized queries inside repository implementations. Re
 
 ### Why Each Key Choice
 
-- **`postgres` (npm package)** — Minimal PostgreSQL client. No ORM overhead, no migration framework baggage. Query templates prevent SQL injection.
-- **No `@supabase/supabase-js`** — The adapter pattern isolates the database client. The SupabaseAdapter uses the `postgres` package directly with the Supabase connection string. This keeps the application decoupled from Supabase-specific APIs (Auth, Storage, Realtime) which are not needed.
+- **`postgres` (npm package)** — Minimal PostgreSQL client. No ORM overhead, no migration framework baggage. Query templates prevent SQL injection. Configured via a single `DATABASE_URL` environment variable.
 - **Zod for config validation** — Prevents silent failures from malformed config. Catches type errors at startup, not at runtime.
 - **No `tsyringe`/`InversifyJS`** — These DI libraries add complexity (decorators, reflect-metadata) for features we don't need (interceptors, AOP). A lightweight hand-rolled container is simpler to debug and has zero framework lock-in.
 

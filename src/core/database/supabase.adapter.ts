@@ -15,16 +15,15 @@ export class SupabaseAdapter implements IDatabaseAdapter {
   ) {}
 
   async connect(): Promise<void> {
-    const { url, serviceRoleKey } = this.config.supabase;
-    if (!url || !serviceRoleKey) {
-      throw new ConfigurationError('Missing Supabase configuration (SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY)');
+    const { databaseUrl } = this.config;
+    if (!databaseUrl) {
+      throw new ConfigurationError('Missing DATABASE_URL configuration');
     }
 
-    this.logger.info({ url: this.sanitizeUrl(url) }, 'Connecting to Supabase PostgreSQL');
+    this.logger.info('Connecting to PostgreSQL database');
 
     try {
-      const connectionUrl = this.buildConnectionUrl(url, serviceRoleKey);
-      this.sql = postgres(connectionUrl, {
+      this.sql = postgres(databaseUrl, {
         max: 5,
         idle_timeout: 30,
         connect_timeout: 10,
@@ -36,10 +35,10 @@ export class SupabaseAdapter implements IDatabaseAdapter {
         throw new DatabaseConnectionError(`Database connection check failed: ${result.error ?? 'Unknown error'}`);
       }
       this.connected = true;
-      this.logger.info({ latencyMs: result.latencyMs }, 'Supabase PostgreSQL connected');
+      this.logger.info({ latencyMs: result.latencyMs }, 'PostgreSQL connected');
     } catch (error) {
-      this.logger.error({ error }, 'Failed to connect to Supabase PostgreSQL');
-      throw new DatabaseConnectionError('Failed to connect to Supabase PostgreSQL', error);
+      this.logger.error({ error }, 'Failed to connect to PostgreSQL');
+      throw new DatabaseConnectionError('Failed to connect to PostgreSQL', error);
     }
   }
 
@@ -48,7 +47,7 @@ export class SupabaseAdapter implements IDatabaseAdapter {
       await this.sql.end();
       this.sql = null;
       this.connected = false;
-      this.logger.info('Supabase PostgreSQL disconnected');
+      this.logger.info('PostgreSQL disconnected');
     }
   }
 
@@ -79,25 +78,5 @@ export class SupabaseAdapter implements IDatabaseAdapter {
 
   isConnected(): boolean {
     return this.connected;
-  }
-
-  private buildConnectionUrl(url: string, serviceRoleKey: string): string {
-    try {
-      const parsed = new URL(url);
-      parsed.username = 'postgres';
-      parsed.password = serviceRoleKey;
-      return parsed.toString();
-    } catch {
-      throw new ConfigurationError('Invalid SUPABASE_URL format');
-    }
-  }
-
-  private sanitizeUrl(url: string): string {
-    try {
-      const parsed = new URL(url);
-      return `${parsed.protocol}//${parsed.hostname}:${parsed.port}`;
-    } catch {
-      return url;
-    }
   }
 }

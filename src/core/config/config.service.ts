@@ -37,8 +37,7 @@ export class ConfigService {
     const raw = {
       BOT_TOKEN: process.env['BOT_TOKEN'],
       CLIENT_ID: process.env['CLIENT_ID'],
-      SUPABASE_URL: process.env['SUPABASE_URL'],
-      SUPABASE_SERVICE_ROLE_KEY: process.env['SUPABASE_SERVICE_ROLE_KEY'],
+      DATABASE_URL: process.env['DATABASE_URL'],
       NODE_ENV: process.env['NODE_ENV'],
       LOG_LEVEL: process.env['LOG_LEVEL'],
       GUILD_ID: process.env['GUILD_ID'],
@@ -75,10 +74,7 @@ export class ConfigService {
         token: env.BOT_TOKEN,
         clientId: env.CLIENT_ID,
       },
-      supabase: {
-        url: env.SUPABASE_URL,
-        serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
-      },
+      databaseUrl: env.DATABASE_URL,
       env: {
         nodeEnv: env.NODE_ENV,
         logLevel: env.LOG_LEVEL,

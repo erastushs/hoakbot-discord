@@ -47,10 +47,7 @@ export interface AppConfig {
     token: string;
     clientId: string;
   };
-  supabase: {
-    url: string;
-    serviceRoleKey: string;
-  };
+  databaseUrl: string;
   env: {
     nodeEnv: string;
     logLevel: string;

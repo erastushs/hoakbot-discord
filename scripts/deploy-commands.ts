@@ -3,6 +3,7 @@ import { ConfigService } from '../src/core/config/config.service.js';
 import { CommandRegistry } from '../src/shared/command-registry.js';
 import { PingCommand } from '../src/modules/general/commands/ping.command.js';
 import { HelpCommand } from '../src/modules/general/commands/help.command.js';
+import { AvatarCommand } from '../src/modules/general/commands/avatar.command.js';
 
 async function main(): Promise<void> {
   const configService = new ConfigService();
@@ -22,7 +23,7 @@ async function main(): Promise<void> {
   }
 
   const registry = new CommandRegistry();
-  const commands = [new PingCommand(), new HelpCommand(registry)];
+  const commands = [new PingCommand(), new HelpCommand(registry), new AvatarCommand()];
 
   for (const cmd of commands) {
     if (cmd.slashOptions) {

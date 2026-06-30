@@ -6,6 +6,7 @@ import type {
   InteractionReplyOptions,
   MessagePayload,
   SlashCommandBuilder,
+  SlashCommandOptionsOnlyBuilder,
 } from 'discord.js';
 import type { ILogger } from '../../core/logger/logger.service.js';
 import type { IEventBus } from '../../core/event-bus/types.js';
@@ -30,7 +31,7 @@ export interface ICommand {
   readonly category: string;
   readonly cooldown?: number;
   readonly requiredPermissions?: number[];
-  readonly slashOptions?: SlashCommandBuilder;
+  readonly slashOptions?: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
   readonly prefixAliases?: string[];
   execute(ctx: CommandContext): Promise<void>;
 }

@@ -9,6 +9,7 @@ import { HelpCommand } from './commands/help.command.js';
 import { AvatarCommand } from './commands/avatar.command.js';
 import { UserInfoCommand } from './commands/userinfo.command.js';
 import { ServerInfoCommand } from './commands/serverinfo.command.js';
+import { BotInfoCommand } from './commands/botinfo.command.js';
 
 export class GeneralModule implements IModule {
   readonly name = 'general';
@@ -28,11 +29,13 @@ export class GeneralModule implements IModule {
     const avatarCommand = new AvatarCommand();
     const userInfoCommand = new UserInfoCommand();
     const serverInfoCommand = new ServerInfoCommand();
+    const botInfoCommand = new BotInfoCommand(config);
     registry.register(pingCommand);
     registry.register(helpCommand);
     registry.register(avatarCommand);
     registry.register(userInfoCommand);
     registry.register(serverInfoCommand);
+    registry.register(botInfoCommand);
 
     const router = new CommandRouter(registry, config, logger, eventBus, metrics);
 

@@ -1,1 +1,1 @@
-export {};
+export { parseDuration, formatDuration } from './duration.js';

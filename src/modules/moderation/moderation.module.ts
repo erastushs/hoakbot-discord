@@ -7,6 +7,7 @@ import { CommandRouter } from '../../adapters/command-router.js';
 import { CleanCommand } from './commands/clean.command.js';
 import { KickCommand } from './commands/kick.command.js';
 import { BanCommand } from './commands/ban.command.js';
+import { TimeoutCommand } from './commands/timeout.command.js';
 
 export class ModerationModule implements IModule {
   readonly name = 'moderation';
@@ -24,9 +25,11 @@ export class ModerationModule implements IModule {
     const cleanCommand = new CleanCommand();
     const kickCommand = new KickCommand(metrics);
     const banCommand = new BanCommand(metrics);
+    const timeoutCommand = new TimeoutCommand(metrics);
     registry.register(cleanCommand);
     registry.register(kickCommand);
     registry.register(banCommand);
+    registry.register(timeoutCommand);
 
     const router = new CommandRouter(registry, config, logger, eventBus, metrics);
 

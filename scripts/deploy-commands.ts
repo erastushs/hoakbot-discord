@@ -7,6 +7,7 @@ import { AvatarCommand } from '../src/modules/general/commands/avatar.command.js
 import { UserInfoCommand } from '../src/modules/general/commands/userinfo.command.js';
 import { ServerInfoCommand } from '../src/modules/general/commands/serverinfo.command.js';
 import { BotInfoCommand } from '../src/modules/general/commands/botinfo.command.js';
+import { CleanCommand } from '../src/modules/moderation/commands/clean.command.js';
 
 async function main(): Promise<void> {
   const configService = new ConfigService();
@@ -26,7 +27,7 @@ async function main(): Promise<void> {
   }
 
   const registry = new CommandRegistry();
-  const commands = [new PingCommand(), new HelpCommand(registry), new AvatarCommand(), new UserInfoCommand(), new ServerInfoCommand(), new BotInfoCommand(config)];
+  const commands = [new PingCommand(), new HelpCommand(registry), new AvatarCommand(), new UserInfoCommand(), new ServerInfoCommand(), new BotInfoCommand(config), new CleanCommand()];
 
   for (const cmd of commands) {
     if (cmd.slashOptions) {

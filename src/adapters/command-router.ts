@@ -114,6 +114,8 @@ export class CommandRouter {
   private createPrefixContext(message: Message, suffix: string): CommandContext {
     const args = new Map<string, unknown>();
 
+    args.set('_suffix', suffix);
+
     const mentionMatch = suffix.trim().match(/^<@!?(\d+)>/);
     if (mentionMatch && mentionMatch[1]) {
       const userId = mentionMatch[1];

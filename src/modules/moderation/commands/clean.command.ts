@@ -1,0 +1,101 @@
+import { PermissionFlagsBits, SlashCommandBuilder, type Message, type GuildTextBasedChannel } from 'discord.js';
+import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+
+export class CleanCommand implements ICommand {
+  readonly name = 'clean';
+  readonly description = 'Deletes messages from the current channel (1-100)';
+  readonly category = 'moderation';
+  readonly requiredPermissions = [PermissionFlagsBits.ManageMessages];
+  readonly slashOptions = new SlashCommandBuilder()
+    .setName('clean')
+    .setDescription('Deletes messages from the current channel (1-100)')
+    .addIntegerOption((option) =>
+      option
+        .setName('amount')
+        .setDescription('Number of messages to delete (1-100)')
+        .setMinValue(1)
+        .setMaxValue(100)
+        .setRequired(true),
+    );
+  readonly prefixAliases = ['cls'];
+
+  async execute(ctx: CommandContext): Promise<void> {
+    if (!ctx.guild) {
+      await ctx.reply('This command can only be used inside a server.');
+      return;
+    }
+
+    if (!ctx.member) {
+      await ctx.reply('Could not resolve your guild member.');
+      return;
+    }
+
+    const permissions = ctx.member.permissions;
+    if (typeof permissions !== 'string' && !permissions.has(PermissionFlagsBits.ManageMessages)) {
+      await ctx.reply('You do not have permission to use this command.');
+      return;
+    }
+
+    const amount = this.parseAmount(ctx);
+    if (amount === null || amount < 1 || amount > 100) {
+      await ctx.reply('Please provide a number between 1 and 100.');
+      return;
+    }
+
+    const channel = ctx.channel;
+    if (!channel) {
+      await ctx.reply('Channel not available.');
+      return;
+    }
+
+    try {
+      const deletedMessages = await (channel as GuildTextBasedChannel).bulkDelete(amount, true);
+
+      const msg = await ctx.reply({ content: `Cleaned ${deletedMessages.size} messages.` }) as Message;
+
+      ctx.eventBus.emit('moderation.action', {
+        guildId: ctx.guild.id,
+        moderatorId: ctx.user.id,
+        targetId: '',
+        action: 'clean',
+        reason: `${amount} messages requested, ${deletedMessages.size} deleted`,
+      });
+
+      ctx.logger.info(
+        {
+          command: this.name,
+          channelId: ctx.channel.id,
+          requested: amount,
+          deleted: deletedMessages.size,
+          user: ctx.user.id,
+        },
+        'Clean command executed',
+      );
+
+      setTimeout(() => {
+        msg.delete().catch(() => {});
+      }, 5000);
+    } catch (err) {
+      ctx.logger.error({ error: err, channelId: ctx.channel.id }, 'Failed to clean messages');
+      await ctx.reply('Failed to clean messages. I may not have the required permissions.');
+    }
+  }
+
+  private parseAmount(ctx: CommandContext): number | null {
+    const fromSlash = ctx.args.get('amount');
+    if (typeof fromSlash === 'number') {
+      return Math.round(fromSlash);
+    }
+
+    const suffix = ctx.args.get('_suffix') as string | undefined;
+    if (!suffix) return null;
+
+    const token = suffix.trim().split(/\s+/)[0];
+    if (!token) return null;
+
+    const parsed = parseInt(token, 10);
+    if (isNaN(parsed)) return null;
+
+    return parsed;
+  }
+}

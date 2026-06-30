@@ -30,7 +30,7 @@ export interface ICommand {
   readonly description: string;
   readonly category: string;
   readonly cooldown?: number;
-  readonly requiredPermissions?: number[];
+  readonly requiredPermissions?: bigint[];
   readonly slashOptions?: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
   readonly prefixAliases?: string[];
   execute(ctx: CommandContext): Promise<void>;

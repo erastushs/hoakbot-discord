@@ -11,6 +11,7 @@ import { MetricsService } from './core/metrics/metrics.service.js';
 import { createDiscordClient } from './adapters/discord-client.js';
 import { GeneralModule } from './modules/general/general.module.js';
 import { VoiceModule } from './modules/voice/voice.module.js';
+import { ModerationModule } from './modules/moderation/moderation.module.js';
 import type { HealthReport } from './core/health/types.js';
 
 const bootstrapLogger = pino({
@@ -66,7 +67,7 @@ try {
 
   moduleLoader.registerModule(new GeneralModule());
   moduleLoader.registerModule(new VoiceModule());
-  // moduleLoader.registerModule(new ModerationModule());
+  moduleLoader.registerModule(new ModerationModule());
 
   await moduleLoader.loadAll(container);
   await moduleLoader.startAll();

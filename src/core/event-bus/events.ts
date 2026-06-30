@@ -84,8 +84,9 @@ export interface CooldownBlockedEvent {
 export interface PermissionDeniedEvent {
   userId: string;
   command: string;
-  requiredLevel: number;
-  userLevel: number;
+  reason: string;
+  requiredLevel?: number;
+  userLevel?: number;
 }
 
 export interface SchedulerJobDueEvent {

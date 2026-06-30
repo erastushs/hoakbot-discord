@@ -5,6 +5,7 @@ export class CleanCommand implements ICommand {
   readonly name = 'clean';
   readonly description = 'Deletes messages from the current channel (1-100)';
   readonly category = 'moderation';
+  readonly guildOnly = true;
   readonly requiredPermissions = [PermissionFlagsBits.ManageMessages];
   readonly slashOptions = new SlashCommandBuilder()
     .setName('clean')
@@ -20,22 +21,6 @@ export class CleanCommand implements ICommand {
   readonly prefixAliases = ['cls'];
 
   async execute(ctx: CommandContext): Promise<void> {
-    if (!ctx.guild) {
-      await ctx.reply('This command can only be used inside a server.');
-      return;
-    }
-
-    if (!ctx.member) {
-      await ctx.reply('Could not resolve your guild member.');
-      return;
-    }
-
-    const permissions = ctx.member.permissions;
-    if (typeof permissions !== 'string' && !permissions.has(PermissionFlagsBits.ManageMessages)) {
-      await ctx.reply('You do not have permission to use this command.');
-      return;
-    }
-
     const amount = this.parseAmount(ctx);
     if (amount === null || amount < 1 || amount > 100) {
       await ctx.reply('Please provide a number between 1 and 100.');
@@ -54,7 +39,7 @@ export class CleanCommand implements ICommand {
       const msg = await ctx.reply({ content: `Cleaned ${deletedMessages.size} messages.` }) as Message;
 
       ctx.eventBus.emit('moderation.action', {
-        guildId: ctx.guild.id,
+        guildId: ctx.guild!.id,
         moderatorId: ctx.user.id,
         targetId: '',
         action: 'clean',

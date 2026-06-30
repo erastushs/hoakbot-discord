@@ -6,9 +6,11 @@ import type { ILogger } from '../core/logger/logger.service.js';
 import type { IEventBus } from '../core/event-bus/types.js';
 import type { IMetrics } from '../core/metrics/types.js';
 import type { AppConfig } from '../core/config/types.js';
+import { PermissionMiddleware } from '../shared/middleware/permission.middleware.js';
 
 export class CommandRouter {
   private readonly cooldowns = new Collection<string, number>();
+  private readonly permissionMiddleware: PermissionMiddleware;
 
   constructor(
     private readonly registry: CommandRegistry,
@@ -16,7 +18,9 @@ export class CommandRouter {
     private readonly logger: ILogger,
     private readonly eventBus: IEventBus,
     private readonly metrics: IMetrics,
-  ) {}
+  ) {
+    this.permissionMiddleware = new PermissionMiddleware(config, logger, eventBus, metrics);
+  }
 
   async handleSlash(interaction: ChatInputCommandInteraction): Promise<void> {
     const command = this.registry.find(interaction.commandName);
@@ -53,6 +57,11 @@ export class CommandRouter {
 
   private async executeCommand(command: ICommand, ctx: CommandContext, _commandName: string): Promise<void> {
     const start = performance.now();
+
+    const permissionResult = await this.permissionMiddleware.check(command, ctx);
+    if (!permissionResult.ok) {
+      return;
+    }
 
     this.logger.debug({ command: command.name, source: ctx.source, user: ctx.user.id }, 'Executing command');
 

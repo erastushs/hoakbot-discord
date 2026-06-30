@@ -10,6 +10,8 @@ import { BanCommand } from './commands/ban.command.js';
 import { TimeoutCommand } from './commands/timeout.command.js';
 import { WarnCommand } from './commands/warn.command.js';
 import { WarningsCommand } from './commands/warnings.command.js';
+import { WarnRemoveCommand } from './commands/warn-remove.command.js';
+import { WarnClearCommand } from './commands/warn-clear.command.js';
 import { WarningRepository } from './repositories/warning.repository.js';
 import { WarningService } from './services/warning.service.js';
 
@@ -40,8 +42,12 @@ export class ModerationModule implements IModule {
     const warningService = new WarningService(warningRepository, logger, eventBus, metrics);
     const warnCommand = new WarnCommand(warningService);
     const warningsCommand = new WarningsCommand(warningService);
+    const warnRemoveCommand = new WarnRemoveCommand(warningService);
+    const warnClearCommand = new WarnClearCommand(warningService);
     registry.register(warnCommand);
     registry.register(warningsCommand);
+    registry.register(warnRemoveCommand);
+    registry.register(warnClearCommand);
 
     const router = new CommandRouter(registry, config, logger, eventBus, metrics);
 

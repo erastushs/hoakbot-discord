@@ -3,7 +3,7 @@ import type { ICommand, CommandContext } from '../../../shared/types/command.js'
 import type { IMetrics } from '../../../core/metrics/types.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
 import { parseDuration, formatDuration } from '../../../shared/utils/duration.js';
-import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { Response } from '../../../shared/responses/response.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
 import { Errors } from '../../../shared/errors/errors.js';
 
@@ -83,15 +83,16 @@ export class TimeoutCommand implements ICommand {
         'Timeout command executed',
       );
 
-      const embed = EmbedFactory.custom(ctx, { color: COLORS.MODERATION.TIMEOUT, title: 'Member Timed Out' })
-        .addFields(
+      await Response.custom(ctx, {
+        color: COLORS.MODERATION.TIMEOUT,
+        title: 'Member Timed Out',
+        fields: [
           { name: 'User', value: `${target.displayName} (\`${target.id}\`)`, inline: false },
           { name: 'Duration', value: formatDuration(ms), inline: true },
           { name: 'Moderator', value: ctx.user.displayName, inline: true },
           { name: 'Reason', value: reason, inline: false },
-        );
-
-      await ctx.reply({ embeds: [embed] });
+        ],
+      });
     } catch (err) {
       ctx.logger.error({ error: err, targetId: target.id }, 'Failed to timeout member');
       await ctx.reply(Errors.failedTimeout());

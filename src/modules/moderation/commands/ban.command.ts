@@ -2,7 +2,7 @@ import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import type { IMetrics } from '../../../core/metrics/types.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
-import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { Response } from '../../../shared/responses/response.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
 import { Errors } from '../../../shared/errors/errors.js';
 
@@ -65,14 +65,15 @@ export class BanCommand implements ICommand {
         'Ban command executed',
       );
 
-      const embed = EmbedFactory.custom(ctx, { color: COLORS.MODERATION.BAN, title: 'Member Banned' })
-        .addFields(
+      await Response.custom(ctx, {
+        color: COLORS.MODERATION.BAN,
+        title: 'Member Banned',
+        fields: [
           { name: 'User', value: `${target.displayName} (\`${target.id}\`)`, inline: false },
           { name: 'Moderator', value: ctx.user.displayName, inline: true },
           { name: 'Reason', value: reason, inline: true },
-        );
-
-      await ctx.reply({ embeds: [embed] });
+        ],
+      });
     } catch (err) {
       ctx.logger.error({ error: err, targetId: target.id }, 'Failed to ban member');
       await ctx.reply(Errors.failedBan());

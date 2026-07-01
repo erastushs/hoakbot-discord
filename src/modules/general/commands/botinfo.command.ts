@@ -2,7 +2,7 @@ import { SlashCommandBuilder, version as djsVersion } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import type { AppConfig } from '../../../core/config/types.js';
-import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { Response } from '../../../shared/responses/response.factory.js';
 import { Errors } from '../../../shared/errors/errors.js';
 
 const pkg = { name: 'hoakbot', version: '1.0.0' };
@@ -54,10 +54,10 @@ export class BotInfoCommand implements ICommand {
       .filter(Boolean)
       .join(', ') || 'None';
 
-    const embed = EmbedFactory.info(ctx)
-      .setTitle(botUser.username)
-      .setThumbnail(botUser.displayAvatarURL())
-      .addFields(
+    await Response.custom(ctx, {
+      title: botUser.username,
+      thumbnail: botUser.displayAvatarURL(),
+      fields: [
         {
           name: 'General',
           value: [
@@ -96,10 +96,8 @@ export class BotInfoCommand implements ICommand {
           name: 'Modules',
           value: loadedModules,
         },
-      )
-      ;
-
-    await ctx.reply({ embeds: [embed] });
+      ],
+    });
   }
 
   private formatUptime(totalSeconds: number): string {

@@ -2,8 +2,9 @@ import { PermissionFlagsBits, SlashCommandBuilder, time } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import type { WarningService } from '../services/warning.service.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
-import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { Response } from '../../../shared/responses/response.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
+import { Errors } from '../../../shared/errors/errors.js';
 
 export class WarningsCommand implements ICommand {
   readonly name = 'warnings';
@@ -42,30 +43,33 @@ export class WarningsCommand implements ICommand {
       this.warningService.count(ctx.guild!.id, target.id),
     ]);
 
-    const embed = EmbedFactory.custom(ctx, { color: COLORS.MODERATION.WARN, title: '\u{1F7E8} Warning History' })
-      .addFields(
+    await Response.custom(ctx, {
+      color: COLORS.MODERATION.WARN,
+      title: '\u{1F7E8} Warning History',
+      fields: [
         { name: 'User', value: `${target.displayName} (\`${target.id}\`)`, inline: false },
         { name: 'Total Warnings', value: `${totalCount}`, inline: true },
-      );
+      ],
+      build: (embed) => {
+        if (warnings.length === 0) {
+          embed.setDescription(Errors.noWarnings());
+        } else {
+          const entries = warnings.map((w) => {
+            const shortId = w.id.substring(0, 8);
+            const modMention = `<@${w.moderator_id}>`;
+            const ts = time(new Date(w.created_at), 'F');
+            const rel = time(new Date(w.created_at), 'R');
+            return `\`${shortId}\` — **Moderator:** ${modMention}\n**Reason:** ${w.reason}\n**When:** ${ts} (${rel})`;
+          });
 
-    if (warnings.length === 0) {
-      embed.setDescription('This member has no warnings.');
-    } else {
-      const entries = warnings.map((w) => {
-        const shortId = w.id.substring(0, 8);
-        const modMention = `<@${w.moderator_id}>`;
-        const ts = time(new Date(w.created_at), 'F');
-        const rel = time(new Date(w.created_at), 'R');
-        return `\`${shortId}\` — **Moderator:** ${modMention}\n**Reason:** ${w.reason}\n**When:** ${ts} (${rel})`;
-      });
-
-      embed.addFields({
-        name: 'Warnings',
-        value: entries.join('\n\n'),
-      });
-    }
-
-    await ctx.reply({ embeds: [embed] });
+          embed.addFields({
+            name: 'Warnings',
+            value: entries.join('\n\n'),
+          });
+        }
+        return embed;
+      },
+    });
   }
 
   private resolveLimit(ctx: CommandContext): number {

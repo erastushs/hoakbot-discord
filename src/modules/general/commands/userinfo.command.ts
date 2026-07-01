@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, time } from 'discord.js';
 import type { GuildMember, User } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
-import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { Response } from '../../../shared/responses/response.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
 import { Errors } from '../../../shared/errors/errors.js';
 
@@ -57,36 +57,33 @@ export class UserInfoCommand implements ICommand {
       forceStatic: false,
     });
 
-    const embed = EmbedFactory.custom(ctx, { color })
-      .setTitle(`${target.displayName}'s Information`)
-      .setThumbnail(avatarURL)
-      .addFields(
-        {
-          name: 'Identity',
-          value: [
-            `**Username:** ${target.username}`,
-            target.globalName ? `**Global Name:** ${target.globalName}` : null,
-            `**Display Name:** ${target.displayName}`,
-          ]
-            .filter(Boolean)
-            .join('\n'),
-        },
-        {
-          name: 'Account',
-          value: [
-            `**User ID:** \`${target.id}\``,
-            `**Bot:** ${target.bot ? 'Yes' : 'No'}`,
-            `**Created:** ${time(target.createdAt, 'F')} (${time(target.createdAt, 'R')})`,
-          ].join('\n'),
-          inline: false,
-        },
-      );
+    const fields: { name: string; value: string; inline?: boolean }[] = [
+      {
+        name: 'Identity',
+        value: [
+          `**Username:** ${target.username}`,
+          target.globalName ? `**Global Name:** ${target.globalName}` : null,
+          `**Display Name:** ${target.displayName}`,
+        ]
+          .filter(Boolean)
+          .join('\n'),
+      },
+      {
+        name: 'Account',
+        value: [
+          `**User ID:** \`${target.id}\``,
+          `**Bot:** ${target.bot ? 'Yes' : 'No'}`,
+          `**Created:** ${time(target.createdAt, 'F')} (${time(target.createdAt, 'R')})`,
+        ].join('\n'),
+        inline: false,
+      },
+    ];
 
     if (isInGuild) {
       const totalRoles = member!.roles.cache.size - 1;
       const highestRole = member!.roles.highest;
 
-      embed.addFields({
+      fields.push({
         name: 'Guild',
         value: [
           `**Joined:** ${time(member!.joinedAt!, 'F')} (${time(member!.joinedAt!, 'R')})`,
@@ -96,6 +93,6 @@ export class UserInfoCommand implements ICommand {
       });
     }
 
-    await ctx.reply({ embeds: [embed] });
+    await Response.custom(ctx, { color, title: `${target.displayName}'s Information`, thumbnail: avatarURL, fields });
   }
 }

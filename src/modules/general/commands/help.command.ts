@@ -2,7 +2,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import type { CommandRegistry } from '../../../shared/command-registry.js';
 import type { AppConfig } from '../../../core/config/types.js';
-import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { Response } from '../../../shared/responses/response.factory.js';
 
 export class HelpCommand implements ICommand {
   readonly name = 'help';
@@ -28,10 +28,9 @@ export class HelpCommand implements ICommand {
 
     const sortedCategories = [...grouped.keys()].sort((a, b) => a.localeCompare(b));
 
-    const embed = EmbedFactory.info(ctx)
-      .setTitle('\u{1F4DA} Hoak Bot Help');
-
     let totalCommands = 0;
+
+    const fields: { name: string; value: string }[] = [];
 
     for (const cat of sortedCategories) {
       const cmds = grouped.get(cat)!;
@@ -46,16 +45,16 @@ export class HelpCommand implements ICommand {
         ].join('\n');
       });
 
-      embed.addFields({ name: cat, value: lines.join('\n\n') });
+      fields.push({ name: cat, value: lines.join('\n\n') });
       totalCommands += cmds.length;
     }
 
-    embed.setDescription(`**Total Commands:** ${totalCommands}\n**Categories:** ${sortedCategories.length}`);
-    if (ctx.user.client.user) {
-      embed.setThumbnail(ctx.user.client.user.displayAvatarURL());
-    }
-
-    await ctx.reply({ embeds: [embed] });
+    await Response.custom(ctx, {
+      title: '\u{1F4DA} Hoak Bot Help',
+      description: `**Total Commands:** ${totalCommands}\n**Categories:** ${sortedCategories.length}`,
+      fields,
+      thumbnail: ctx.user.client.user?.displayAvatarURL(),
+    });
   }
 
   private capitalize(s: string): string {

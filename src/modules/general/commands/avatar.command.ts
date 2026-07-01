@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import type { User } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
-import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { Response } from '../../../shared/responses/response.factory.js';
 import { Errors } from '../../../shared/errors/errors.js';
 
 export class AvatarCommand implements ICommand {
@@ -44,15 +44,14 @@ export class AvatarCommand implements ICommand {
 
     const isAnimated = target.avatar?.startsWith('a_') ?? false;
 
-    const embed = EmbedFactory.info(ctx)
-      .setTitle(`${target.displayName}'s Avatar`)
-      .addFields(
+    await Response.info(ctx, {
+      title: `${target.displayName}'s Avatar`,
+      fields: [
         { name: 'Resolution', value: '4096x4096', inline: true },
         { name: 'Animated', value: isAnimated ? 'Yes' : 'No', inline: true },
         { name: 'Direct Link', value: `[Open original](${avatarURL})`, inline: true },
-      )
-      .setImage(avatarURL);
-
-    await ctx.reply({ embeds: [embed] });
+      ],
+      image: avatarURL,
+    });
   }
 }

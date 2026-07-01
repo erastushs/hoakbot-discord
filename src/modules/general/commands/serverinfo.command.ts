@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, time } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
-import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { Response } from '../../../shared/responses/response.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
 import { Errors } from '../../../shared/errors/errors.js';
 
@@ -38,10 +38,13 @@ export class ServerInfoCommand implements ICommand {
     const iconURL = guild.iconURL({ extension: 'png', size: 4096 });
     const bannerURL = guild.bannerURL({ extension: 'png', size: 4096 });
 
-    const embed = EmbedFactory.custom(ctx, { color })
-      .setTitle(guild.name)
-      .setDescription(guild.description ? `*${guild.description}*` : null)
-      .addFields(
+    await Response.custom(ctx, {
+      color,
+      title: guild.name,
+      description: guild.description ? `*${guild.description}*` : null,
+      thumbnail: iconURL ?? undefined,
+      image: bannerURL ?? undefined,
+      fields: [
         {
           name: 'General',
           value: [
@@ -79,15 +82,7 @@ export class ServerInfoCommand implements ICommand {
             `**Sticker Count:** ${stickerCount}`,
           ].join('\n'),
         },
-      );
-
-    if (iconURL) {
-      embed.setThumbnail(iconURL);
-    }
-    if (bannerURL) {
-      embed.setImage(bannerURL);
-    }
-
-    await ctx.reply({ embeds: [embed] });
+      ],
+    });
   }
 }

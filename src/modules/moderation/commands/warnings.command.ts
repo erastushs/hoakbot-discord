@@ -1,7 +1,9 @@
-import { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder, time } from 'discord.js';
+import { PermissionFlagsBits, SlashCommandBuilder, time } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import type { WarningService } from '../services/warning.service.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
+import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { COLORS } from '../../../shared/constants/colors.js';
 
 export class WarningsCommand implements ICommand {
   readonly name = 'warnings';
@@ -40,9 +42,7 @@ export class WarningsCommand implements ICommand {
       this.warningService.count(ctx.guild!.id, target.id),
     ]);
 
-    const embed = new EmbedBuilder()
-      .setColor(0xfacc15)
-      .setTitle('\u{1F7E8} Warning History')
+    const embed = EmbedFactory.custom(ctx, { color: COLORS.MODERATION.WARN, title: '\u{1F7E8} Warning History' })
       .addFields(
         { name: 'User', value: `${target.displayName} (\`${target.id}\`)`, inline: false },
         { name: 'Total Warnings', value: `${totalCount}`, inline: true },

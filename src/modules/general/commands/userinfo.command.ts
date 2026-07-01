@@ -1,6 +1,8 @@
-import { EmbedBuilder, SlashCommandBuilder, time } from 'discord.js';
+import { SlashCommandBuilder, time } from 'discord.js';
 import type { GuildMember, User } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { COLORS } from '../../../shared/constants/colors.js';
 
 export class UserInfoCommand implements ICommand {
   readonly name = 'userinfo';
@@ -46,7 +48,7 @@ export class UserInfoCommand implements ICommand {
     const isInGuild = ctx.guild !== null && member !== null;
     const color = member?.displayColor && member.displayColor !== 0
       ? member.displayColor
-      : 0x5865f2;
+      : COLORS.PRIMARY;
 
     const avatarURL = target.displayAvatarURL({
       extension: 'png',
@@ -54,8 +56,7 @@ export class UserInfoCommand implements ICommand {
       forceStatic: false,
     });
 
-    const embed = new EmbedBuilder()
-      .setColor(color)
+    const embed = EmbedFactory.custom(ctx, { color })
       .setTitle(`${target.displayName}'s Information`)
       .setThumbnail(avatarURL)
       .addFields(
@@ -93,8 +94,6 @@ export class UserInfoCommand implements ICommand {
         ].join('\n'),
       });
     }
-
-    embed.setFooter({ text: `Requested by ${ctx.user.displayName}`, iconURL: ctx.user.displayAvatarURL() });
 
     await ctx.reply({ embeds: [embed] });
   }

@@ -1,7 +1,8 @@
-import { EmbedBuilder, SlashCommandBuilder, version as djsVersion } from 'discord.js';
+import { SlashCommandBuilder, version as djsVersion } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import type { AppConfig } from '../../../core/config/types.js';
+import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 
 const pkg = { name: 'hoakbot', version: '1.0.0' };
 
@@ -52,8 +53,7 @@ export class BotInfoCommand implements ICommand {
       .filter(Boolean)
       .join(', ') || 'None';
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
+    const embed = EmbedFactory.info(ctx)
       .setTitle(botUser.username)
       .setThumbnail(botUser.displayAvatarURL())
       .addFields(
@@ -96,7 +96,7 @@ export class BotInfoCommand implements ICommand {
           value: loadedModules,
         },
       )
-      .setFooter({ text: `Requested by ${ctx.user.displayName}`, iconURL: ctx.user.displayAvatarURL() });
+      ;
 
     await ctx.reply({ embeds: [embed] });
   }

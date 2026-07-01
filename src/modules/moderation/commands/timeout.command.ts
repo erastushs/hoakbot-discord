@@ -1,8 +1,10 @@
-import { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import type { IMetrics } from '../../../core/metrics/types.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
 import { parseDuration, formatDuration } from '../../../shared/utils/duration.js';
+import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { COLORS } from '../../../shared/constants/colors.js';
 
 export class TimeoutCommand implements ICommand {
   readonly name = 'timeout';
@@ -80,9 +82,7 @@ export class TimeoutCommand implements ICommand {
         'Timeout command executed',
       );
 
-      const embed = new EmbedBuilder()
-        .setColor(0xa855f7)
-        .setTitle('Member Timed Out')
+      const embed = EmbedFactory.custom(ctx, { color: COLORS.MODERATION.TIMEOUT, title: 'Member Timed Out' })
         .addFields(
           { name: 'User', value: `${target.displayName} (\`${target.id}\`)`, inline: false },
           { name: 'Duration', value: formatDuration(ms), inline: true },

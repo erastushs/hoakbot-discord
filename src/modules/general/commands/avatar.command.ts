@@ -1,6 +1,7 @@
-import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 import type { User } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 
 export class AvatarCommand implements ICommand {
   readonly name = 'avatar';
@@ -42,8 +43,7 @@ export class AvatarCommand implements ICommand {
 
     const isAnimated = target.avatar?.startsWith('a_') ?? false;
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
+    const embed = EmbedFactory.info(ctx)
       .setTitle(`${target.displayName}'s Avatar`)
       .addFields(
         { name: 'Resolution', value: '4096x4096', inline: true },

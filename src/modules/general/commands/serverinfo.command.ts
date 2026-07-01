@@ -1,5 +1,7 @@
-import { EmbedBuilder, SlashCommandBuilder, time } from 'discord.js';
+import { SlashCommandBuilder, time } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { COLORS } from '../../../shared/constants/colors.js';
 
 export class ServerInfoCommand implements ICommand {
   readonly name = 'serverinfo';
@@ -31,12 +33,11 @@ export class ServerInfoCommand implements ICommand {
     const emojiCount = guild.emojis.cache.size;
     const stickerCount = guild.stickers.cache.size;
 
-    const color = guild.ownerId ? owner?.displayColor ?? 0x5865f2 : 0x5865f2;
+    const color = guild.ownerId ? owner?.displayColor ?? COLORS.PRIMARY : COLORS.PRIMARY;
     const iconURL = guild.iconURL({ extension: 'png', size: 4096 });
     const bannerURL = guild.bannerURL({ extension: 'png', size: 4096 });
 
-    const embed = new EmbedBuilder()
-      .setColor(color)
+    const embed = EmbedFactory.custom(ctx, { color })
       .setTitle(guild.name)
       .setDescription(guild.description ? `*${guild.description}*` : null)
       .addFields(
@@ -85,8 +86,6 @@ export class ServerInfoCommand implements ICommand {
     if (bannerURL) {
       embed.setImage(bannerURL);
     }
-
-    embed.setFooter({ text: `Requested by ${ctx.user.displayName}`, iconURL: ctx.user.displayAvatarURL() });
 
     await ctx.reply({ embeds: [embed] });
   }

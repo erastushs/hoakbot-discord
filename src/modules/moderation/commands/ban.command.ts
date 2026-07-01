@@ -1,7 +1,9 @@
-import { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import type { IMetrics } from '../../../core/metrics/types.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
+import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { COLORS } from '../../../shared/constants/colors.js';
 
 export class BanCommand implements ICommand {
   readonly name = 'ban';
@@ -62,9 +64,7 @@ export class BanCommand implements ICommand {
         'Ban command executed',
       );
 
-      const embed = new EmbedBuilder()
-        .setColor(0xef4444)
-        .setTitle('Member Banned')
+      const embed = EmbedFactory.custom(ctx, { color: COLORS.MODERATION.BAN, title: 'Member Banned' })
         .addFields(
           { name: 'User', value: `${target.displayName} (\`${target.id}\`)`, inline: false },
           { name: 'Moderator', value: ctx.user.displayName, inline: true },

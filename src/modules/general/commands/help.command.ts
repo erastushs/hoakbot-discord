@@ -1,7 +1,8 @@
-import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import type { CommandRegistry } from '../../../shared/command-registry.js';
 import type { AppConfig } from '../../../core/config/types.js';
+import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 
 export class HelpCommand implements ICommand {
   readonly name = 'help';
@@ -27,8 +28,7 @@ export class HelpCommand implements ICommand {
 
     const sortedCategories = [...grouped.keys()].sort((a, b) => a.localeCompare(b));
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865f2)
+    const embed = EmbedFactory.info(ctx)
       .setTitle('\u{1F4DA} Hoak Bot Help');
 
     let totalCommands = 0;
@@ -51,8 +51,6 @@ export class HelpCommand implements ICommand {
     }
 
     embed.setDescription(`**Total Commands:** ${totalCommands}\n**Categories:** ${sortedCategories.length}`);
-    embed.setFooter({ text: `Requested by ${ctx.user.displayName}`, iconURL: ctx.user.displayAvatarURL() });
-
     if (ctx.user.client.user) {
       embed.setThumbnail(ctx.user.client.user.displayAvatarURL());
     }

@@ -12,6 +12,7 @@ const cooldownsSchema = z.object({
 
 const voiceSchema = z.object({
   standbyChannelId: z.string(),
+  joinDelayMs: z.number().int().min(0),
   cooldownMs: z.number().int().positive(),
   reconnectDelayMs: z.number().int().positive(),
   maxReconnectRetries: z.number().int().positive(),

@@ -13,6 +13,7 @@ import { Events } from 'discord.js';
 enum VoiceStateEnum {
   IDLE = 'IDLE',
   MOVING = 'MOVING',
+  WAITING = 'WAITING',
   PLAYING = 'PLAYING',
   RETURNING = 'RETURNING',
   COOLDOWN = 'COOLDOWN',
@@ -28,8 +29,11 @@ export class VoiceModule implements IModule {
   private defaultSound = '';
   private volume = 1.0;
   private cooldownMs = 5000;
+  private joinDelayMs = 2000;
   private state: VoiceStateEnum = VoiceStateEnum.IDLE;
   private cooldownTimer: ReturnType<typeof setTimeout> | null = null;
+  private joinTimer: ReturnType<typeof setTimeout> | null = null;
+  private isShuttingDown = false;
 
   register(container: IContainer): void {
     const config = container.resolve(TOKENS.AppConfig);
@@ -37,11 +41,12 @@ export class VoiceModule implements IModule {
     const client = container.resolve(TOKENS.DiscordClient);
     const eventBus = container.resolve(TOKENS.EventBus);
 
-    const { standbyChannelId, reconnectDelayMs, maxReconnectRetries, defaultSound, volume, cooldownMs } =
+    const { standbyChannelId, reconnectDelayMs, maxReconnectRetries, defaultSound, volume, cooldownMs, joinDelayMs } =
       config.bot.voice;
     this.defaultSound = defaultSound;
     this.volume = volume;
     this.cooldownMs = cooldownMs;
+    this.joinDelayMs = joinDelayMs;
 
     this.connectionManager = new ConnectionManager(client, logger, maxReconnectRetries, reconnectDelayMs);
     this.audioManager = new AudioManager(logger);
@@ -58,7 +63,9 @@ export class VoiceModule implements IModule {
   }
 
   onShutdown(): Promise<void> {
+    this.isShuttingDown = true;
     if (this.cooldownTimer) clearTimeout(this.cooldownTimer);
+    if (this.joinTimer) clearTimeout(this.joinTimer);
     if (this.connectionManager) {
       return this.connectionManager.disconnect();
     }
@@ -77,7 +84,7 @@ export class VoiceModule implements IModule {
   }
 
   private async handleMemberJoined(event: VoiceMemberJoinedEvent, logger: ILogger): Promise<void> {
-    if (!this.connectionManager || !this.audioManager) return;
+    if (!this.connectionManager || !this.audioManager || this.isShuttingDown) return;
 
     if (this.state !== VoiceStateEnum.IDLE) {
       logger.info({ user: event.username, state: this.state }, 'Ignored voice event while busy');
@@ -88,6 +95,19 @@ export class VoiceModule implements IModule {
     logger.info({ user: event.username, channelId: event.channelId }, 'Processing voice.memberJoined');
 
     await this.connectionManager.moveTo(event.channelId, event.guildId);
+
+    if (this.isShuttingDown || (this.state as string) !== VoiceStateEnum.MOVING) return;
+
+    this.transition(VoiceStateEnum.WAITING, logger);
+
+    await new Promise<void>((resolve) => {
+      this.joinTimer = setTimeout(() => {
+        this.joinTimer = null;
+        resolve();
+      }, this.joinDelayMs);
+    });
+
+    if (this.isShuttingDown || (this.state as string) !== VoiceStateEnum.WAITING) return;
 
     const connection = this.connectionManager.getConnection();
     const soundPath = resolve('assets', 'sounds', `${this.defaultSound}.mp3`);
@@ -100,6 +120,8 @@ export class VoiceModule implements IModule {
     } catch (err) {
       logger.error({ error: err }, 'Playback error');
     }
+
+    if (this.isShuttingDown) return;
 
     this.transition(VoiceStateEnum.RETURNING, logger);
     this.connectionManager.returnToStandby();

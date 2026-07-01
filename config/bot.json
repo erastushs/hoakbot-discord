@@ -13,6 +13,7 @@
   },
   "voice": {
     "standbyChannelId": "504877260021694464",
+    "joinDelayMs": 2000,
     "cooldownMs": 5000,
     "reconnectDelayMs": 3000,
     "maxReconnectRetries": 5,

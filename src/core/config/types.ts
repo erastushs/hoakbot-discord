@@ -10,6 +10,7 @@ export interface CooldownsConfig {
 
 export interface VoiceConfig {
   standbyChannelId: string;
+  joinDelayMs: number;
   cooldownMs: number;
   reconnectDelayMs: number;
   maxReconnectRetries: number;

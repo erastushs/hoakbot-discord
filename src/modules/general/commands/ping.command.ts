@@ -1,7 +1,8 @@
 import { SlashCommandBuilder } from 'discord.js';
-import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import type { CommandContext } from '../../../shared/types/command.js';
+import { BaseCommand } from '../../../shared/command/base-command.js';
 
-export class PingCommand implements ICommand {
+export class PingCommand extends BaseCommand {
   readonly name = 'ping';
   readonly description = 'Replies with the bot latency';
   readonly category = 'general';

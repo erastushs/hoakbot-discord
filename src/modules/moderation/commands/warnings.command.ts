@@ -1,12 +1,12 @@
 import { PermissionFlagsBits, SlashCommandBuilder, time } from 'discord.js';
-import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import type { CommandContext } from '../../../shared/types/command.js';
 import type { WarningService } from '../services/warning.service.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
-import { Response } from '../../../shared/responses/response.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
 import { Errors } from '../../../shared/errors/errors.js';
+import { BaseCommand } from '../../../shared/command/base-command.js';
 
-export class WarningsCommand implements ICommand {
+export class WarningsCommand extends BaseCommand {
   readonly name = 'warnings';
   readonly description = "Lists a member's warning history";
   readonly category = 'moderation';
@@ -30,7 +30,9 @@ export class WarningsCommand implements ICommand {
 
   private readonly guard = new ModerationGuard();
 
-  constructor(private readonly warningService: WarningService) {}
+  constructor(private readonly warningService: WarningService) {
+    super();
+  }
 
   async execute(ctx: CommandContext): Promise<void> {
     const target = await this.guard.resolveTarget(ctx);
@@ -43,7 +45,7 @@ export class WarningsCommand implements ICommand {
       this.warningService.count(ctx.guild!.id, target.id),
     ]);
 
-    await Response.custom(ctx, {
+    await this.custom(ctx, {
       color: COLORS.MODERATION.WARN,
       title: '\u{1F7E8} Warning History',
       fields: [

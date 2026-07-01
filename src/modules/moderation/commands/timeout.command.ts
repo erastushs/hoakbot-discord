@@ -1,13 +1,13 @@
 import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
-import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import type { CommandContext } from '../../../shared/types/command.js';
 import type { IMetrics } from '../../../core/metrics/types.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
 import { parseDuration, formatDuration } from '../../../shared/utils/duration.js';
-import { Response } from '../../../shared/responses/response.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
 import { Errors } from '../../../shared/errors/errors.js';
+import { BaseCommand } from '../../../shared/command/base-command.js';
 
-export class TimeoutCommand implements ICommand {
+export class TimeoutCommand extends BaseCommand {
   readonly name = 'timeout';
   readonly description = 'Timeouts a member in the server';
   readonly category = 'moderation';
@@ -29,7 +29,9 @@ export class TimeoutCommand implements ICommand {
 
   private readonly guard = new ModerationGuard();
 
-  constructor(private readonly metrics: IMetrics) {}
+  constructor(private readonly metrics: IMetrics) {
+    super();
+  }
 
   async execute(ctx: CommandContext): Promise<void> {
     const target = await this.guard.resolveTarget(ctx);
@@ -83,7 +85,7 @@ export class TimeoutCommand implements ICommand {
         'Timeout command executed',
       );
 
-      await Response.custom(ctx, {
+      await this.custom(ctx, {
         color: COLORS.MODERATION.TIMEOUT,
         title: 'Member Timed Out',
         fields: [

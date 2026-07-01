@@ -1,10 +1,11 @@
 import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
-import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import type { CommandContext } from '../../../shared/types/command.js';
 import type { WarningService } from '../services/warning.service.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
 import { Errors } from '../../../shared/errors/errors.js';
+import { BaseCommand } from '../../../shared/command/base-command.js';
 
-export class WarnClearCommand implements ICommand {
+export class WarnClearCommand extends BaseCommand {
   readonly name = 'warn-clear';
   readonly description = 'Clears all warnings for a member';
   readonly category = 'moderation';
@@ -20,7 +21,9 @@ export class WarnClearCommand implements ICommand {
 
   private readonly guard = new ModerationGuard();
 
-  constructor(private readonly warningService: WarningService) {}
+  constructor(private readonly warningService: WarningService) {
+    super();
+  }
 
   async execute(ctx: CommandContext): Promise<void> {
     const target = await this.guard.resolveTarget(ctx);

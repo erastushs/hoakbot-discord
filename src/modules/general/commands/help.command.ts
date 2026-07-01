@@ -1,10 +1,11 @@
 import { SlashCommandBuilder } from 'discord.js';
-import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import type { CommandContext } from '../../../shared/types/command.js';
+import type { ICommand } from '../../../shared/types/command.js';
 import type { CommandRegistry } from '../../../shared/command-registry.js';
 import type { AppConfig } from '../../../core/config/types.js';
-import { Response } from '../../../shared/responses/response.factory.js';
+import { BaseCommand } from '../../../shared/command/base-command.js';
 
-export class HelpCommand implements ICommand {
+export class HelpCommand extends BaseCommand {
   readonly name = 'help';
   readonly description = 'Lists all available commands';
   readonly category = 'General';
@@ -13,7 +14,9 @@ export class HelpCommand implements ICommand {
   constructor(
     private readonly registry: CommandRegistry,
     private readonly config: Readonly<AppConfig>,
-  ) {}
+  ) {
+    super();
+  }
 
   async execute(ctx: CommandContext): Promise<void> {
     const all = this.registry.all().filter((cmd) => !cmd.hidden);
@@ -49,7 +52,7 @@ export class HelpCommand implements ICommand {
       totalCommands += cmds.length;
     }
 
-    await Response.custom(ctx, {
+    await this.custom(ctx, {
       title: '\u{1F4DA} Hoak Bot Help',
       description: `**Total Commands:** ${totalCommands}\n**Categories:** ${sortedCategories.length}`,
       fields,

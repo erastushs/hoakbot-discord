@@ -1,9 +1,10 @@
 import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
-import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import type { CommandContext } from '../../../shared/types/command.js';
 import type { WarningService } from '../services/warning.service.js';
 import { Errors } from '../../../shared/errors/errors.js';
+import { BaseCommand } from '../../../shared/command/base-command.js';
 
-export class WarnRemoveCommand implements ICommand {
+export class WarnRemoveCommand extends BaseCommand {
   readonly name = 'warn-remove';
   readonly description = 'Removes a warning by ID';
   readonly category = 'moderation';
@@ -17,7 +18,9 @@ export class WarnRemoveCommand implements ICommand {
     );
   readonly prefixAliases = ['wr'];
 
-  constructor(private readonly warningService: WarningService) {}
+  constructor(private readonly warningService: WarningService) {
+    super();
+  }
 
   async execute(ctx: CommandContext): Promise<void> {
     const warningId = this.resolveId(ctx);

@@ -3,7 +3,7 @@ import type { CommandContext } from '../types/command.js';
 import { EmbedFactory } from '../builders/embed.factory.js';
 import type { EmbedBuilder } from 'discord.js';
 
-interface ResponseOptions {
+export interface ResponseOptions {
   title?: string;
   description?: string | null;
   color?: ColorResolvable;

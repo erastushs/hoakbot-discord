@@ -1,10 +1,10 @@
 import { SlashCommandBuilder } from 'discord.js';
 import type { User } from 'discord.js';
-import type { ICommand, CommandContext } from '../../../shared/types/command.js';
-import { Response } from '../../../shared/responses/response.factory.js';
+import type { CommandContext } from '../../../shared/types/command.js';
 import { Errors } from '../../../shared/errors/errors.js';
+import { BaseCommand } from '../../../shared/command/base-command.js';
 
-export class AvatarCommand implements ICommand {
+export class AvatarCommand extends BaseCommand {
   readonly name = 'avatar';
   readonly description = "Displays a user's avatar";
   readonly category = 'general';
@@ -44,7 +44,7 @@ export class AvatarCommand implements ICommand {
 
     const isAnimated = target.avatar?.startsWith('a_') ?? false;
 
-    await Response.info(ctx, {
+    await this.info(ctx, {
       title: `${target.displayName}'s Avatar`,
       fields: [
         { name: 'Resolution', value: '4096x4096', inline: true },

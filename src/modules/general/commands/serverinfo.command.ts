@@ -1,10 +1,10 @@
 import { SlashCommandBuilder, time } from 'discord.js';
-import type { ICommand, CommandContext } from '../../../shared/types/command.js';
-import { Response } from '../../../shared/responses/response.factory.js';
+import type { CommandContext } from '../../../shared/types/command.js';
 import { COLORS } from '../../../shared/constants/colors.js';
 import { Errors } from '../../../shared/errors/errors.js';
+import { BaseCommand } from '../../../shared/command/base-command.js';
 
-export class ServerInfoCommand implements ICommand {
+export class ServerInfoCommand extends BaseCommand {
   readonly name = 'serverinfo';
   readonly description = 'Displays information about the current server';
   readonly category = 'general';
@@ -38,7 +38,7 @@ export class ServerInfoCommand implements ICommand {
     const iconURL = guild.iconURL({ extension: 'png', size: 4096 });
     const bannerURL = guild.bannerURL({ extension: 'png', size: 4096 });
 
-    await Response.custom(ctx, {
+    await this.custom(ctx, {
       color,
       title: guild.name,
       description: guild.description ? `*${guild.description}*` : null,

@@ -1,13 +1,13 @@
 import { SlashCommandBuilder, version as djsVersion } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
-import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import type { CommandContext } from '../../../shared/types/command.js';
 import type { AppConfig } from '../../../core/config/types.js';
-import { Response } from '../../../shared/responses/response.factory.js';
 import { Errors } from '../../../shared/errors/errors.js';
+import { BaseCommand } from '../../../shared/command/base-command.js';
 
 const pkg = { name: 'hoakbot', version: '1.0.0' };
 
-export class BotInfoCommand implements ICommand {
+export class BotInfoCommand extends BaseCommand {
   readonly name = 'botinfo';
   readonly description = "Displays information about the bot";
   readonly category = 'general';
@@ -16,7 +16,9 @@ export class BotInfoCommand implements ICommand {
     .setDescription("Displays information about the bot");
   readonly prefixAliases = ['bi'];
 
-  constructor(private readonly config: Readonly<AppConfig>) {}
+  constructor(private readonly config: Readonly<AppConfig>) {
+    super();
+  }
 
   async execute(ctx: CommandContext): Promise<void> {
     const client = ctx.user.client;
@@ -54,7 +56,7 @@ export class BotInfoCommand implements ICommand {
       .filter(Boolean)
       .join(', ') || 'None';
 
-    await Response.custom(ctx, {
+    await this.custom(ctx, {
       title: botUser.username,
       thumbnail: botUser.displayAvatarURL(),
       fields: [

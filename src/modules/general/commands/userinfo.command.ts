@@ -1,11 +1,11 @@
 import { SlashCommandBuilder, time } from 'discord.js';
 import type { GuildMember, User } from 'discord.js';
-import type { ICommand, CommandContext } from '../../../shared/types/command.js';
-import { Response } from '../../../shared/responses/response.factory.js';
+import type { CommandContext } from '../../../shared/types/command.js';
 import { COLORS } from '../../../shared/constants/colors.js';
 import { Errors } from '../../../shared/errors/errors.js';
+import { BaseCommand } from '../../../shared/command/base-command.js';
 
-export class UserInfoCommand implements ICommand {
+export class UserInfoCommand extends BaseCommand {
   readonly name = 'userinfo';
   readonly description = "Displays information about a user";
   readonly category = 'general';
@@ -93,6 +93,6 @@ export class UserInfoCommand implements ICommand {
       });
     }
 
-    await Response.custom(ctx, { color, title: `${target.displayName}'s Information`, thumbnail: avatarURL, fields });
+    await this.custom(ctx, { color, title: `${target.displayName}'s Information`, thumbnail: avatarURL, fields });
   }
 }

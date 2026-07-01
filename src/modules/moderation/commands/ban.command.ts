@@ -1,12 +1,12 @@
 import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
-import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import type { CommandContext } from '../../../shared/types/command.js';
 import type { IMetrics } from '../../../core/metrics/types.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
-import { Response } from '../../../shared/responses/response.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
 import { Errors } from '../../../shared/errors/errors.js';
+import { BaseCommand } from '../../../shared/command/base-command.js';
 
-export class BanCommand implements ICommand {
+export class BanCommand extends BaseCommand {
   readonly name = 'ban';
   readonly description = 'Bans a member from the server';
   readonly category = 'moderation';
@@ -25,7 +25,9 @@ export class BanCommand implements ICommand {
 
   private readonly guard = new ModerationGuard();
 
-  constructor(private readonly metrics: IMetrics) {}
+  constructor(private readonly metrics: IMetrics) {
+    super();
+  }
 
   async execute(ctx: CommandContext): Promise<void> {
     const target = await this.guard.resolveTarget(ctx);
@@ -65,7 +67,7 @@ export class BanCommand implements ICommand {
         'Ban command executed',
       );
 
-      await Response.custom(ctx, {
+      await this.custom(ctx, {
         color: COLORS.MODERATION.BAN,
         title: 'Member Banned',
         fields: [

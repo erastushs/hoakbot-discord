@@ -1,8 +1,9 @@
 import { PermissionFlagsBits, SlashCommandBuilder, type Message, type GuildTextBasedChannel } from 'discord.js';
-import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import type { CommandContext } from '../../../shared/types/command.js';
 import { Errors } from '../../../shared/errors/errors.js';
+import { BaseCommand } from '../../../shared/command/base-command.js';
 
-export class CleanCommand implements ICommand {
+export class CleanCommand extends BaseCommand {
   readonly name = 'clean';
   readonly description = 'Deletes messages from the current channel (1-100)';
   readonly category = 'moderation';

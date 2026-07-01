@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/15</span>
+                <span class='fraction'>15/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/15</span>
+                <span class='fraction'>15/15</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -102,73 +102,73 @@
 <a name='L37'></a><a href='#L37'>37</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { ICommand } from './types/command.js';
 &nbsp;
 export class CommandRegistry {
-  private readonly commands = <span class="cstat-no" title="statement not covered" >new Map&lt;string, ICommand&gt;();</span>
-  private readonly aliasMap = <span class="cstat-no" title="statement not covered" >new Map&lt;string, ICommand&gt;();</span>
+  private readonly commands = new Map&lt;string, ICommand&gt;();
+  private readonly aliasMap = new Map&lt;string, ICommand&gt;();
 &nbsp;
-<span class="fstat-no" title="function not covered" >  register(c</span>ommand: ICommand): void {
-    const name = <span class="cstat-no" title="statement not covered" >command.name.toLowerCase();</span>
-<span class="cstat-no" title="statement not covered" >    if (this.commands.has(name)) {</span>
-<span class="cstat-no" title="statement not covered" >      throw new Error(`Duplicate command: ${name}`);</span>
+  register(command: ICommand): void {
+    const name = command.name.toLowerCase();
+    if (this.commands.has(name)) {
+      throw new Error(`Duplicate command: ${name}`);
     }
-<span class="cstat-no" title="statement not covered" >    this.commands.set(name, command);</span>
+    this.commands.set(name, command);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    if (command.prefixAliases) {</span>
-<span class="cstat-no" title="statement not covered" >      for (const alias of command.prefixAliases) {</span>
-        const lower = <span class="cstat-no" title="statement not covered" >alias.toLowerCase();</span>
-<span class="cstat-no" title="statement not covered" >        if (this.aliasMap.has(lower)) {</span>
-<span class="cstat-no" title="statement not covered" >          throw new Error(`Duplicate alias: ${lower} for command ${name}`);</span>
+    if (command.prefixAliases) {
+      for (const alias of command.prefixAliases) {
+        const lower = alias.toLowerCase();
+        if (this.aliasMap.has(lower)) {
+          throw new Error(`Duplicate alias: ${lower} for command ${name}`);
         }
-<span class="cstat-no" title="statement not covered" >        this.aliasMap.set(lower, command);</span>
+        this.aliasMap.set(lower, command);
       }
     }
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  find(n</span>ame: string): ICommand | null {
-<span class="cstat-no" title="statement not covered" >    return this.commands.get(name.toLowerCase()) ?? null;</span>
+  find(name: string): ICommand | null {
+    return this.commands.get(name.toLowerCase()) ?? null;
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  findByAlias(a</span>lias: string): ICommand | null {
-<span class="cstat-no" title="statement not covered" >    return this.aliasMap.get(alias.toLowerCase()) ?? null;</span>
+  findByAlias(alias: string): ICommand | null {
+    return this.aliasMap.get(alias.toLowerCase()) ?? null;
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  all(): ReadonlyArray&lt;ICommand&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    return [...this.commands.values()];</span>
+  all(): ReadonlyArray&lt;ICommand&gt; {
+    return [...this.commands.values()];
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -178,7 +178,7 @@ export class CommandRegistry {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-01T02:01:34.746Z
+                at 2026-07-01T02:09:13.787Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

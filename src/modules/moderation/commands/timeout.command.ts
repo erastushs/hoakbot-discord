@@ -5,6 +5,7 @@ import { ModerationGuard } from '../services/moderation.guard.js';
 import { parseDuration, formatDuration } from '../../../shared/utils/duration.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
+import { Errors } from '../../../shared/errors/errors.js';
 
 export class TimeoutCommand implements ICommand {
   readonly name = 'timeout';
@@ -44,7 +45,7 @@ export class TimeoutCommand implements ICommand {
     }
 
     if (!member.moderatable) {
-      await ctx.reply('I cannot timeout this member.');
+      await ctx.reply(Errors.cannotTimeout());
       return;
     }
 
@@ -93,7 +94,7 @@ export class TimeoutCommand implements ICommand {
       await ctx.reply({ embeds: [embed] });
     } catch (err) {
       ctx.logger.error({ error: err, targetId: target.id }, 'Failed to timeout member');
-      await ctx.reply('Failed to timeout the member. Check my permissions and role hierarchy.');
+      await ctx.reply(Errors.failedTimeout());
     }
   }
 
@@ -104,14 +105,14 @@ export class TimeoutCommand implements ICommand {
     }
 
     const suffix = ctx.args.get('_suffix') as string | undefined;
-    if (!suffix) return { ms: 0, error: 'Please provide a duration (e.g. 10m, 2h, 7d).' };
+    if (!suffix) return { ms: 0, error: Errors.durationRequired() };
 
     const trimmed = suffix.trim();
     const mentionMatch = trimmed.match(/^<@!?(\d+)>/);
     const afterMention = mentionMatch ? trimmed.slice(mentionMatch[0].length).trim() : trimmed;
     const token = afterMention.split(/\s+/)[0] ?? '';
 
-    if (!token) return { ms: 0, error: 'Please provide a duration (e.g. 10m, 2h, 7d).' };
+    if (!token) return { ms: 0, error: Errors.durationRequired() };
 
     return parseDuration(token);
   }

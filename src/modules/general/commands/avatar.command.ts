@@ -2,6 +2,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import type { User } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { Errors } from '../../../shared/errors/errors.js';
 
 export class AvatarCommand implements ICommand {
   readonly name = 'avatar';
@@ -25,7 +26,7 @@ export class AvatarCommand implements ICommand {
           target = await ctx.user.client.users.fetch(userId);
         } catch {
           ctx.logger.warn({ userId, command: this.name }, 'Target user not found');
-          await ctx.reply('User not found.');
+          await ctx.reply(Errors.memberNotFound());
           return;
         }
       }

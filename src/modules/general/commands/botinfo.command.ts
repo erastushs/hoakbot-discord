@@ -3,6 +3,7 @@ import { getVoiceConnection } from '@discordjs/voice';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import type { AppConfig } from '../../../core/config/types.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { Errors } from '../../../shared/errors/errors.js';
 
 const pkg = { name: 'hoakbot', version: '1.0.0' };
 
@@ -21,7 +22,7 @@ export class BotInfoCommand implements ICommand {
     const client = ctx.user.client;
     const botUser = client.user;
     if (!botUser) {
-      await ctx.reply('Bot user not available.');
+      await ctx.reply(Errors.botNotAvailable());
       return;
     }
 

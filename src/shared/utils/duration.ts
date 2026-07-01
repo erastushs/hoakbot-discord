@@ -1,3 +1,5 @@
+import { Errors } from '../errors/errors.js';
+
 const MAX_TIMEOUT_MS = 28 * 24 * 60 * 60 * 1000;
 
 const UNIT_MS: Record<string, number> = {
@@ -11,7 +13,7 @@ export function parseDuration(input: string): { ms: number; error?: string } {
   const trimmed = input.trim();
   const match = trimmed.match(/^(\d+)\s*(s|m|h|d)$/i);
   if (!match) {
-    return { ms: 0, error: 'Invalid duration format. Use a number followed by s, m, h, or d (e.g. 10m, 2h, 7d).' };
+    return { ms: 0, error: Errors.invalidDuration() };
   }
 
   const value = parseInt(match[1]!, 10);
@@ -19,11 +21,11 @@ export function parseDuration(input: string): { ms: number; error?: string } {
   const ms = value * (UNIT_MS[unit] ?? 0);
 
   if (ms <= 0) {
-    return { ms: 0, error: 'Duration must be greater than zero.' };
+    return { ms: 0, error: Errors.durationZero() };
   }
 
   if (ms > MAX_TIMEOUT_MS) {
-    return { ms: 0, error: 'Duration cannot exceed 28 days.' };
+    return { ms: 0, error: Errors.durationTooLong() };
   }
 
   return { ms };

@@ -1,6 +1,7 @@
 import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import type { WarningService } from '../services/warning.service.js';
+import { Errors } from '../../../shared/errors/errors.js';
 
 export class WarnRemoveCommand implements ICommand {
   readonly name = 'warn-remove';
@@ -21,14 +22,14 @@ export class WarnRemoveCommand implements ICommand {
   async execute(ctx: CommandContext): Promise<void> {
     const warningId = this.resolveId(ctx);
     if (!warningId) {
-      await ctx.reply('Please provide a warning ID.');
+      await ctx.reply(Errors.warningIdRequired());
       return;
     }
 
     const deleted = await this.warningService.remove(warningId);
 
     if (!deleted) {
-      await ctx.reply('Warning not found.');
+      await ctx.reply(Errors.warningNotFound());
       return;
     }
 
@@ -40,7 +41,7 @@ export class WarnRemoveCommand implements ICommand {
       reason: warningId,
     });
 
-    await ctx.reply('\u{1F5D1} Warning removed.');
+    await ctx.reply(Errors.warningRemoved());
   }
 
   private resolveId(ctx: CommandContext): string | null {

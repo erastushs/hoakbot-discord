@@ -4,6 +4,7 @@ import type { WarningService } from '../services/warning.service.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
+import { Errors } from '../../../shared/errors/errors.js';
 
 export class WarnCommand implements ICommand {
   readonly name = 'warn';
@@ -40,8 +41,8 @@ export class WarnCommand implements ICommand {
     }
 
     const reason = this.guard.resolveReason(ctx);
-    if (reason === 'No reason provided.') {
-      await ctx.reply('Reason is required.');
+    if (reason === Errors.noReasonProvided()) {
+      await ctx.reply(Errors.reasonRequired());
       return;
     }
 
@@ -66,7 +67,7 @@ export class WarnCommand implements ICommand {
       await ctx.reply({ embeds: [embed] });
     } catch (err) {
       ctx.logger.error({ error: err, targetId: target.id }, 'Failed to warn member');
-      await ctx.reply('Failed to warn the member.');
+      await ctx.reply(Errors.failedWarn());
     }
   }
 }

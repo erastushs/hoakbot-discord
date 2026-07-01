@@ -4,6 +4,7 @@ import type { IMetrics } from '../../../core/metrics/types.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
+import { Errors } from '../../../shared/errors/errors.js';
 
 export class BanCommand implements ICommand {
   readonly name = 'ban';
@@ -40,7 +41,7 @@ export class BanCommand implements ICommand {
     }
 
     if (!member.bannable) {
-      await ctx.reply('I cannot ban this member.');
+      await ctx.reply(Errors.cannotBan());
       return;
     }
 
@@ -74,7 +75,7 @@ export class BanCommand implements ICommand {
       await ctx.reply({ embeds: [embed] });
     } catch (err) {
       ctx.logger.error({ error: err, targetId: target.id }, 'Failed to ban member');
-      await ctx.reply('Failed to ban the member. Check my permissions and role hierarchy.');
+      await ctx.reply(Errors.failedBan());
     }
   }
 }

@@ -2,6 +2,7 @@ import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import type { WarningService } from '../services/warning.service.js';
 import { ModerationGuard } from '../services/moderation.guard.js';
+import { Errors } from '../../../shared/errors/errors.js';
 
 export class WarnClearCommand implements ICommand {
   readonly name = 'warn-clear';
@@ -28,7 +29,7 @@ export class WarnClearCommand implements ICommand {
     const deleted = await this.warningService.clear(ctx.guild!.id, target.id);
 
     if (deleted === 0) {
-      await ctx.reply('This member has no warnings.');
+      await ctx.reply(Errors.noWarnings());
       return;
     }
 
@@ -40,6 +41,6 @@ export class WarnClearCommand implements ICommand {
       reason: `${deleted} warnings cleared`,
     });
 
-    await ctx.reply(`\u{1F5D1} Cleared ${deleted} warnings from ${target.displayName}.`);
+    await ctx.reply(Errors.warningsCleared(deleted, target.displayName));
   }
 }

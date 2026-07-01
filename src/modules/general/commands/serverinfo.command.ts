@@ -2,6 +2,7 @@ import { SlashCommandBuilder, time } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
+import { Errors } from '../../../shared/errors/errors.js';
 
 export class ServerInfoCommand implements ICommand {
   readonly name = 'serverinfo';
@@ -14,7 +15,7 @@ export class ServerInfoCommand implements ICommand {
 
   async execute(ctx: CommandContext): Promise<void> {
     if (!ctx.guild) {
-      await ctx.reply('This command can only be used inside a server.');
+      await ctx.reply(Errors.guildOnly());
       return;
     }
 

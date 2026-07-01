@@ -1,5 +1,6 @@
 import { PermissionFlagsBits, SlashCommandBuilder, type Message, type GuildTextBasedChannel } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
+import { Errors } from '../../../shared/errors/errors.js';
 
 export class CleanCommand implements ICommand {
   readonly name = 'clean';
@@ -23,20 +24,20 @@ export class CleanCommand implements ICommand {
   async execute(ctx: CommandContext): Promise<void> {
     const amount = this.parseAmount(ctx);
     if (amount === null || amount < 1 || amount > 100) {
-      await ctx.reply('Please provide a number between 1 and 100.');
+      await ctx.reply(Errors.invalidAmount());
       return;
     }
 
     const channel = ctx.channel;
     if (!channel) {
-      await ctx.reply('Channel not available.');
+      await ctx.reply(Errors.channelNotAvailable());
       return;
     }
 
     try {
       const deletedMessages = await (channel as GuildTextBasedChannel).bulkDelete(amount, true);
 
-      const msg = await ctx.reply({ content: `Cleaned ${deletedMessages.size} messages.` }) as Message;
+      const msg = await ctx.reply({ content: Errors.cleanedMessages(deletedMessages.size) }) as Message;
 
       ctx.eventBus.emit('moderation.action', {
         guildId: ctx.guild!.id,
@@ -62,7 +63,7 @@ export class CleanCommand implements ICommand {
       }, 5000);
     } catch (err) {
       ctx.logger.error({ error: err, channelId: ctx.channel.id }, 'Failed to clean messages');
-      await ctx.reply('Failed to clean messages. I may not have the required permissions.');
+      await ctx.reply(Errors.failedClean());
     }
   }
 

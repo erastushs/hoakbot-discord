@@ -3,6 +3,7 @@ import type { GuildMember, User } from 'discord.js';
 import type { ICommand, CommandContext } from '../../../shared/types/command.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
+import { Errors } from '../../../shared/errors/errors.js';
 
 export class UserInfoCommand implements ICommand {
   readonly name = 'userinfo';
@@ -26,7 +27,7 @@ export class UserInfoCommand implements ICommand {
           target = await ctx.user.client.users.fetch(userId);
         } catch {
           ctx.logger.warn({ userId, command: this.name }, 'Target user not found');
-          await ctx.reply('User not found.');
+          await ctx.reply(Errors.memberNotFound());
           return;
         }
       }

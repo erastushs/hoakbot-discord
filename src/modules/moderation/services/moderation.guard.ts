@@ -1,5 +1,6 @@
 import type { GuildMember, User } from 'discord.js';
 import type { CommandContext } from '../../../shared/types/command.js';
+import { Errors } from '../../../shared/errors/errors.js';
 
 export class ModerationGuard {
   async resolveTarget(ctx: CommandContext): Promise<User | null> {
@@ -14,12 +15,12 @@ export class ModerationGuard {
       try {
         return await ctx.user.client.users.fetch(userId);
       } catch {
-        await ctx.reply('User not found.');
+        await ctx.reply(Errors.memberNotFound());
         return null;
       }
     }
 
-    await ctx.reply('Please specify a user.');
+    await ctx.reply(Errors.userRequired());
     return null;
   }
 
@@ -27,7 +28,7 @@ export class ModerationGuard {
     try {
       return await ctx.guild!.members.fetch(target.id);
     } catch {
-      await ctx.reply('That user is not a member of this server.');
+      await ctx.reply(Errors.memberNotInGuild());
       return null;
     }
   }
@@ -39,34 +40,34 @@ export class ModerationGuard {
     }
 
     const suffix = ctx.args.get('_suffix') as string | undefined;
-    if (!suffix) return 'No reason provided.';
+    if (!suffix) return Errors.noReasonProvided();
 
     const trimmed = suffix.trim();
     const mentionMatch = trimmed.match(/^<@!?(\d+)>/);
-    if (!mentionMatch) return 'No reason provided.';
+    if (!mentionMatch) return Errors.noReasonProvided();
 
     const afterMention = trimmed.slice(mentionMatch[0].length).trim();
-    return afterMention.length > 0 ? afterMention : 'No reason provided.';
+    return afterMention.length > 0 ? afterMention : Errors.noReasonProvided();
   }
 
   validateCommon(member: GuildMember, ctx: CommandContext, action: string): string | null {
     if (member.id === ctx.user.id) {
-      return `You cannot ${action} yourself.`;
+      return Errors.selfAction(action);
     }
 
     if (member.id === ctx.user.client.user?.id) {
-      return `I cannot ${action} myself.`;
+      return Errors.botSelf(action);
     }
 
     if (member.id === ctx.guild?.ownerId) {
-      return `You cannot ${action} the server owner.`;
+      return Errors.serverOwner(action);
     }
 
     if (ctx.member) {
       const executorHighest = ctx.member.roles.highest.position;
       const targetHighest = member.roles.highest.position;
       if (executorHighest <= targetHighest) {
-        return `You cannot ${action} this member due to role hierarchy.`;
+        return Errors.roleHierarchy(action);
       }
     }
 
@@ -75,7 +76,7 @@ export class ModerationGuard {
       const botHighest = botMember.roles.highest.position;
       const targetHighest = member.roles.highest.position;
       if (botHighest <= targetHighest) {
-        return `I cannot ${action} this member due to role hierarchy.`;
+        return Errors.botHierarchy(action);
       }
     }
 

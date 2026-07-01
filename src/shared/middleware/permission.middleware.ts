@@ -3,6 +3,7 @@ import type { ILogger } from '../../core/logger/logger.service.js';
 import type { IEventBus } from '../../core/event-bus/types.js';
 import type { IMetrics } from '../../core/metrics/types.js';
 import type { AppConfig } from '../../core/config/types.js';
+import { Errors } from '../errors/errors.js';
 
 export interface PermissionResult {
   ok: boolean;
@@ -24,7 +25,7 @@ export class PermissionMiddleware {
     }
 
     if (command.guildOnly && !ctx.guild) {
-      await ctx.reply('This command can only be used inside a server.');
+      await ctx.reply(Errors.guildOnly());
 
       this.emitDenied(ctx, command.name, 'guildOnly');
       return { ok: false, reason: 'guildOnly' };
@@ -33,7 +34,7 @@ export class PermissionMiddleware {
     const required = command.requiredPermissions;
     if (required && required.length > 0) {
       if (!ctx.member) {
-        await ctx.reply('Could not resolve your guild member.');
+        await ctx.reply(Errors.couldNotResolveMember());
 
         this.emitDenied(ctx, command.name, 'no-member');
         return { ok: false, reason: 'no-member' };
@@ -41,7 +42,7 @@ export class PermissionMiddleware {
 
       const userPermissions = ctx.member.permissions;
       if (typeof userPermissions === 'string') {
-        await ctx.reply('You do not have permission to use this command.');
+        await ctx.reply(Errors.permissionDenied());
 
         this.emitDenied(ctx, command.name, 'permissions-unresolved');
         return { ok: false, reason: 'permissions-unresolved' };
@@ -49,7 +50,7 @@ export class PermissionMiddleware {
 
       for (const perm of required) {
         if (!userPermissions.has(perm)) {
-          await ctx.reply('You do not have permission to use this command.');
+          await ctx.reply(Errors.permissionDenied());
 
           this.emitDenied(ctx, command.name, `missing:${String(perm)}`);
           return { ok: false, reason: 'user-permission' };
@@ -59,7 +60,7 @@ export class PermissionMiddleware {
       if (ctx.guild) {
         const botMember = ctx.guild.members.me;
         if (!botMember) {
-          await ctx.reply('I do not have the required permissions to perform this action.');
+          await ctx.reply(Errors.botPermissionDenied());
 
           this.emitDenied(ctx, command.name, 'bot-no-member');
           return { ok: false, reason: 'bot-no-member' };
@@ -67,7 +68,7 @@ export class PermissionMiddleware {
 
         const botPermissions = botMember.permissions;
         if (typeof botPermissions === 'string') {
-          await ctx.reply('I do not have the required permissions to perform this action.');
+          await ctx.reply(Errors.botPermissionDenied());
 
           this.emitDenied(ctx, command.name, 'bot-permissions-unresolved');
           return { ok: false, reason: 'bot-permissions-unresolved' };
@@ -75,7 +76,7 @@ export class PermissionMiddleware {
 
         for (const perm of required) {
           if (!botPermissions.has(perm)) {
-            await ctx.reply('I do not have the required permissions to perform this action.');
+            await ctx.reply(Errors.botPermissionDenied());
 
             this.emitDenied(ctx, command.name, `bot-missing:${String(perm)}`);
             return { ok: false, reason: 'bot-permission' };

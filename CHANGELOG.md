@@ -5,31 +5,44 @@ All notable changes to Hoak Bot are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] — 2025-07-03
 
 ### Added
-- EmbedFactory with shared embed builders (success, error, warning, info, custom)
-- Centralized color constants (`COLORS.PRIMARY`, `COLORS.MODERATION.*`, etc.)
-- Error catalog (`Errors.*`) replacing all hardcoded user-facing strings
-- Response factory (`Response.*`) wrapping embed construction and `ctx.reply()`
-- BaseCommand abstract class with protected response helpers
-- Configurable voice join delay (`joinDelayMs`) with WAITING state
-- Vitest testing infrastructure with v8 coverage (80% thresholds)
+- **Logging Module** — comprehensive member, voice, message, and moderation logging:
+  - `VoiceLogService` — join/leave/move events with embeds
+  - `MemberLogService` — nickname, display name, avatar, and role add/remove event logging
+  - `MessageLogService` — message delete, edit, bulk delete with attachment archiving
+  - `ModerationLogService` — kick, ban, timeout, warn, clean action logging
+- **Welcome Module** — configurable welcome cards with custom backgrounds and templates
+- **Goodbye Module** — configurable goodbye cards with custom backgrounds
+- **Moderation Module** — kick, ban, timeout, warn, clean commands with permission checks
+- **General Module** — ping and help commands with structured responses
+- **Metrics Module** — health check and metrics reporting with anonymous counters
+- `EmbedFactory` — centralized embed builder with color constants
+- `COLORS` constants — named palette (`PRIMARY`, `SUCCESS`, `ERROR`, `WARNING`, `MODERATION.*`, `VOICE.*`)
+- `Response` factory — structured embed replies with error/success/warning/info patterns
+- `BaseCommand` abstract class — shared response helpers for all commands
+- Error catalog (`Errors.*`) — centralized user-facing error strings
+- Configurable voice join delay (`joinDelayMs`) with `WAITING` state
+- Permission middleware with role-based level system (admin, moderator, trusted)
+- Feature flags system for module toggling
+- Vitest testing infrastructure with 80% coverage thresholds
 - GitHub Actions CI pipeline (lint → typecheck → build → test → deploy)
-- Observability metrics (`command_execution_total`, `command_failed_total`, `voice_error_total`)
-- Health check exposing anonymous metrics counters
-- Repository standards: .editorconfig, .gitattributes, CODEOWNERS, dependabot, issue templates, PR template, CONTRIBUTING.md, SECURITY.md
+- GitHub Actions release workflow with version validation
+- Repository standards: `.editorconfig`, `.gitattributes`, `CODEOWNERS`, `dependabot`, issue/PR templates, `CONTRIBUTING.md`, `SECURITY.md`
 
 ### Changed
-- All commands extend BaseCommand instead of implementing ICommand directly
-- Embed colors use named constants instead of numeric literals
-- Error messages centralized in Errors catalog
-- Embed replies use Response factory instead of raw `new EmbedBuilder()`
-- Voice state machine: IDLE → MOVING → WAITING → PLAYING → RETURNING → COOLDOWN
+- All commands extend `BaseCommand` with typed `CommandContext`
+- Embed colors use named `COLORS.*` constants
+- Error messages centralized in `Errors` catalog
+- Embed replies use `Response` builder
+- Voice state machine: `IDLE → MOVING → WAITING → PLAYING → RETURNING → COOLDOWN`
+- Project name changed to Hoak Bot
 
 ### Fixed
 - Voice module respects shutdown flag during join delay
-- Permission middleware properly validates both user and bot permissions
+- Permission middleware validates both user and bot permissions
+- Module loader respects feature flag config
 
 ## [1.0.0] — 2025-04-05
 
@@ -49,5 +62,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions deploy pipeline to VPS via SSH
 - PM2 process management with zero-downtime reload
 
-[Unreleased]: https://github.com/erastushs/hoakbot/compare/v1.0.0...HEAD
+[2.0.0]: https://github.com/erastushs/hoakbot/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/erastushs/hoakbot/releases/tag/v1.0.0

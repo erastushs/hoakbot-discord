@@ -41,18 +41,37 @@ A modular Discord bot built for a private Discord server. Handles general intera
 - Automatically joins a configured standby voice channel on startup
 - Detects when a member joins any voice channel
 - Moves to the member's channel, plays a configurable sound, then returns to standby
-- 5-state machine: `IDLE` → `MOVING` → `PLAYING` → `RETURNING` → `COOLDOWN`
+- 6-state machine: `IDLE` → `MOVING` → `WAITING` → `PLAYING` → `RETURNING` → `COOLDOWN`
 - Cooldown protection between activations
 - Exponential backoff reconnection with configurable retry limit
+
+### Logging
+
+- Voice join/leave/move logging with embeds
+- Member profile change logging (nickname, display name, avatar, roles)
+- Message deletion, editing, and bulk deletion with attachment archiving
+- Moderation action logging (kick, ban, timeout, warn, clean)
+
+### Moderation
+
+- `/kick`, `/ban`, `/timeout`, `/warn`, `/clean` commands
+- Role-based permission levels (admin, moderator, trusted)
+- Warning system with persistent tracking
+
+### Welcome & Goodbye
+
+- Custom welcome cards with configurable backgrounds and templates
+- Custom goodbye cards with configurable backgrounds
+- Placement variables (`{mention}`, `{server}`, `{membercount}`)
 
 ### Core
 
 - Lightweight dependency injection container
-- Internal Event Bus (17 typed events)
+- Internal EventBus with 22 typed events
 - Runtime config validation with Zod
-- Structured logging via Pino (pretty-printed in dev, NDJSON in production)
-- PostgreSQL adapter with connection pooling
-- Subsystem health checks with startup summary table
+- Structured logging via Pino
+- PostgreSQL adapter with connection pooling (Supabase)
+- Subsystem health checks with startup summary
 - In-process metrics (counters, gauges, timers)
 - Module-based architecture with feature flags
 
@@ -62,30 +81,35 @@ A modular Discord bot built for a private Discord server. Handles general intera
 
 ```
 src/
-  adapters/           Discord client factory, command router
-  core/               Infrastructure
-    config/           ConfigService, Zod schemas, types
-    container/        Lightweight DI container
-    database/         PostgreSQL adapter
-    errors/           Typed error classes
-    event-bus/        Internal EventBus with typed events
-    health/           HealthService and check registry
-    logger/           Pino logger factory
-    metrics/          Counters, gauges, timers
-    permissions/      Role definitions (stub)
-    scheduler/        Cron/job types (stub)
-    feature-flags/    Module toggle types (stub)
+  adapters/              Discord client factory, command router
+  core/                  Infrastructure
+    config/              ConfigService, Zod schemas, types
+    container/           Lightweight DI container
+    database/            PostgreSQL adapter
+    errors/              Typed error classes
+    event-bus/           Internal EventBus with 22 typed events
+    health/              HealthService and check registry
+    logger/              Pino logger factory
+    metrics/             Counters, gauges, timers
+    permissions/         Role-based permission levels
+    feature-flags/       Module toggle types
   modules/
-    general/          /ping, /help commands
-    voice/            Voice channel follow-and-play logic
-    moderation/       Placeholder (not yet implemented)
-  shared/             Command registry, types, middleware (stub)
+    general/             /ping, /help commands
+    voice/               Voice follow-and-play with state machine
+    logging/             Member, voice, message, moderation logging
+    moderation/          Kick, ban, timeout, warn, clean commands
+    welcome/             Welcome card generation
+    goodbye/             Goodbye card generation
+    metrics/             Health check and metrics commands
+  shared/                Builders, constants, types, command registry
 
-config/               bot.json, permissions.json, feature-flags.json
+config/                  bot.json, permissions.json, feature-flags.json
 assets/
-  sounds/             hoak.mp3
-scripts/              deploy-commands, list-commands, clear-global-commands
-.github/workflows/    CI/CD deploy pipeline
+  sounds/                hoak.mp3
+  images/                Welcome and goodbye backgrounds
+scripts/                 deploy-commands, list-commands, clear-global-commands
+tests/                   Unit tests (338 tests, Vitest)
+.github/workflows/       CI/CD deploy and release pipelines
 ```
 
 ---
@@ -158,7 +182,7 @@ Secrets live in `.env`. All other runtime configuration lives in `config/` as JS
 
 | File | Purpose |
 |---|---|
-| `bot.json` | Prefix, presence, cooldowns, voice settings |
+| `bot.json` | Prefix, presence, cooldowns, voice, logging, welcome, goodbye |
 | `permissions.json` | Role mappings for admin, moderator, trusted |
 | `feature-flags.json` | Module toggles (`true` / `false`) |
 
@@ -166,10 +190,15 @@ Secrets live in `.env`. All other runtime configuration lives in `config/` as JS
 
 ## Commands
 
-| Prefix | Slash | Alias | Description |
-|---|---|---|---|
-| `hoakping` | `/ping` | `hoakp` | Replies with bot latency |
-| `hoakhelp` | `/help` | – | Lists all available commands |
+| Prefix | Slash | Description |
+|---|---|---|
+| `hoakping` | `/ping` | Bot latency check |
+| `hoakhelp` | `/help` | Command list |
+| `hoakkick` | `/kick` | Kick a member |
+| `hoakban` | `/ban` | Ban a member |
+| `hoaktimeout` | `/timeout` | Timeout a member |
+| `hoakwarn` | `/warn` | Issue a warning |
+| `hoakclean` | `/clean` | Bulk delete messages |
 
 ---
 
@@ -205,33 +234,31 @@ Required GitHub Actions secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`.
 
 ## Roadmap
 
-### Completed
+### v2.0 — Stable (Current)
 
-- Dual slash and prefix command system
-- Shared command registry with alias support
-- Voice follow-and-play with state machine
-- DI container, EventBus, health checks, metrics
-- Config validation with Zod
-- Structured logging with Pino
-- PostgreSQL adapter with connection pooling
-- GitHub Actions CI/CD pipeline
-- PM2 production process management
+- Modular architecture with 8 feature modules
+- Logging module (voice, member, message, moderation)
+- Welcome and goodbye card system
+- Moderation commands (kick, ban, timeout, warn, clean)
+- Shared build infrastructure (EmbedFactory, COLORS, Errors, Response)
+- Feature flags for module toggling
+- Comprehensive test suite (338 tests)
+- CI/CD pipeline with automated deploy
 
-### In Progress
+### v3.0 — Dashboard & Configuration Platform (Next)
 
-- Database schema and repository layer
-- Permission middleware
+See [ROADMAP.md](ROADMAP.md) for the full v3.0 plan.
 
-### Planned
-
-- `avatar`, `userinfo`, `serverinfo`, `botinfo` commands
-- Moderation commands (kick, ban, timeout, warn, purge)
-- Multiple configurable sounds with a sound library
-- Custom per-user sound triggers
-- Usage statistics and dashboard
-- Cache layer (in-memory)
-- Scheduler (cron jobs, reminders)
-- Internationalization support
+**Phase 1** — ConfigProvider abstraction layer (replace direct `bot.json` access)
+**Phase 2** — Database configuration (guild_settings, logging_settings, etc.)
+**Phase 3** — Configuration cache (in-memory with Redis-ready design)
+**Phase 4** — Dashboard REST API (Discord OAuth2, guild-scoped endpoints)
+**Phase 5** — Dashboard frontend (Next.js, Tailwind, dark mode)
+**Phase 6** — Settings framework (metadata-driven, reusable form system)
+**Phase 7** — Feature pages (Voice, Welcome, Goodbye, Logging, Moderation, General)
+**Phase 8** — Live configuration (no-restart settings updates)
+**Phase 9** — Plugin-ready architecture (auto-registering modules)
+**Phase 10** — Dashboard polish (audit log, search, pagination, backup/restore)
 
 ---
 

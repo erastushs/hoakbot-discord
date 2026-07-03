@@ -1,6 +1,6 @@
 {
   "name": "hoakbot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Hoak Bot — A modular Discord bot for the Hoak Family community",
   "private": true,
   "main": "dist/bootstrap.js",

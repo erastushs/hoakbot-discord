@@ -153,6 +153,18 @@ export interface LoggingRoleRemovedEvent {
   roles: string[];
 }
 
+export interface LoggingDisplayNameUpdatedEvent {
+  guildId: string;
+  userId: string;
+  before: string;
+  after: string;
+}
+
+export interface LoggingAvatarUpdatedEvent {
+  guildId: string;
+  userId: string;
+}
+
 export interface LoggingModerationLoggedEvent {
   guildId: string;
   action: string;
@@ -181,6 +193,8 @@ export interface EventMap {
   'logging.member.nickname_updated': LoggingNicknameUpdatedEvent;
   'logging.member.role_added': LoggingRoleAddedEvent;
   'logging.member.role_removed': LoggingRoleRemovedEvent;
+  'logging.member.display_name_updated': LoggingDisplayNameUpdatedEvent;
+  'logging.member.avatar_updated': LoggingAvatarUpdatedEvent;
   'logging.message.deleted': LoggingMessageDeletedEvent;
   'logging.message.edited': LoggingMessageEditedEvent;
   'logging.message.bulk_deleted': LoggingMessageBulkDeletedEvent;

@@ -31,6 +31,8 @@ export class MemberLogService {
     }
 
     await this.handleNicknameChange(oldMember, newMember);
+    await this.handleDisplayNameChange(oldMember, newMember);
+    await this.handleAvatarChange(oldMember, newMember);
   }
 
   private resolveChannel(guild: Guild): TextChannel | undefined {
@@ -139,6 +141,79 @@ export class MemberLogService {
       },
       'Role change log sent',
     );
+  }
+
+  private async handleDisplayNameChange(oldMember: GuildMember, newMember: GuildMember): Promise<void> {
+    const oldName = oldMember.displayName;
+    const newName = newMember.displayName;
+
+    if (oldName === newName) return;
+
+    const channel = this.resolveChannel(newMember.guild);
+    if (!channel) return;
+
+    const embed = EmbedFactory.build({
+      title: '\uD83C\uDFF7 Display Name Updated',
+      description: `<@${newMember.id}> changed their display name.`,
+      color: COLORS.PRIMARY,
+      fields: [
+        { name: 'Member', value: `<@${newMember.id}>`, inline: true },
+        { name: 'Before', value: oldName, inline: true },
+        { name: 'After', value: newName, inline: true },
+      ],
+      footer: 'Display Name',
+    });
+
+    try {
+      await channel.send({ embeds: [embed] });
+      this.metrics.counter('member_display_name_log_total').increment();
+      this.logger.info(
+        { userId: newMember.id, guildId: newMember.guild.id, before: oldName, after: newName },
+        'Display name change log sent',
+      );
+      this.eventBus.emit('logging.member.display_name_updated', {
+        guildId: newMember.guild.id,
+        userId: newMember.id,
+        before: oldName,
+        after: newName,
+      });
+    } catch (err) {
+      this.logger.error({ error: err, channelId: this.config.channelId }, 'Failed to send display name log');
+    }
+  }
+
+  private async handleAvatarChange(oldMember: GuildMember, newMember: GuildMember): Promise<void> {
+    const oldAvatar = oldMember.displayAvatarURL();
+    const newAvatar = newMember.displayAvatarURL();
+
+    if (oldAvatar === newAvatar) return;
+
+    const channel = this.resolveChannel(newMember.guild);
+    if (!channel) return;
+
+    const embed = EmbedFactory.build({
+      title: '\uD83D\uDDBC Avatar Updated',
+      description: `<@${newMember.id}> updated their avatar.`,
+      color: COLORS.PRIMARY,
+      footer: 'Avatar Updated',
+      thumbnail: oldAvatar || undefined,
+      image: newAvatar,
+    });
+
+    try {
+      await channel.send({ embeds: [embed] });
+      this.metrics.counter('member_avatar_log_total').increment();
+      this.logger.info(
+        { userId: newMember.id, guildId: newMember.guild.id },
+        'Avatar update log sent',
+      );
+      this.eventBus.emit('logging.member.avatar_updated', {
+        guildId: newMember.guild.id,
+        userId: newMember.id,
+      });
+    } catch (err) {
+      this.logger.error({ error: err, channelId: this.config.channelId }, 'Failed to send avatar log');
+    }
   }
 
   private buildNicknameEmbed(member: GuildMember, oldNick: string | null, newNick: string | null): EmbedBuilder {

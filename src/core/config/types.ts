@@ -28,12 +28,22 @@ export interface LoggingConfig {
   voice: VoiceLogConfig;
 }
 
+export interface WelcomeMessageConfig {
+  title: string;
+  body: string[];
+}
+
+export interface WelcomeImageConfig {
+  title: string;
+  subtitle: string;
+}
+
 export interface WelcomeConfig {
   enabled: boolean;
   channelId: string;
   backgroundUrl: string;
-  title: string;
-  subtitle: string;
+  message: WelcomeMessageConfig;
+  image: WelcomeImageConfig;
 }
 
 export interface BotConfig {

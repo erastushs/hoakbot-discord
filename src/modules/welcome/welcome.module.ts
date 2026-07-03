@@ -2,6 +2,7 @@ import type { IModule } from '../module.interface.js';
 import type { IContainer } from '../../core/container/types.js';
 import { TOKENS } from '../../core/container/tokens.js';
 import { ImageService } from '../../shared/image/image.service.js';
+import { TemplateService } from '../../shared/template/template.service.js';
 import { WelcomeService } from './services/welcome.service.js';
 
 export class WelcomeModule implements IModule {
@@ -23,8 +24,16 @@ export class WelcomeModule implements IModule {
     }
 
     const imageService = new ImageService(logger);
+    const templateService = new TemplateService();
 
-    this.welcomeService = new WelcomeService(client, config.bot.welcome, imageService, logger, metrics);
+    this.welcomeService = new WelcomeService(
+      client,
+      config.bot.welcome,
+      imageService,
+      templateService,
+      logger,
+      metrics,
+    );
     this.welcomeService.register();
 
     logger.info('Welcome module registered');

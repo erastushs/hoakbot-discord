@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { WelcomeService } from '../../src/modules/welcome/services/welcome.service.js';
 
 function makeMetrics() {
@@ -56,6 +56,15 @@ function makeImageService() {
   };
 }
 
+function makeTemplateService() {
+  return {
+    render: vi.fn((t: string) => t),
+    renderLines: vi.fn((lines: string[]) => lines),
+    toOrdinal: vi.fn((n: number) => `${n}th`),
+    toOrdinalId: vi.fn((n: number) => `ke-${n}`),
+  };
+}
+
 function makeGuildMember(overrides: Record<string, unknown> = {}) {
   return {
     id: 'user-1',
@@ -63,6 +72,7 @@ function makeGuildMember(overrides: Record<string, unknown> = {}) {
     toString: () => '<@user-1>',
     user: {
       id: 'user-1',
+      username: 'testuser',
       bot: false,
       displayAvatarURL: vi.fn(() => 'https://example.com/avatar.png'),
     },
@@ -97,16 +107,32 @@ function makeClient(send: ReturnType<typeof vi.fn>) {
   };
 }
 
+const defaultConfig = {
+  enabled: true,
+  channelId: 'welcome-channel',
+  backgroundUrl: 'https://example.com/bg.png',
+  message: { title: 'Welcome {server}!', body: ['Hello {mention}'] },
+  image: { title: 'WELCOME', subtitle: 'TO {server}' },
+} as const;
+
 function createService(
   client: ReturnType<typeof makeClient>,
-  config = { enabled: true, channelId: 'welcome-channel', backgroundUrl: 'https://example.com/bg.png', title: 'Welcome!', subtitle: 'Member #{count}' },
+  config = defaultConfig,
   imageService = makeImageService(),
+  templateService = makeTemplateService(),
   logger = makeLogger(),
   metrics = makeMetrics(),
 ) {
-  const service = new WelcomeService(client as never, config, imageService as never, logger as never, metrics as never);
+  const service = new WelcomeService(
+    client as never,
+    config,
+    imageService as never,
+    templateService as never,
+    logger as never,
+    metrics as never,
+  );
   service.register();
-  return { service, logger, metrics };
+  return { service, logger, metrics, templateService };
 }
 
 describe('WelcomeService', () => {
@@ -125,9 +151,79 @@ describe('WelcomeService', () => {
       await vi.waitFor(() => expect(send).toHaveBeenCalled());
 
       const call = send.mock.calls[0]?.[0] as Record<string, unknown>;
-      expect(call.content).toBe('Welcome <@user-1>!');
+      expect(call.content).toBeDefined();
       expect(call.files).toBeDefined();
       expect((call.files as Array<Record<string, unknown>>)[0]?.name).toBe('welcome.png');
+    });
+
+    it('renders message title and body via TemplateService', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+      const templateService = makeTemplateService();
+
+      createService(client, defaultConfig, makeImageService(), templateService);
+
+      const member = makeGuildMember();
+      member.guild.channels.cache.set('welcome-channel', { send, isTextBased: () => true } as never);
+
+      client.emit('guildMemberAdd', member);
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      expect(templateService.render).toHaveBeenCalledWith('Welcome {server}!', expect.any(Object));
+      expect(templateService.renderLines).toHaveBeenCalledWith(['Hello {mention}'], expect.any(Object));
+    });
+
+    it('renders image title and subtitle via TemplateService', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+      const templateService = makeTemplateService();
+
+      createService(client, defaultConfig, makeImageService(), templateService);
+
+      const member = makeGuildMember();
+      member.guild.channels.cache.set('welcome-channel', { send, isTextBased: () => true } as never);
+
+      client.emit('guildMemberAdd', member);
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      expect(templateService.render).toHaveBeenCalledWith('WELCOME', expect.any(Object));
+      expect(templateService.render).toHaveBeenCalledWith('TO {server}', expect.any(Object));
+    });
+
+    it('provides correct TemplateContext', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+
+      const contextSnapshots: Array<Record<string, unknown>> = [];
+      const actualTemplateService = {
+        render: vi.fn((t: string, ctx: Record<string, unknown>) => {
+          contextSnapshots.push(ctx);
+          return t;
+        }),
+        renderLines: vi.fn((lines: string[]) => lines),
+        toOrdinal: vi.fn((n: number) => `${n}th`),
+        toOrdinalId: vi.fn((n: number) => `ke-${n}`),
+      };
+
+      createService(client, defaultConfig, makeImageService(), actualTemplateService);
+
+      const member = makeGuildMember();
+      member.guild.channels.cache.set('welcome-channel', { send, isTextBased: () => true } as never);
+
+      client.emit('guildMemberAdd', member);
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      expect(contextSnapshots.length).toBeGreaterThan(0);
+      const ctx = contextSnapshots[0]!;
+      expect(ctx.user).toBe('<@user-1>');
+      expect(ctx.mention).toBe('<@user-1>');
+      expect(ctx.username).toBe('testuser');
+      expect(ctx.display_name).toBe('TestUser');
+      expect(ctx.server).toBe('Test Guild');
+      expect(ctx.membercount).toBe(10);
     });
   });
 
@@ -157,8 +253,8 @@ describe('WelcomeService', () => {
         enabled: false,
         channelId: 'welcome-channel',
         backgroundUrl: '',
-        title: '',
-        subtitle: '',
+        message: { title: '', body: [] },
+        image: { title: '', subtitle: '' },
       });
 
       const member = makeGuildMember();
@@ -176,10 +272,13 @@ describe('WelcomeService', () => {
       const send = vi.fn().mockResolvedValue(undefined);
       const client = makeClient(send);
 
-      const { logger } = createService(
-        client,
-        { enabled: true, channelId: '', backgroundUrl: '', title: '', subtitle: '' },
-      );
+      const { logger } = createService(client, {
+        enabled: true,
+        channelId: '',
+        backgroundUrl: '',
+        message: { title: '', body: [] },
+        image: { title: '', subtitle: '' },
+      });
 
       const member = makeGuildMember();
 

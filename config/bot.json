@@ -29,9 +29,24 @@
   },
   "welcome": {
     "enabled": true,
-    "channelId": "",
-    "backgroundUrl": "",
-    "title": "Welcome to {server}!",
-    "subtitle": "You are member #{count}"
+    "channelId": "561523659748016172",
+    "backgroundUrl": "https://media.discordapp.net/attachments/1471048538095091835/1471048701257453638/welcomeHOAK.png?ex=6a48109d&is=6a46bf1d&hm=9ea0862b3d9687396c5b215a15b45fb944b46fe563f67172a18eda01fa5ac624&=&format=webp&quality=lossless&width=1679&height=820",
+    "message": {
+      "title": "Welcome to {server} <:hoakfam:1471017721641566362>",
+      "body": [
+        "Hello {mention}, you are the {membercount.ordinal} member.",
+        "",
+        "🎯 Take your roles at <#504845048618287104>",
+        "📜 Please read and follow the server rules",
+        "🤝 Keep the community friendly and respectful",
+        "📩 Need help? Contact <@320660662323904525> or any admins",
+        "",
+        "Enjoy and have fun gaming with us 🎮"
+      ]
+    },
+    "image": {
+      "title": "WELCOME",
+      "subtitle": "TO {server}"
+    }
   }
 }

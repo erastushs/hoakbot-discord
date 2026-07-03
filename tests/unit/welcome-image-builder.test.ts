@@ -53,10 +53,8 @@ function makeInput(overrides?: Partial<WelcomeImageInput>): WelcomeImageInput {
     username: 'TestUser',
     avatarUrl: 'https://example.com/avatar.png',
     backgroundUrl: 'https://example.com/bg.png',
-    guildName: 'Test Guild',
-    memberCount: 42,
-    title: 'Welcome to {server}!',
-    subtitle: 'You are member #{count}',
+    title: 'Welcome to Test Guild!',
+    subtitle: 'You are member #42',
     ...overrides,
   };
 }
@@ -122,22 +120,23 @@ describe('WelcomeImageBuilder', () => {
     );
   });
 
-  it('draws title and subtitle text', async () => {
-    await builder.build(makeInput());
+  it('draws title text as-provided (no placeholder logic)', async () => {
+    await builder.build(makeInput({ title: 'HELLO WORLD', subtitle: 'lorem ipsum' }));
 
     const calls = imageService.drawText.mock.calls;
-    const titles = calls.map((c: unknown[]) => c[1]);
-    expect(titles).toContain('Welcome to Test Guild!');
-    expect(titles).toContain('You are member #42');
+    const texts = calls.map((c: unknown[]) => c[1]);
+    expect(texts).toContain('HELLO WORLD');
+    expect(texts).toContain('lorem ipsum');
   });
 
-  it('substitutes {server} and {count} placeholders', async () => {
-    await builder.build(makeInput({ title: 'Hello {server}', subtitle: 'Num {count}' }));
+  it('passes through placeholder-like text unchanged', async () => {
+    await builder.build(makeInput({ title: 'Hello {server}', subtitle: 'Member #{count}' }));
 
     const calls = imageService.drawText.mock.calls;
-    const titles = calls.map((c: unknown[]) => c[1]);
-    expect(titles).toContain('Hello Test Guild');
-    expect(titles).toContain('Num 42');
+    const texts = calls.map((c: unknown[]) => c[1]);
+    // Builder does NOT resolve {server} or {count} — text must pass through as-is
+    expect(texts).toContain('Hello {server}');
+    expect(texts).toContain('Member #{count}');
   });
 
   it('returns a PNG buffer', async () => {

@@ -4,8 +4,6 @@ export interface WelcomeImageInput {
   username: string;
   avatarUrl: string;
   backgroundUrl: string;
-  guildName: string;
-  memberCount: number;
   title: string;
   subtitle: string;
 }
@@ -30,7 +28,9 @@ export class WelcomeImageBuilder {
 
     this.drawUsername(ctx, input.username);
 
-    this.drawGuildName(ctx, input.guildName, input.memberCount, input.title, input.subtitle);
+    this.drawTitle(ctx, input.title);
+
+    this.drawSubtitle(ctx, input.subtitle);
 
     return canvas.encodeSync('png');
   }
@@ -75,19 +75,13 @@ export class WelcomeImageBuilder {
     );
   }
 
-  private drawGuildName(
+  private drawTitle(
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
-    guildName: string,
-    memberCount: number,
     title: string,
-    subtitle: string,
   ): void {
-    const resolvedTitle = title.replace('{server}', guildName).replace('{count}', String(memberCount));
-    const resolvedSubtitle = subtitle.replace('{server}', guildName).replace('{count}', String(memberCount));
-
     this.imageService.drawText(
       ctx,
-      resolvedTitle,
+      title,
       '24px sans-serif',
       WelcomeImageBuilder.WIDTH / 2,
       WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE + 90,
@@ -95,10 +89,15 @@ export class WelcomeImageBuilder {
       'center',
       '#cccccc',
     );
+  }
 
+  private drawSubtitle(
+    ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
+    subtitle: string,
+  ): void {
     this.imageService.drawText(
       ctx,
-      resolvedSubtitle,
+      subtitle,
       '20px sans-serif',
       WelcomeImageBuilder.WIDTH / 2,
       WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE + 120,

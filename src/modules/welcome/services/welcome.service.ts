@@ -4,6 +4,8 @@ import type { ILogger } from '../../../core/logger/logger.service.js';
 import type { IMetrics } from '../../../core/metrics/types.js';
 import type { WelcomeConfig } from '../../../core/config/types.js';
 import { WelcomeImageBuilder } from '../builders/welcome-image.builder.js';
+import type { TemplateService } from '../../../shared/template/template.service.js';
+import type { TemplateContext } from '../../../shared/template/template.service.js';
 import type { ImageService } from '../../../shared/image/image.service.js';
 
 export class WelcomeService {
@@ -11,6 +13,7 @@ export class WelcomeService {
     private readonly client: Client,
     private readonly config: WelcomeConfig,
     private readonly imageService: ImageService,
+    private readonly templateService: TemplateService,
     private readonly logger: ILogger,
     private readonly metrics: IMetrics,
   ) {}
@@ -38,23 +41,35 @@ export class WelcomeService {
       return;
     }
 
-    const memberCount = guild.memberCount;
+    const context: TemplateContext = {
+      user: `<@${member.id}>`,
+      mention: `<@${member.id}>`,
+      username: member.user.username,
+      display_name: member.displayName,
+      server: guild.name,
+      membercount: guild.memberCount,
+    };
+
+    const renderedTitle = this.templateService.render(this.config.message.title, context);
+    const renderedBody = this.templateService.renderLines(this.config.message.body, context);
 
     try {
       const builder = new WelcomeImageBuilder(this.imageService);
+
+      const imageTitle = this.templateService.render(this.config.image.title, context);
+      const imageSubtitle = this.templateService.render(this.config.image.subtitle, context);
 
       const imageBuffer = await builder.build({
         username: member.displayName,
         avatarUrl: member.user.displayAvatarURL({ extension: 'png', size: 256 }),
         backgroundUrl: this.config.backgroundUrl,
-        guildName: guild.name,
-        memberCount,
-        title: this.config.title,
-        subtitle: this.config.subtitle,
+        title: imageTitle,
+        subtitle: imageSubtitle,
       });
 
+      const bodyText = renderedBody.join('\n');
       await channel.send({
-        content: `Welcome ${member}!`,
+        content: `## ${renderedTitle}\n${bodyText}`,
         files: [{ attachment: imageBuffer, name: 'welcome.png' }],
       });
 

@@ -34,8 +34,14 @@ const welcomeSchema = z.object({
   enabled: z.boolean(),
   channelId: z.string(),
   backgroundUrl: z.string(),
-  title: z.string(),
-  subtitle: z.string(),
+  message: z.object({
+    title: z.string(),
+    body: z.array(z.string()),
+  }),
+  image: z.object({
+    title: z.string(),
+    subtitle: z.string(),
+  }),
 });
 
 const botSchema = z.object({

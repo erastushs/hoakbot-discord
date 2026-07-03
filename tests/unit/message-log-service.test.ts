@@ -422,4 +422,142 @@ describe('MessageLogService', () => {
       expect(metrics.counter).not.toHaveBeenCalledWith('message_log_total');
     });
   });
+
+  describe('bulk delete', () => {
+    function makeBulkMessages(
+      ids: string[],
+      guildId = 'guild-1',
+      channelId = 'chan-1',
+    ): unknown {
+      const entries: Array<[string, Record<string, unknown>]> = ids.map((id) => [
+        id,
+        { id, guildId, channelId, partial: false },
+      ]);
+      return {
+        size: ids.length,
+        first: () => (entries.length > 0 ? entries[0]![1] : undefined),
+        keys: () => entries.map((e) => e[0])[Symbol.iterator](),
+      };
+    }
+
+    it('logs bulk delete with correct fields', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+
+      const { logger, metrics, eventBus } = createService(client);
+
+      const messages = makeBulkMessages(['msg-1', 'msg-2', 'msg-3']);
+
+      client.emitEvent('messageDeleteBulk', messages);
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const call = send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> };
+      const embed = call.embeds[0]?.data;
+
+      expect(embed?.title).toBe('\uD83D\uDDD1 Bulk Message Delete');
+      expect(embed?.color).toBe(0x8d99ae);
+      expect(embed?.footer?.text).toBe('Bulk Message Delete');
+
+      expect(logger.info).toHaveBeenCalledWith(
+        { guildId: 'guild-1', channelId: 'chan-1', deletedCount: 3 },
+        'Bulk message delete log sent',
+      );
+      expect(metrics.counter).toHaveBeenCalledWith('message_bulk_delete_log_total');
+      expect(metrics.increment).toHaveBeenCalled();
+      expect(eventBus.emit).toHaveBeenCalledWith('logging.message.bulk_deleted', {
+        guildId: 'guild-1',
+        channelId: 'chan-1',
+        count: 3,
+      });
+    });
+
+    it('includes channel mention and message count', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+
+      createService(client);
+
+      const messages = makeBulkMessages(['a', 'b']);
+      client.emitEvent('messageDeleteBulk', messages);
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
+        ?.data?.fields as Array<{ name: string; value: string }>;
+
+      expect(fields?.find((f) => f.name === 'Channel')?.value).toBe('<#chan-1>');
+      expect(fields?.find((f) => f.name === 'Messages Deleted')?.value).toBe('2');
+    });
+
+    it('includes first message ID for single message', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+
+      createService(client);
+
+      const messages = makeBulkMessages(['only-one']);
+      client.emitEvent('messageDeleteBulk', messages);
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
+        ?.data?.fields as Array<{ name: string; value: string }>;
+
+      expect(fields?.find((f) => f.name === 'First Message ID')?.value).toBe('`only-one`');
+      expect(fields?.find((f) => f.name === 'Oldest Message ID')).toBeUndefined();
+    });
+
+    it('includes oldest/newest for multiple messages', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+
+      createService(client);
+
+      const messages = makeBulkMessages(['msg-10', 'msg-20', 'msg-30']);
+      client.emitEvent('messageDeleteBulk', messages);
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
+        ?.data?.fields as Array<{ name: string; value: string }>;
+
+      expect(fields?.find((f) => f.name === 'Oldest Message ID')?.value).toBe('`msg-10`');
+      expect(fields?.find((f) => f.name === 'Newest Message ID')?.value).toBe('`msg-30`');
+    });
+
+    it('ignores empty collections', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+
+      const { metrics } = createService(client);
+
+      const messages = {
+        size: 0,
+        first: () => undefined,
+        keys: () => [][Symbol.iterator](),
+      };
+
+      client.emitEvent('messageDeleteBulk', messages);
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(send).not.toHaveBeenCalled();
+      expect(metrics.counter).not.toHaveBeenCalledWith('message_bulk_delete_log_total');
+    });
+
+    it('is disabled when config is disabled', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+
+      createService(client, { enabled: false, channelId: 'msg-log-channel' });
+
+      const messages = makeBulkMessages(['a', 'b']);
+      client.emitEvent('messageDeleteBulk', messages);
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(send).not.toHaveBeenCalled();
+    });
+  });
 });

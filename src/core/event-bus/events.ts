@@ -118,6 +118,12 @@ export interface LoggingMessageEditedEvent {
   authorId: string;
 }
 
+export interface LoggingMessageBulkDeletedEvent {
+  guildId: string;
+  channelId: string;
+  count: number;
+}
+
 export type ShutdownEvent = void;
 
 export interface EventMap {
@@ -139,5 +145,6 @@ export interface EventMap {
   'logging.member.nickname_updated': LoggingNicknameUpdatedEvent;
   'logging.message.deleted': LoggingMessageDeletedEvent;
   'logging.message.edited': LoggingMessageEditedEvent;
+  'logging.message.bulk_deleted': LoggingMessageBulkDeletedEvent;
   'system.shutdown': ShutdownEvent;
 }

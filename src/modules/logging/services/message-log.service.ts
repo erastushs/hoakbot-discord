@@ -10,6 +10,12 @@ import { COLORS } from '../../../shared/constants/colors.js';
 const NEUTRAL_GRAY = 0x8d99ae;
 const CONTENT_MAX = 1024;
 
+interface BulkMessageCollection {
+  readonly size: number;
+  first(): Message | PartialMessage | undefined;
+  keys(): IterableIterator<string>;
+}
+
 export class MessageLogService {
   constructor(
     private readonly client: Client,
@@ -26,6 +32,10 @@ export class MessageLogService {
 
     this.client.on(Events.MessageUpdate, (oldMessage: Message | PartialMessage, newMessage: Message | PartialMessage) => {
       void this.handleMessageEdit(oldMessage, newMessage);
+    });
+
+    this.client.on(Events.MessageBulkDelete, (messages, _channel) => {
+      void this.handleMessageBulkDelete(messages as unknown as BulkMessageCollection);
     });
   }
 
@@ -138,6 +148,104 @@ export class MessageLogService {
     } catch (err) {
       this.logger.error({ error: err, channelId }, 'Failed to send message edit log');
     }
+  }
+
+  async handleMessageBulkDelete(
+    messages: BulkMessageCollection,
+  ): Promise<void> {
+    if (!this.config.enabled) return;
+    if (messages.size === 0) return;
+
+    const first = messages.first();
+    if (!first?.guildId) return;
+
+    const channelId = this.config.channelId;
+    if (!channelId) {
+      this.logger.warn('Message log channelId not configured');
+      return;
+    }
+
+    const guild = this.client.guilds.cache.get(first.guildId);
+    if (!guild) {
+      this.logger.warn({ guildId: first.guildId }, 'Guild not found for bulk delete log');
+      return;
+    }
+
+    const channel = guild.channels.cache.get(channelId) as TextChannel | undefined;
+    if (!channel) {
+      this.logger.warn({ channelId, guildId: guild.id }, 'Bulk delete log channel not found');
+      return;
+    }
+
+    const embed = this.buildBulkDeleteEmbed(messages, first.channelId);
+
+    try {
+      await channel.send({ embeds: [embed] });
+      this.metrics.counter('message_bulk_delete_log_total').increment();
+      this.logger.info(
+        {
+          guildId: first.guildId,
+          channelId: first.channelId,
+          deletedCount: messages.size,
+        },
+        'Bulk message delete log sent',
+      );
+      this.eventBus.emit('logging.message.bulk_deleted', {
+        guildId: first.guildId,
+        channelId: first.channelId,
+        count: messages.size,
+      });
+    } catch (err) {
+      this.logger.error({ error: err, channelId }, 'Failed to send bulk delete log');
+    }
+  }
+
+  private buildBulkDeleteEmbed(
+    messages: BulkMessageCollection,
+    channelId: string,
+  ): EmbedBuilder {
+    const ids = [...messages.keys()];
+
+    const fields = [
+      {
+        name: 'Channel',
+        value: `<#${channelId}>`,
+        inline: true,
+      },
+      {
+        name: 'Messages Deleted',
+        value: String(messages.size),
+        inline: true,
+      },
+    ];
+
+    if (ids.length > 0) {
+      fields.push({
+        name: 'First Message ID',
+        value: `\`${ids[0]}\``,
+        inline: true,
+      });
+    }
+
+    if (ids.length > 1) {
+      fields.push({
+        name: 'Oldest Message ID',
+        value: `\`${ids[0]}\``,
+        inline: true,
+      });
+      fields.push({
+        name: 'Newest Message ID',
+        value: `\`${ids[ids.length - 1]}\``,
+        inline: true,
+      });
+    }
+
+    return EmbedFactory.build({
+      title: '\uD83D\uDDD1 Bulk Message Delete',
+      color: NEUTRAL_GRAY,
+      fields,
+      footer: 'Bulk Message Delete',
+    });
   }
 
   private buildDeleteEmbed(

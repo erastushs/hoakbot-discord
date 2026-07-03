@@ -13,6 +13,7 @@ import { GeneralModule } from './modules/general/general.module.js';
 import { VoiceModule } from './modules/voice/voice.module.js';
 import { ModerationModule } from './modules/moderation/moderation.module.js';
 import { LoggingModule } from './modules/logging/logging.module.js';
+import { WelcomeModule } from './modules/welcome/welcome.module.js';
 import { CommandRegistry } from './shared/command-registry.js';
 import type { HealthReport } from './core/health/types.js';
 
@@ -74,6 +75,7 @@ try {
   moduleLoader.registerModule(new VoiceModule());
   moduleLoader.registerModule(new ModerationModule());
   moduleLoader.registerModule(new LoggingModule());
+  moduleLoader.registerModule(new WelcomeModule());
 
   await moduleLoader.loadAll(container);
   await moduleLoader.startAll();

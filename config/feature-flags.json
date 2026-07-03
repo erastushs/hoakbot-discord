@@ -4,6 +4,7 @@
     "voice": true,
     "moderation": true,
     "logging": true,
+    "welcome": true,
     "metrics": true,
     "tickets": false,
     "ai": false,

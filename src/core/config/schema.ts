@@ -30,6 +30,14 @@ const loggingSchema = z.object({
   voice: voiceLogSchema,
 });
 
+const welcomeSchema = z.object({
+  enabled: z.boolean(),
+  channelId: z.string(),
+  backgroundUrl: z.string(),
+  title: z.string(),
+  subtitle: z.string(),
+});
+
 const botSchema = z.object({
   prefix: z.string(),
   guildId: z.string(),
@@ -39,6 +47,7 @@ const botSchema = z.object({
   cooldowns: cooldownsSchema,
   voice: voiceSchema,
   logging: loggingSchema,
+  welcome: welcomeSchema,
 });
 
 const permissionsSchema = z.object({

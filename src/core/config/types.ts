@@ -28,6 +28,14 @@ export interface LoggingConfig {
   voice: VoiceLogConfig;
 }
 
+export interface WelcomeConfig {
+  enabled: boolean;
+  channelId: string;
+  backgroundUrl: string;
+  title: string;
+  subtitle: string;
+}
+
 export interface BotConfig {
   prefix: string;
   guildId: string;
@@ -37,6 +45,7 @@ export interface BotConfig {
   cooldowns: CooldownsConfig;
   voice: VoiceConfig;
   logging: LoggingConfig;
+  welcome: WelcomeConfig;
 }
 
 export interface PermissionsConfig {

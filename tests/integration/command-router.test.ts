@@ -36,6 +36,13 @@ function makeConfig(ownerIds: string[] = []): Readonly<AppConfig> {
         enabled: false,
         voice: { enabled: false, channelId: '' },
       },
+      welcome: {
+        enabled: false,
+        channelId: '',
+        backgroundUrl: '',
+        title: '',
+        subtitle: '',
+      },
     },
     permissions: { roles: { administrator: [], moderator: [], trusted: [] } },
     featureFlags: { modules: {} },

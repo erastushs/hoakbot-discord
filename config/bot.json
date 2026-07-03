@@ -24,7 +24,14 @@
     "enabled": true,
     "voice": {
       "enabled": true,
-      "channelId": "561523659748016172"
+      "channelId": "525693311244042250"
     }
+  },
+  "welcome": {
+    "enabled": true,
+    "channelId": "",
+    "backgroundUrl": "",
+    "title": "Welcome to {server}!",
+    "subtitle": "You are member #{count}"
   }
 }

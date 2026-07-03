@@ -126,8 +126,49 @@ describe('ManifestRegistry', () => {
     registry.register(manifest({ dependencies: ['hoak:missing'] }));
 
     expect(() => registry.validate()).toThrow(
-      'Module manifest "hoak:voice" depends on unknown module "hoak:missing".',
+      'Module manifest dependency validation failed: Module "hoak:voice" depends on missing module "hoak:missing".',
     );
+  });
+
+  it('rejects circular dependencies', () => {
+    const registry = loadManifestRegistry;
+
+    expect(() =>
+      registry([
+        manifest({ dependencies: ['hoak:general'] }),
+        manifest({
+          id: 'hoak:general',
+          name: 'General',
+          category: 'utility',
+          dependencies: ['hoak:voice'],
+          dashboard: {
+            navigation: {
+              sidebarPriority: 20,
+              sidebarSection: 'Utility',
+            },
+            homePage: {
+              featured: true,
+              priority: 20,
+            },
+            settings: {
+              groups: [],
+            },
+          },
+        }),
+      ]),
+    ).toThrow('Circular dependency detected: hoak:voice -> hoak:general -> hoak:voice.');
+  });
+
+  it('rejects invalid versions and categories', () => {
+    const registry = new ManifestRegistry();
+
+    expect(() => registry.register(manifest({ version: 'next' }))).toThrow(
+      'version: Manifest version must be SemVer-like.',
+    );
+
+    expect(() =>
+      registry.register({ ...manifest(), id: 'hoak:bad', category: 'invalid' } as IModuleManifest),
+    ).toThrow('category: Invalid enum value.');
   });
 
   it('rejects invalid manifest shapes', () => {

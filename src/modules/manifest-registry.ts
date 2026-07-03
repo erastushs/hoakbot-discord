@@ -1,3 +1,4 @@
+import { DependencyGraph } from './dependency-graph.js';
 import { manifestSchema } from './manifest.schema.js';
 import type { IModuleManifest } from './manifest.types.js';
 
@@ -57,18 +58,18 @@ export class ManifestRegistry {
   }
 
   private validateDependencies(): void {
-    for (const manifest of this.manifests.values()) {
-      for (const dependency of manifest.dependencies ?? []) {
-        if (dependency === manifest.id) {
-          throw new Error(`Module manifest "${manifest.id}" cannot depend on itself.`);
-        }
+    const graph = new DependencyGraph();
 
-        if (!this.manifests.has(dependency)) {
-          throw new Error(
-            `Module manifest "${manifest.id}" depends on unknown module "${dependency}".`,
-          );
-        }
-      }
+    for (const manifest of this.manifests.values()) {
+      graph.add(manifest);
+    }
+
+    const validation = graph.validate();
+
+    if (!validation.valid) {
+      throw new Error(
+        `Module manifest dependency validation failed: ${validation.errors.map((error) => error.message).join('; ')}`,
+      );
     }
   }
 }

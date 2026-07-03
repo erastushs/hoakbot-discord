@@ -10,6 +10,7 @@ interface EmbedOptions {
   fields?: { name: string; value: string; inline?: boolean }[];
   thumbnail?: string;
   image?: string;
+  footer?: string;
 }
 
 export class EmbedFactory {
@@ -27,6 +28,7 @@ export class EmbedFactory {
     if (opts.fields) embed.addFields(...opts.fields);
     if (opts.thumbnail) embed.setThumbnail(opts.thumbnail);
     if (opts.image) embed.setImage(opts.image);
+    if (opts.footer) embed.setFooter({ text: opts.footer });
     return embed;
   }
 

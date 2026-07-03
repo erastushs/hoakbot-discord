@@ -23,9 +23,15 @@ export interface VoiceLogConfig {
   channelId: string;
 }
 
+export interface MemberLogConfig {
+  enabled: boolean;
+  channelId: string;
+}
+
 export interface LoggingConfig {
   enabled: boolean;
   voice: VoiceLogConfig;
+  member: MemberLogConfig;
 }
 
 export interface WelcomeMessageConfig {

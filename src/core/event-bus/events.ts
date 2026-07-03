@@ -96,6 +96,13 @@ export interface SchedulerJobDueEvent {
   payload: Record<string, unknown>;
 }
 
+export interface LoggingNicknameUpdatedEvent {
+  guildId: string;
+  userId: string;
+  before: string | null;
+  after: string | null;
+}
+
 export type ShutdownEvent = void;
 
 export interface EventMap {
@@ -114,5 +121,6 @@ export interface EventMap {
   'cooldown.blocked': CooldownBlockedEvent;
   'permission.denied': PermissionDeniedEvent;
   'scheduler.jobDue': SchedulerJobDueEvent;
+  'logging.member.nickname_updated': LoggingNicknameUpdatedEvent;
   'system.shutdown': ShutdownEvent;
 }

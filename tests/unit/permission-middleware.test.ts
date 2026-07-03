@@ -23,6 +23,7 @@ function makeConfig(overrides?: Partial<AppConfig>): Readonly<AppConfig> {
       logging: {
         enabled: false,
         voice: { enabled: false, channelId: '' },
+        member: { enabled: false, channelId: '' },
       },
       welcome: {
         enabled: false,

@@ -25,6 +25,10 @@
     "voice": {
       "enabled": true,
       "channelId": "525693311244042250"
+    },
+    "member": {
+      "enabled": true,
+      "channelId": ""
     }
   },
   "welcome": {

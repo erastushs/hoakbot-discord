@@ -69,7 +69,8 @@ export class CommandRouter {
       await command.execute(ctx);
       const latencyMs = Math.round(performance.now() - start);
 
-      this.metrics.counter('commands_executed').increment();
+      this.metrics.counter('command_execution_total').increment();
+      this.metrics.gauge('command_execution_duration_ms').set(latencyMs);
       this.eventBus.emit('command.executed', {
         command: command.name,
         source: ctx.source,
@@ -77,10 +78,32 @@ export class CommandRouter {
         guildId: ctx.guild?.id ?? '',
         latencyMs,
       });
+
+      this.logger.info(
+        {
+          command: command.name,
+          userId: ctx.user.id,
+          guildId: ctx.guild?.id ?? '',
+          source: ctx.source,
+          durationMs: latencyMs,
+          success: true,
+        },
+        'Command executed',
+      );
     } catch (err) {
       const latencyMs = Math.round(performance.now() - start);
+
+      this.metrics.counter('command_failed_total').increment();
       this.logger.error(
-        { command: command.name, source: ctx.source, error: err, latencyMs },
+        {
+          command: command.name,
+          userId: ctx.user.id,
+          guildId: ctx.guild?.id ?? '',
+          source: ctx.source,
+          durationMs: latencyMs,
+          success: false,
+          error: err,
+        },
         'Command execution failed',
       );
 

@@ -52,7 +52,7 @@ export class BanCommand extends BaseCommand {
     try {
       await member.ban({ reason });
 
-      this.metrics.counter('moderation_actions').increment();
+      this.metrics.counter('moderation_action_total').increment();
 
       ctx.eventBus.emit('moderation.action', {
         guildId: ctx.guild!.id,

@@ -63,7 +63,7 @@ export class TimeoutCommand extends BaseCommand {
     try {
       await member.timeout(ms, reason);
 
-      this.metrics.counter('moderation_actions').increment();
+      this.metrics.counter('moderation_action_total').increment();
 
       ctx.eventBus.emit('moderation.action', {
         guildId: ctx.guild!.id,

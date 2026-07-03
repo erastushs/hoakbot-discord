@@ -80,7 +80,7 @@ try {
   logger.info('Running health checks...');
   const healthTimer = metricsService.timer('health');
   healthTimer.start();
-  registerHealthChecks(healthService, configService, databaseAdapter, eventBus, moduleLoader, logger);
+  registerHealthChecks(healthService, configService, databaseAdapter, eventBus, moduleLoader, logger, metricsService);
   const report = await healthService.runAll();
   healthTimer.stop();
 
@@ -174,6 +174,7 @@ function registerHealthChecks(
   eventBus: EventBus,
   moduleLoader: ModuleLoader,
   logger: ReturnType<typeof createLogger>,
+  metricsService: MetricsService,
 ): void {
   healthService.registerCheck({
     name: 'config',
@@ -231,6 +232,24 @@ function registerHealthChecks(
         status: 'healthy',
         message: `${loaded} modules loaded`,
         metadata: { moduleCount: loaded },
+      };
+    },
+  });
+
+  healthService.registerCheck({
+    name: 'metrics',
+    execute: async () => {
+      const snapshot = metricsService.snapshot();
+      return {
+        status: 'healthy',
+        message: 'Metrics available',
+        metadata: {
+          commandsExecuted: snapshot.counters['command_execution_total'] ?? 0,
+          commandsFailed: snapshot.counters['command_failed_total'] ?? 0,
+          moderationActions: snapshot.counters['moderation_action_total'] ?? 0,
+          voiceJoins: snapshot.counters['voice_join_total'] ?? 0,
+          voiceErrors: snapshot.counters['voice_error_total'] ?? 0,
+        },
       };
     },
   });

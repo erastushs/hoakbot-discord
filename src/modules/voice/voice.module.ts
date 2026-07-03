@@ -6,6 +6,7 @@ import { ConnectionManager } from './services/ConnectionManager.js';
 import { AudioManager } from './services/AudioManager.js';
 import type { ILogger } from '../../core/logger/logger.service.js';
 import type { IEventBus } from '../../core/event-bus/types.js';
+import type { IMetrics } from '../../core/metrics/types.js';
 import type { VoiceMemberJoinedEvent } from '../../core/event-bus/events.js';
 import type { Client, VoiceState } from 'discord.js';
 import { Events } from 'discord.js';
@@ -34,12 +35,14 @@ export class VoiceModule implements IModule {
   private cooldownTimer: ReturnType<typeof setTimeout> | null = null;
   private joinTimer: ReturnType<typeof setTimeout> | null = null;
   private isShuttingDown = false;
+  private metrics: IMetrics | null = null;
 
   register(container: IContainer): void {
     const config = container.resolve(TOKENS.AppConfig);
     const logger = container.resolve(TOKENS.Logger);
     const client = container.resolve(TOKENS.DiscordClient);
     const eventBus = container.resolve(TOKENS.EventBus);
+    const metrics = container.resolve(TOKENS.MetricsService);
 
     const { standbyChannelId, reconnectDelayMs, maxReconnectRetries, defaultSound, volume, cooldownMs, joinDelayMs } =
       config.bot.voice;
@@ -47,6 +50,7 @@ export class VoiceModule implements IModule {
     this.volume = volume;
     this.cooldownMs = cooldownMs;
     this.joinDelayMs = joinDelayMs;
+    this.metrics = metrics;
 
     this.connectionManager = new ConnectionManager(client, logger, maxReconnectRetries, reconnectDelayMs);
     this.audioManager = new AudioManager(logger);
@@ -93,6 +97,7 @@ export class VoiceModule implements IModule {
 
     this.transition(VoiceStateEnum.MOVING, logger);
     logger.info({ user: event.username, channelId: event.channelId }, 'Processing voice.memberJoined');
+    this.metrics?.counter('voice_join_total').increment();
 
     await this.connectionManager.moveTo(event.channelId, event.guildId);
 
@@ -116,8 +121,10 @@ export class VoiceModule implements IModule {
 
     try {
       await this.audioManager.play(connection, soundPath, this.volume);
+      this.metrics?.counter('voice_playback_total').increment();
       logger.info({ sound: this.defaultSound }, 'Playback finished');
     } catch (err) {
+      this.metrics?.counter('voice_error_total').increment();
       logger.error({ error: err }, 'Playback error');
     }
 

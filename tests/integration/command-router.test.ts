@@ -47,7 +47,7 @@ describe('CommandRouter', () => {
   let registry: CommandRegistry;
   let logger: { debug: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
   let eventBus: { emit: ReturnType<typeof vi.fn> };
-  let metrics: { counter: ReturnType<typeof vi.fn>; incrementFn: ReturnType<typeof vi.fn> };
+  let metrics: { counter: ReturnType<typeof vi.fn>; gauge: ReturnType<typeof vi.fn>; incrementFn: ReturnType<typeof vi.fn> };
   let router: CommandRouter;
 
   beforeEach(() => {
@@ -55,7 +55,7 @@ describe('CommandRouter', () => {
     logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
     eventBus = { emit: vi.fn() };
     const incrementFn = vi.fn();
-    metrics = { counter: vi.fn(() => ({ increment: incrementFn })), incrementFn };
+    metrics = { counter: vi.fn(() => ({ increment: incrementFn })), gauge: vi.fn(() => ({ set: vi.fn() })), incrementFn };
     router = new CommandRouter(registry, makeConfig(), logger as never, eventBus as never, metrics as never);
   });
 

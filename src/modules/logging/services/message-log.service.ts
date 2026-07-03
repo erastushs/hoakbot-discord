@@ -5,6 +5,7 @@ import type { IMetrics } from '../../../core/metrics/types.js';
 import type { MessageLogConfig } from '../../../core/config/types.js';
 import type { IEventBus } from '../../../core/event-bus/types.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { COLORS } from '../../../shared/constants/colors.js';
 
 const NEUTRAL_GRAY = 0x8d99ae;
 const CONTENT_MAX = 1024;
@@ -21,6 +22,10 @@ export class MessageLogService {
   register(): void {
     this.client.on(Events.MessageDelete, (message: Message | PartialMessage) => {
       void this.handleMessageDelete(message);
+    });
+
+    this.client.on(Events.MessageUpdate, (oldMessage: Message | PartialMessage, newMessage: Message | PartialMessage) => {
+      void this.handleMessageEdit(oldMessage, newMessage);
     });
   }
 
@@ -51,7 +56,7 @@ export class MessageLogService {
     const content = message.content ?? '';
     const attachmentCount = message.attachments?.size ?? 0;
 
-    const embed = this.buildEmbed(message, content, attachmentCount);
+    const embed = this.buildDeleteEmbed(message, content, attachmentCount);
 
     try {
       await channel.send({ embeds: [embed] });
@@ -78,7 +83,68 @@ export class MessageLogService {
     }
   }
 
-  private buildEmbed(message: Message | PartialMessage, content: string, attachmentCount: number): EmbedBuilder {
+  async handleMessageEdit(
+    oldMessage: Message | PartialMessage,
+    newMessage: Message | PartialMessage,
+  ): Promise<void> {
+    if (!this.config.enabled) return;
+    if (!newMessage.guildId) return;
+    if (newMessage.author?.bot) return;
+    if (newMessage.system) return;
+    if (oldMessage.partial) return;
+
+    const oldContent = (oldMessage as Message).content ?? '';
+    const newContent = newMessage.content ?? '';
+    if (oldContent === newContent) return;
+
+    const channelId = this.config.channelId;
+    if (!channelId) {
+      this.logger.warn('Message log channelId not configured');
+      return;
+    }
+
+    const guild = this.client.guilds.cache.get(newMessage.guildId);
+    if (!guild) {
+      this.logger.warn({ guildId: newMessage.guildId }, 'Guild not found for message edit log');
+      return;
+    }
+
+    const channel = guild.channels.cache.get(channelId) as TextChannel | undefined;
+    if (!channel) {
+      this.logger.warn({ channelId, guildId: guild.id }, 'Message edit log channel not found');
+      return;
+    }
+
+    const embed = this.buildEditEmbed(newMessage, oldContent, newContent);
+
+    try {
+      await channel.send({ embeds: [embed] });
+      this.metrics.counter('message_edit_log_total').increment();
+      this.logger.info(
+        {
+          guildId: newMessage.guildId,
+          channelId: newMessage.channelId,
+          messageId: newMessage.id,
+          authorId: newMessage.author?.id ?? null,
+        },
+        'Message edit log sent',
+      );
+      this.eventBus.emit('logging.message.edited', {
+        guildId: newMessage.guildId,
+        channelId: newMessage.channelId,
+        messageId: newMessage.id,
+        authorId: newMessage.author?.id ?? '',
+      });
+    } catch (err) {
+      this.logger.error({ error: err, channelId }, 'Failed to send message edit log');
+    }
+  }
+
+  private buildDeleteEmbed(
+    message: Message | PartialMessage,
+    content: string,
+    attachmentCount: number,
+  ): EmbedBuilder {
     const fields = [
       {
         name: 'Author',
@@ -105,9 +171,10 @@ export class MessageLogService {
     if (attachmentCount > 0) {
       fields.push({
         name: 'Attachments',
-        value: attachmentCount === 1
-          ? message.attachments?.first()?.name ?? '1 attachment'
-          : `${attachmentCount} attachments`,
+        value:
+          attachmentCount === 1
+            ? (message.attachments?.first()?.name ?? '1 attachment')
+            : `${attachmentCount} attachments`,
         inline: true,
       });
     }
@@ -117,6 +184,55 @@ export class MessageLogService {
       color: NEUTRAL_GRAY,
       fields,
       footer: 'Message Delete',
+    });
+  }
+
+  private buildEditEmbed(
+    message: Message | PartialMessage,
+    oldContent: string,
+    newContent: string,
+  ): EmbedBuilder {
+    const fields = [
+      {
+        name: 'Author',
+        value: message.author ? `<@${message.author.id}>` : '*Unknown*',
+        inline: true,
+      },
+      {
+        name: 'Channel',
+        value: message.channelId ? `<#${message.channelId}>` : '*Unknown*',
+        inline: true,
+      },
+      {
+        name: 'Message ID',
+        value: `\`${message.id}\``,
+        inline: true,
+      },
+      {
+        name: 'Before',
+        value: this.formatContent(oldContent),
+        inline: false,
+      },
+      {
+        name: 'After',
+        value: this.formatContent(newContent),
+        inline: false,
+      },
+    ];
+
+    if (message.url) {
+      fields.push({
+        name: 'Jump',
+        value: `[Open Message](${message.url})`,
+        inline: false,
+      });
+    }
+
+    return EmbedFactory.build({
+      title: '\u270F\uFE0F Message Edited',
+      color: COLORS.PRIMARY,
+      fields,
+      footer: 'Message Edit',
     });
   }
 

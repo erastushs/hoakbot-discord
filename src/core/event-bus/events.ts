@@ -111,6 +111,13 @@ export interface LoggingMessageDeletedEvent {
   attachmentCount: number;
 }
 
+export interface LoggingMessageEditedEvent {
+  guildId: string;
+  channelId: string;
+  messageId: string;
+  authorId: string;
+}
+
 export type ShutdownEvent = void;
 
 export interface EventMap {
@@ -131,5 +138,6 @@ export interface EventMap {
   'scheduler.jobDue': SchedulerJobDueEvent;
   'logging.member.nickname_updated': LoggingNicknameUpdatedEvent;
   'logging.message.deleted': LoggingMessageDeletedEvent;
+  'logging.message.edited': LoggingMessageEditedEvent;
   'system.shutdown': ShutdownEvent;
 }

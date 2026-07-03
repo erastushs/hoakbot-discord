@@ -28,10 +28,16 @@ export interface MemberLogConfig {
   channelId: string;
 }
 
+export interface MessageLogConfig {
+  enabled: boolean;
+  channelId: string;
+}
+
 export interface LoggingConfig {
   enabled: boolean;
   voice: VoiceLogConfig;
   member: MemberLogConfig;
+  message: MessageLogConfig;
 }
 
 export interface WelcomeMessageConfig {

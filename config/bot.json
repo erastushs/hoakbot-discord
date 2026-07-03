@@ -29,6 +29,10 @@
     "member": {
       "enabled": true,
       "channelId": "1074317469881221271"
+    },
+    "message": {
+      "enabled": true,
+      "channelId": ""
     }
   },
   "welcome": {

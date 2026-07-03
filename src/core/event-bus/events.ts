@@ -103,6 +103,14 @@ export interface LoggingNicknameUpdatedEvent {
   after: string | null;
 }
 
+export interface LoggingMessageDeletedEvent {
+  guildId: string;
+  channelId: string;
+  messageId: string;
+  authorId: string;
+  attachmentCount: number;
+}
+
 export type ShutdownEvent = void;
 
 export interface EventMap {
@@ -122,5 +130,6 @@ export interface EventMap {
   'permission.denied': PermissionDeniedEvent;
   'scheduler.jobDue': SchedulerJobDueEvent;
   'logging.member.nickname_updated': LoggingNicknameUpdatedEvent;
+  'logging.message.deleted': LoggingMessageDeletedEvent;
   'system.shutdown': ShutdownEvent;
 }

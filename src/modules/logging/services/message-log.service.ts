@@ -1,0 +1,132 @@
+import type { Client, Message, PartialMessage, TextChannel, EmbedBuilder } from 'discord.js';
+import { Events } from 'discord.js';
+import type { ILogger } from '../../../core/logger/logger.service.js';
+import type { IMetrics } from '../../../core/metrics/types.js';
+import type { MessageLogConfig } from '../../../core/config/types.js';
+import type { IEventBus } from '../../../core/event-bus/types.js';
+import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+
+const NEUTRAL_GRAY = 0x8d99ae;
+const CONTENT_MAX = 1024;
+
+export class MessageLogService {
+  constructor(
+    private readonly client: Client,
+    private readonly config: MessageLogConfig,
+    private readonly logger: ILogger,
+    private readonly metrics: IMetrics,
+    private readonly eventBus: IEventBus,
+  ) {}
+
+  register(): void {
+    this.client.on(Events.MessageDelete, (message: Message | PartialMessage) => {
+      void this.handleMessageDelete(message);
+    });
+  }
+
+  async handleMessageDelete(message: Message | PartialMessage): Promise<void> {
+    if (!this.config.enabled) return;
+    if (!message.guildId) return;
+    if (message.author?.bot) return;
+    if (message.system) return;
+
+    const channelId = this.config.channelId;
+    if (!channelId) {
+      this.logger.warn('Message log channelId not configured');
+      return;
+    }
+
+    const guild = this.client.guilds.cache.get(message.guildId);
+    if (!guild) {
+      this.logger.warn({ guildId: message.guildId }, 'Guild not found for message log');
+      return;
+    }
+
+    const channel = guild.channels.cache.get(channelId) as TextChannel | undefined;
+    if (!channel) {
+      this.logger.warn({ channelId, guildId: guild.id }, 'Message log channel not found');
+      return;
+    }
+
+    const content = message.content ?? '';
+    const attachmentCount = message.attachments?.size ?? 0;
+
+    const embed = this.buildEmbed(message, content, attachmentCount);
+
+    try {
+      await channel.send({ embeds: [embed] });
+      this.metrics.counter('message_log_total').increment();
+      this.logger.info(
+        {
+          guildId: message.guildId,
+          channelId: message.channelId,
+          messageId: message.id,
+          authorId: message.author?.id ?? null,
+          attachments: attachmentCount,
+        },
+        'Message delete log sent',
+      );
+      this.eventBus.emit('logging.message.deleted', {
+        guildId: message.guildId,
+        channelId: message.channelId,
+        messageId: message.id,
+        authorId: message.author?.id ?? '',
+        attachmentCount,
+      });
+    } catch (err) {
+      this.logger.error({ error: err, channelId }, 'Failed to send message log');
+    }
+  }
+
+  private buildEmbed(message: Message | PartialMessage, content: string, attachmentCount: number): EmbedBuilder {
+    const fields = [
+      {
+        name: 'Author',
+        value: message.author ? `<@${message.author.id}>` : '*Unknown*',
+        inline: true,
+      },
+      {
+        name: 'Channel',
+        value: message.channelId ? `<#${message.channelId}>` : '*Unknown*',
+        inline: true,
+      },
+      {
+        name: 'Message ID',
+        value: `\`${message.id}\``,
+        inline: true,
+      },
+      {
+        name: 'Content',
+        value: this.formatContent(content),
+        inline: false,
+      },
+    ];
+
+    if (attachmentCount > 0) {
+      fields.push({
+        name: 'Attachments',
+        value: attachmentCount === 1
+          ? message.attachments?.first()?.name ?? '1 attachment'
+          : `${attachmentCount} attachments`,
+        inline: true,
+      });
+    }
+
+    return EmbedFactory.build({
+      title: '\uD83D\uDDD1 Message Deleted',
+      color: NEUTRAL_GRAY,
+      fields,
+      footer: 'Message Delete',
+    });
+  }
+
+  private formatContent(content: string): string {
+    if (!content) return '*(No content)*';
+
+    if (content.length > CONTENT_MAX) {
+      return content.slice(0, CONTENT_MAX - 3) + '...';
+    }
+
+    return content;
+  }
+}

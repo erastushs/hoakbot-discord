@@ -30,10 +30,16 @@ const memberLogSchema = z.object({
   channelId: z.string(),
 });
 
+const messageLogSchema = z.object({
+  enabled: z.boolean(),
+  channelId: z.string(),
+});
+
 const loggingSchema = z.object({
   enabled: z.boolean(),
   voice: voiceLogSchema,
   member: memberLogSchema,
+  message: messageLogSchema,
 });
 
 const welcomeSchema = z.object({

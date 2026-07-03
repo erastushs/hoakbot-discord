@@ -36,6 +36,7 @@ function makeConfig(ownerIds: string[] = []): Readonly<AppConfig> {
         enabled: false,
         voice: { enabled: false, channelId: '' },
         member: { enabled: false, channelId: '' },
+        message: { enabled: false, channelId: '' },
       },
       welcome: {
         enabled: false,

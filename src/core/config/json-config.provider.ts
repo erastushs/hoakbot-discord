@@ -16,11 +16,11 @@ export class JsonConfigProvider implements IConfigProvider {
     this.configPath = configPath;
   }
 
-  async get<T>(key: string, _guildId?: string): Promise<T> {
+  async get<T>(key: string, _guildId?: string): Promise<T | undefined> {
     const value = this.readPath(key);
 
     if (value === undefined) {
-      throw new Error(`JsonConfigProvider could not find config key "${key}".`);
+      return undefined;
     }
 
     return this.clone(value) as T;
@@ -30,7 +30,11 @@ export class JsonConfigProvider implements IConfigProvider {
     const values: Record<string, T> = {};
 
     for (const key of keys) {
-      values[key] = await this.get<T>(key, guildId);
+      const value = await this.get<T>(key, guildId);
+
+      if (value !== undefined) {
+        values[key] = value;
+      }
     }
 
     return values;
@@ -46,6 +50,14 @@ export class JsonConfigProvider implements IConfigProvider {
 
   async setMany(_entries: ConfigEntry[], _guildId?: string): Promise<void> {
     throw new Error('JsonConfigProvider is read-only in Milestone 2.');
+  }
+
+  async delete(_key: string, _guildId?: string): Promise<boolean> {
+    throw new Error('JsonConfigProvider is read-only in Milestone 2.');
+  }
+
+  async exists(key: string, _guildId?: string): Promise<boolean> {
+    return this.readPath(key) !== undefined;
   }
 
   watch(_key: string, _guildId: string | undefined, _handler: ConfigChangeHandler): () => void {

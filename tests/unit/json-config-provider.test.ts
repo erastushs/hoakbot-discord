@@ -60,9 +60,7 @@ describe('JsonConfigProvider', () => {
   it('throws for unknown keys', async () => {
     const provider = new JsonConfigProvider(createConfigFile({ prefix: 'hoak' }));
 
-    await expect(provider.get('voice.volume')).rejects.toThrow(
-      'JsonConfigProvider could not find config key "voice.volume".',
-    );
+    await expect(provider.get('voice.volume')).resolves.toBeUndefined();
   });
 
   it('does not write to bot.json in Milestone 2', async () => {
@@ -74,5 +72,15 @@ describe('JsonConfigProvider', () => {
     await expect(provider.setMany([{ key: 'prefix', value: '!' }])).rejects.toThrow(
       'JsonConfigProvider is read-only in Milestone 2.',
     );
+    await expect(provider.delete('prefix')).rejects.toThrow(
+      'JsonConfigProvider is read-only in Milestone 2.',
+    );
+  });
+
+  it('checks whether keys exist', async () => {
+    const provider = new JsonConfigProvider(createConfigFile({ prefix: 'hoak' }));
+
+    await expect(provider.exists('prefix')).resolves.toBe(true);
+    await expect(provider.exists('missing')).resolves.toBe(false);
   });
 });

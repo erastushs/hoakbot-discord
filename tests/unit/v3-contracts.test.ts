@@ -86,6 +86,8 @@ describe('v3 architecture contracts', () => {
       getDefaults: async () => ({ 'general.prefix': '!' }),
       set: async (_key, _value, _options) => undefined,
       setMany: async (_entries, _guildId) => undefined,
+      delete: async (_key, _guildId) => true,
+      exists: async (_key, _guildId) => true,
       watch: (_key, _guildId, _handler) => () => undefined,
     };
 

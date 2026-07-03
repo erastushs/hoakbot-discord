@@ -26,10 +26,12 @@ export interface ConfigChangeEvent {
 export type ConfigChangeHandler = (change: ConfigChangeEvent) => void;
 
 export interface IConfigProvider {
-  get<T>(key: string, guildId?: string): Promise<T>;
+  get<T>(key: string, guildId?: string): Promise<T | undefined>;
   getMany<T>(keys: string[], guildId?: string): Promise<Record<string, T>>;
   getDefaults(): Promise<Record<string, unknown>>;
   set(key: string, value: unknown, options?: ConfigSetOptions): Promise<void>;
   setMany(entries: ConfigEntry[], guildId?: string): Promise<void>;
+  delete?(key: string, guildId?: string): Promise<boolean>;
+  exists?(key: string, guildId?: string): Promise<boolean>;
   watch(key: string, guildId: string | undefined, handler: ConfigChangeHandler): () => void;
 }

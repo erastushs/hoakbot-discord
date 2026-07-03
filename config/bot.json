@@ -23,8 +23,8 @@
   "logging": {
     "enabled": true,
     "voice": {
-      "enabled": false,
-      "channelId": ""
+      "enabled": true,
+      "channelId": "561523659748016172"
     }
   }
 }

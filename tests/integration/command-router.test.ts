@@ -32,6 +32,10 @@ function makeConfig(ownerIds: string[] = []): Readonly<AppConfig> {
         defaultSound: 'hoak',
         volume: 1.0,
       },
+      logging: {
+        enabled: false,
+        voice: { enabled: false, channelId: '' },
+      },
     },
     permissions: { roles: { administrator: [], moderator: [], trusted: [] } },
     featureFlags: { modules: {} },

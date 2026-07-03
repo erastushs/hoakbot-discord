@@ -20,6 +20,16 @@ const voiceSchema = z.object({
   volume: z.number().min(0).max(2),
 });
 
+const voiceLogSchema = z.object({
+  enabled: z.boolean(),
+  channelId: z.string(),
+});
+
+const loggingSchema = z.object({
+  enabled: z.boolean(),
+  voice: voiceLogSchema,
+});
+
 const botSchema = z.object({
   prefix: z.string(),
   guildId: z.string(),
@@ -28,6 +38,7 @@ const botSchema = z.object({
   presence: presenceSchema,
   cooldowns: cooldownsSchema,
   voice: voiceSchema,
+  logging: loggingSchema,
 });
 
 const permissionsSchema = z.object({

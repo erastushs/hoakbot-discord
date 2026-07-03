@@ -11,4 +11,9 @@ export const COLORS = {
     TIMEOUT: 0xa855f7,
     WARN: 0xfacc15,
   },
+  VOICE: {
+    JOIN: 0xfacc15,
+    LEAVE: 0xf59e0b,
+    MOVE: 0x3b82f6,
+  },
 } as const;

@@ -3,6 +3,7 @@
     "general": true,
     "voice": true,
     "moderation": true,
+    "logging": true,
     "metrics": true,
     "tickets": false,
     "ai": false,

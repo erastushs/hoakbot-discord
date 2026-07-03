@@ -18,6 +18,16 @@ export interface VoiceConfig {
   volume: number;
 }
 
+export interface VoiceLogConfig {
+  enabled: boolean;
+  channelId: string;
+}
+
+export interface LoggingConfig {
+  enabled: boolean;
+  voice: VoiceLogConfig;
+}
+
 export interface BotConfig {
   prefix: string;
   guildId: string;
@@ -26,6 +36,7 @@ export interface BotConfig {
   presence: PresenceConfig;
   cooldowns: CooldownsConfig;
   voice: VoiceConfig;
+  logging: LoggingConfig;
 }
 
 export interface PermissionsConfig {

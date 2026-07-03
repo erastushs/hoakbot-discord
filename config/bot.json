@@ -19,5 +19,12 @@
     "maxReconnectRetries": 5,
     "defaultSound": "hoak",
     "volume": 1.0
+  },
+  "logging": {
+    "enabled": true,
+    "voice": {
+      "enabled": false,
+      "channelId": ""
+    }
   }
 }

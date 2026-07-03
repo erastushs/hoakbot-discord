@@ -1,11 +1,17 @@
 import { SlashCommandBuilder, version as djsVersion } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import type { CommandContext } from '../../../shared/types/command.js';
 import type { AppConfig } from '../../../core/config/types.js';
 import { Errors } from '../../../shared/errors/errors.js';
 import { BaseCommand } from '../../../shared/command/base-command.js';
 
-const pkg = { name: 'hoakbot', version: '1.0.0' };
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkgPath = join(__dirname, '..', '..', '..', '..', 'package.json');
+const pkgContent = JSON.parse(readFileSync(pkgPath, 'utf-8')) as { name: string; version: string };
+const pkg = { name: pkgContent.name, version: pkgContent.version };
 
 export class BotInfoCommand extends BaseCommand {
   readonly name = 'botinfo';

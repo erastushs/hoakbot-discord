@@ -1,5 +1,8 @@
 # Hoak Bot
 
+[![Build](https://img.shields.io/github/actions/workflow/status/erastushs/hoakbot/deploy.yml?branch=main&label=build)](https://github.com/erastushs/hoakbot/actions/workflows/deploy.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/erastushs/hoakbot/release.yml?label=tests)](https://github.com/erastushs/hoakbot/actions/workflows/release.yml)
+[![Version](https://img.shields.io/github/package-json/v/erastushs/hoakbot)](https://github.com/erastushs/hoakbot)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)](https://www.typescriptlang.org)
 [![Discord.js](https://img.shields.io/badge/discord.js-v14-5865F2?logo=discord)](https://discord.js.org)

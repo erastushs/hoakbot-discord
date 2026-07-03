@@ -285,6 +285,12 @@ export class MessageLogService {
     const TOLERANCE_MS = 10_000;
 
     try {
+      await new Promise((resolve) => setTimeout(resolve, 750));
+    } catch {
+      // Ignore timeout errors
+    }
+
+    try {
       const logs = await guild.fetchAuditLogs({
         type: AuditLogEvent.MessageBulkDelete,
         limit: 5,
@@ -295,9 +301,11 @@ export class MessageLogService {
       for (const [, entry] of logs.entries) {
         if (now - entry.createdTimestamp > TOLERANCE_MS) continue;
 
-        const extra = entry.extra as { channel: { id: string }; count: number };
-        if (extra.channel?.id !== targetChannelId) continue;
+        const extra = entry.extra as { count: number };
         if (extra.count !== count) continue;
+
+        const target = entry.target as { id: string } | null;
+        if (target?.id !== targetChannelId) continue;
 
         return entry.executor?.id ?? null;
       }
@@ -313,28 +321,13 @@ export class MessageLogService {
     channelId: string,
     count: number,
   ): EmbedBuilder {
-    const fields = [
-      {
-        name: 'Moderator',
-        value: moderatorId ? `<@${moderatorId}>` : '*Unknown*',
-        inline: true,
-      },
-      {
-        name: 'Channel',
-        value: `<#${channelId}>`,
-        inline: true,
-      },
-      {
-        name: 'Messages Deleted',
-        value: String(count),
-        inline: true,
-      },
-    ];
+    const actor = moderatorId ? `<@${moderatorId}>` : 'Someone';
+    const messagesWord = count === 1 ? '**1 message**' : `**${count} messages**`;
 
     return EmbedFactory.build({
       title: '\uD83D\uDDD1 Bulk Message Delete',
       color: NEUTRAL_GRAY,
-      fields,
+      description: `${actor} deleted ${messagesWord} in <#${channelId}>.`,
       footer: 'Bulk Message Delete',
     });
   }

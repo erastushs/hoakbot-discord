@@ -319,11 +319,12 @@ describe('MessageLogService', () => {
       return { size: ids.length, first: () => (entries.length > 0 ? entries[0]![1] : undefined), keys: () => entries.map((e) => e[0])[Symbol.iterator]() };
     }
 
-    function makeAuditLogs(moderatorId: string | null) {
+    function makeAuditLogs(moderatorId: string | null, channelId = 'chan-1') {
       const entries = new Map();
       entries.set('entry-1', {
         executor: moderatorId ? { id: moderatorId } : null,
-        extra: { channel: { id: 'chan-1' }, count: 3 },
+        extra: { count: 3 },
+        target: { id: channelId },
         createdTimestamp: Date.now(),
       });
       return {
@@ -343,13 +344,11 @@ describe('MessageLogService', () => {
       await vi.waitFor(() => expect(send).toHaveBeenCalled());
 
       const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
-      const fields = embed?.fields as Array<{ name: string; value: string }>;
 
-      expect(fields?.find((f) => f.name === 'Moderator')?.value).toBe('<@mod-123>');
-      expect(fields?.find((f) => f.name === 'Channel')?.value).toBe('<#chan-1>');
-      expect(fields?.find((f) => f.name === 'Messages Deleted')?.value).toBe('3');
-      expect(fields?.find((f) => f.name === 'First Message ID')).toBeUndefined();
-      expect(fields?.find((f) => f.name === 'Oldest Message ID')).toBeUndefined();
+      expect(embed?.title).toBe('\uD83D\uDDD1 Bulk Message Delete');
+      expect(embed?.description).toBe('<@mod-123> deleted **3 messages** in <#chan-1>.');
+      expect(embed?.fields).toBeUndefined();
+      expect(embed?.footer?.text).toBe('Bulk Message Delete');
 
       expect(logger.info).toHaveBeenCalledWith(
         expect.objectContaining({ moderatorId: 'mod-123' }),
@@ -364,7 +363,7 @@ describe('MessageLogService', () => {
       expect(metrics.counter).toHaveBeenCalledWith('message_bulk_delete_log_total');
     });
 
-    it('shows Unknown moderator when audit log is empty', async () => {
+    it('shows Someone when audit log is empty', async () => {
       const send = vi.fn().mockResolvedValue(undefined);
       const fetchAuditLogs = vi.fn().mockResolvedValue({ entries: new Map() });
       const client = makeClient(send, fetchAuditLogs);
@@ -376,12 +375,11 @@ describe('MessageLogService', () => {
       await vi.waitFor(() => expect(send).toHaveBeenCalled());
 
       const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
-      const fields = embed?.fields as Array<{ name: string; value: string }>;
 
-      expect(fields?.find((f) => f.name === 'Moderator')?.value).toBe('*Unknown*');
+      expect(embed?.description).toBe('Someone deleted **2 messages** in <#chan-1>.');
     });
 
-    it('shows Unknown moderator when audit log fetch fails', async () => {
+    it('shows Someone when audit log fetch fails', async () => {
       const send = vi.fn().mockResolvedValue(undefined);
       const fetchAuditLogs = vi.fn().mockRejectedValue(new Error('API error'));
       const client = makeClient(send, fetchAuditLogs);
@@ -393,9 +391,8 @@ describe('MessageLogService', () => {
       await vi.waitFor(() => expect(send).toHaveBeenCalled());
 
       const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
-      const fields = embed?.fields as Array<{ name: string; value: string }>;
 
-      expect(fields?.find((f) => f.name === 'Moderator')?.value).toBe('*Unknown*');
+      expect(embed?.description).toBe('Someone deleted **1 message** in <#chan-1>.');
     });
 
     it('emits moderatorId as null when unknown', async () => {
@@ -415,6 +412,22 @@ describe('MessageLogService', () => {
         count: 1,
         moderatorId: null,
       });
+    });
+
+    it('uses singular message wording for count of 1', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const fetchAuditLogs = vi.fn().mockResolvedValue({ entries: new Map() });
+      const client = makeClient(send, fetchAuditLogs);
+
+      createService(client);
+
+      client.emitEvent('messageDeleteBulk', makeBulkMessages(['only-one']));
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
+
+      expect(embed?.description).toBe('Someone deleted **1 message** in <#chan-1>.');
     });
 
     it('ignores empty collections', async () => {

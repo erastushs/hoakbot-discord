@@ -1,10 +1,18 @@
 import { AttachmentBuilder } from 'discord.js';
 
+const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp']);
+
+function isImageFilename(name: string): boolean {
+  const lower = name.toLowerCase();
+  return IMAGE_EXTENSIONS.has(lower.slice(lower.lastIndexOf('.')));
+}
+
 interface ArchiveResult {
   files: AttachmentBuilder[];
   archivedCount: number;
   failedCount: number;
   skippedCount: number;
+  firstImageFileName: string | null;
 }
 
 interface AttachmentLike {
@@ -29,6 +37,7 @@ export class AttachmentArchiveService {
     let archivedCount = 0;
     let failedCount = 0;
     let skippedCount = 0;
+    let firstImageFileName: string | null = null;
 
     for (const [, attachment] of attachments) {
       if (attachment.size > opts.maxSizeBytes) {
@@ -49,11 +58,15 @@ export class AttachmentArchiveService {
 
         files.push(file);
         archivedCount++;
+
+        if (!firstImageFileName && isImageFilename(attachment.name)) {
+          firstImageFileName = attachment.name;
+        }
       } catch {
         failedCount++;
       }
     }
 
-    return { files, archivedCount, failedCount, skippedCount };
+    return { files, archivedCount, failedCount, skippedCount, firstImageFileName };
   }
 }

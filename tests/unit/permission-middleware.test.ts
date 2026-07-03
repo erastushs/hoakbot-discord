@@ -339,14 +339,14 @@ describe('PermissionMiddleware', () => {
       });
     });
 
-    it('increments permission_denied metric', async () => {
+    it('increments permission_denied_total metric', async () => {
       const { middleware, metrics } = createMiddleware();
       const ctx = makeCtx({ guild: null });
       const cmd = makeCommand({ guildOnly: true });
 
       await middleware.check(cmd as never, ctx as never);
 
-      expect(metrics.counter).toHaveBeenCalledWith('permission_denied');
+      expect(metrics.counter).toHaveBeenCalledWith('permission_denied_total');
       expect(metrics.incrementFn).toHaveBeenCalledTimes(1);
     });
   });

@@ -225,8 +225,8 @@ export class MemberLogService {
         { name: 'User ID', value: `\`${member.id}\``, inline: true },
         { name: 'Before', value: oldNick ?? '*None*', inline: true },
         { name: 'After', value: newNick ?? '*None*', inline: true },
-        { name: 'Timestamp', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false },
       ],
+      footer: 'Nickname Updated',
     });
   }
 

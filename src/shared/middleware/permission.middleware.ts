@@ -89,7 +89,7 @@ export class PermissionMiddleware {
   }
 
   private emitDenied(ctx: CommandContext, command: string, reason: string): void {
-    this.metrics.counter('permission_denied').increment();
+    this.metrics.counter('permission_denied_total').increment();
 
     this.eventBus.emit('permission.denied', {
       userId: ctx.user.id,

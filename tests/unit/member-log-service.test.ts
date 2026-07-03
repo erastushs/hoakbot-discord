@@ -109,7 +109,7 @@ describe('MemberLogService', () => {
 
       expect(embed?.title).toBe('\uD83C\uDFF7 Nickname Updated');
       expect(embed?.color).toBe(0x5865f2);
-      expect(embed?.fields).toHaveLength(5);
+      expect(embed?.fields).toHaveLength(4);
       expect(logger.info).toHaveBeenCalledWith(
         { userId: 'user-1', guildId: 'guild-1', before: null, after: 'Erastus' },
         'Nickname change log sent',

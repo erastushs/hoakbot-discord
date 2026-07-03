@@ -94,10 +94,10 @@ describe('WarningService', () => {
       });
     });
 
-    it('increments warnings_issued counter', async () => {
+    it('increments warnings_issued_total counter', async () => {
       await service.warn(warnInput);
 
-      expect(metrics.counter).toHaveBeenCalledWith('warnings_issued');
+      expect(metrics.counter).toHaveBeenCalledWith('warnings_issued_total');
       expect(metrics.incrementFn).toHaveBeenCalledOnce();
     });
 

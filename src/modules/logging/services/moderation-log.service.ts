@@ -5,16 +5,17 @@ import type { ModerationLogConfig } from '../../../core/config/types.js';
 import type { IEventBus } from '../../../core/event-bus/types.js';
 import type { ModerationActionEvent, WarningIssuedEvent } from '../../../core/event-bus/events.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { COLORS } from '../../../shared/constants/colors.js';
 
-const COLORS = {
-  kick: 0xf59e0b,
-  ban: 0xef4444,
-  timeout: 0x5865f2,
-  warn: 0xfacc15,
-  warn_remove: 0xf59e0b,
-  warn_clear: 0xfacc15,
-  unban: 0x22c55e,
-} as const;
+const MODERATION_COLORS: Record<string, number> = {
+  kick: COLORS.MODERATION.KICK,
+  ban: COLORS.MODERATION.BAN,
+  timeout: COLORS.MODERATION.TIMEOUT,
+  warn: COLORS.MODERATION.WARN,
+  warn_remove: COLORS.MODERATION.KICK,
+  warn_clear: COLORS.MODERATION.WARN,
+  unban: COLORS.SUCCESS,
+};
 
 const TITLES: Record<string, string> = {
   kick: '\uD83D\uDD28 Member Kicked',
@@ -124,7 +125,7 @@ export class ModerationLogService {
 
     try {
       await channel.send({ embeds: [embed] });
-      this.metrics.counter('moderation_action_log_total').increment();
+      this.metrics.counter('moderation_log_total').increment();
       this.logger.info(
         {
           guildId: event.guildId,
@@ -176,7 +177,7 @@ export class ModerationLogService {
 
     try {
       await channel.send({ embeds: [embed] });
-      this.metrics.counter('moderation_action_log_total').increment();
+      this.metrics.counter('moderation_log_total').increment();
       this.logger.info(
         {
           guildId: event.guildId,
@@ -199,7 +200,7 @@ export class ModerationLogService {
 
   private buildModerationEmbed(opts: ModerationEmbedOptions): EmbedBuilder {
     const title = TITLES[opts.action] ?? 'Moderation Action';
-    const color = COLORS[opts.action as keyof typeof COLORS] ?? 0x5865f2;
+    const color = MODERATION_COLORS[opts.action] ?? COLORS.PRIMARY;
     const verb = ACTIONS[opts.action] ?? 'acted on';
     const footer = FOOTERS[opts.action] ?? 'Moderation';
     const reason = opts.reason?.trim() || null;

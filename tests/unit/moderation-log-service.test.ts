@@ -118,7 +118,7 @@ describe('ModerationLogService', () => {
         { guildId: 'guild-1', moderatorId: 'mod-1', targetId: 'target-1', action: 'kick', reason: 'Breaking rules' },
         'kick log sent',
       );
-      expect(metrics.counter).toHaveBeenCalledWith('moderation_action_log_total');
+      expect(metrics.counter).toHaveBeenCalledWith('moderation_log_total');
       expect(eventBus.emit).toHaveBeenCalledWith('logging.moderation.logged', {
         guildId: 'guild-1', action: 'kick', moderatorId: 'mod-1', targetId: 'target-1',
       });
@@ -157,7 +157,7 @@ describe('ModerationLogService', () => {
       await vi.waitFor(() => expect(send).toHaveBeenCalled());
       const embed = getEmbed(send);
       expect(embed?.title).toBe('\u23F3 Member Timed Out');
-      expect(embed?.color).toBe(0x5865f2);
+      expect(embed?.color).toBe(0xa855f7);
       expect(embed?.footer?.text).toBe('Timeout');
       expect(getFields(embed).find((f) => f.name === 'Duration')?.value).toBe('10m');
     });

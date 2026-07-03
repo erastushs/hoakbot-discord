@@ -8,7 +8,6 @@ import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 import { AttachmentArchiveService } from '../../../shared/attachment/attachment-archive.service.js';
 import { COLORS } from '../../../shared/constants/colors.js';
 
-const NEUTRAL_GRAY = 0x8d99ae;
 const CONTENT_MAX = 1024;
 const DELETE_FOOTER = 'Message Delete';
 
@@ -125,16 +124,17 @@ export class MessageLogService {
     skippedCount: number;
     total: number;
     archiveLabel: string | null;
+    firstImageFileName: string | null;
   }> {
     const attachments = message.attachments;
     if (!attachments || attachments.size === 0) {
-      return { files: [], archivedCount: 0, failedCount: 0, skippedCount: 0, total: 0, archiveLabel: null };
+      return { files: [], archivedCount: 0, failedCount: 0, skippedCount: 0, total: 0, archiveLabel: null, firstImageFileName: null };
     }
 
     if (!this.config.archiveAttachments) {
       const names = [...attachments.values()].map((a) => a.name);
       const label = attachments.size === 1 ? names[0]! : `${attachments.size} attachments`;
-      return { files: [], archivedCount: 0, failedCount: 0, skippedCount: 0, total: attachments.size, archiveLabel: label };
+      return { files: [], archivedCount: 0, failedCount: 0, skippedCount: 0, total: attachments.size, archiveLabel: label, firstImageFileName: null };
     }
 
     const service = new AttachmentArchiveService();
@@ -163,6 +163,7 @@ export class MessageLogService {
       skippedCount: result.skippedCount,
       total: attachments.size,
       archiveLabel: parts.length > 0 ? parts.join('\n') : null,
+      firstImageFileName: result.firstImageFileName,
     };
   }
 
@@ -326,7 +327,7 @@ export class MessageLogService {
 
     return EmbedFactory.build({
       title: '\uD83D\uDDD1 Bulk Message Delete',
-      color: NEUTRAL_GRAY,
+      color: COLORS.NEUTRAL,
       description: `${actor} deleted ${messagesWord} in <#${channelId}>.`,
       footer: 'Bulk Message Delete',
     });
@@ -337,6 +338,7 @@ export class MessageLogService {
     content: string,
     archive: {
       archiveLabel: string | null;
+      firstImageFileName: string | null;
     },
   ): EmbedBuilder {
     const fields = [
@@ -370,11 +372,14 @@ export class MessageLogService {
       });
     }
 
+    const image = archive.firstImageFileName ? `attachment://${archive.firstImageFileName}` : undefined;
+
     return EmbedFactory.build({
       title: '\uD83D\uDDD1 Message Deleted',
-      color: NEUTRAL_GRAY,
+      color: COLORS.NEUTRAL,
       fields,
       footer: DELETE_FOOTER,
+      image,
     });
   }
 

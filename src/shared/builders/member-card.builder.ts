@@ -1,4 +1,4 @@
-import type { ImageService } from '../../shared/image/image.service.js';
+import type { ImageService } from '../image/image.service.js';
 
 export interface MemberCardInput {
   username: string;

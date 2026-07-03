@@ -29,7 +29,7 @@ export class WarningService {
 
     const count = await this.repository.countWarnings(input.guildId, input.userId);
 
-    this.metrics.counter('warnings_issued').increment();
+    this.metrics.counter('warnings_issued_total').increment();
 
     this.eventBus.emit('moderation.warningIssued', {
       guildId: input.guildId,

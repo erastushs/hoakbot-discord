@@ -122,8 +122,8 @@ describe('VoiceLogService', () => {
       const embed = call.embeds[0]?.data;
 
       expect(embed?.title).toBe('\u27A1\uFE0F Voice Channel Join');
-      expect(embed?.color).toBe(0xfacc15);
-      expect(embed?.fields).toHaveLength(3);
+      expect(embed?.color).toBe(0x5865f2);
+      expect(embed?.fields).toHaveLength(2);
       expect(embed?.fields?.[0]).toEqual({ name: 'User', value: '<@user-1> (testuser)', inline: true });
       expect(embed?.fields?.[1]).toEqual({ name: 'Channel', value: 'General', inline: true });
       expect(metrics.counter).toHaveBeenCalledWith('voice_log_total');
@@ -160,8 +160,8 @@ describe('VoiceLogService', () => {
       const call = send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> };
       const embed = call.embeds[0]?.data;
 
-      expect(embed?.title).toBe('\u2B05\uFE0F Voice Channel Leave');
-      expect(embed?.color).toBe(0xf59e0b);
+      expect(embed?.title).toBe('\u{1F519} Voice Channel Leave');
+      expect(embed?.color).toBe(0xe74c3c);
       expect(embed?.fields?.[0]).toEqual({ name: 'User', value: '<@user-1> (testuser)', inline: true });
       expect(embed?.fields?.[1]).toEqual({ name: 'Channel', value: 'General', inline: true });
       expect(metrics.counter).toHaveBeenCalledWith('voice_log_total');
@@ -198,7 +198,7 @@ describe('VoiceLogService', () => {
       const embed = call.embeds[0]?.data;
 
       expect(embed?.title).toBe('\uD83D\uDD04 Voice Channel Move');
-      expect(embed?.color).toBe(0x3b82f6);
+      expect(embed?.color).toBe(0xfacc15);
       expect(embed?.fields?.[0]).toEqual({ name: 'User', value: '<@user-1> (testuser)', inline: true });
       expect(embed?.fields?.[1]).toEqual({ name: 'From', value: 'General', inline: true });
       expect(embed?.fields?.[2]).toEqual({ name: 'To', value: 'Lounge', inline: true });

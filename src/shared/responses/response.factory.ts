@@ -10,6 +10,7 @@ export interface ResponseOptions {
   fields?: { name: string; value: string; inline?: boolean }[];
   thumbnail?: string;
   image?: string;
+  footer?: string;
 }
 
 export class Response {
@@ -51,4 +52,5 @@ function applyOptions(embed: EmbedBuilder, opts?: ResponseOptions): void {
   if (opts.fields) embed.addFields(...opts.fields);
   if (opts.thumbnail) embed.setThumbnail(opts.thumbnail);
   if (opts.image) embed.setImage(opts.image);
+  if (opts.footer) embed.setFooter({ text: opts.footer });
 }

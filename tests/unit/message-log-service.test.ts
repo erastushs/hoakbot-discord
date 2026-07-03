@@ -135,6 +135,7 @@ describe('MessageLogService', () => {
         archivedCount: 0,
         failedCount: 0,
         skippedCount: 0,
+        firstImageFileName: null,
       });
     });
 
@@ -144,6 +145,7 @@ describe('MessageLogService', () => {
         archivedCount: 1,
         failedCount: 0,
         skippedCount: 0,
+        firstImageFileName: 'image.png',
       });
 
       const send = vi.fn().mockResolvedValue(undefined);
@@ -167,6 +169,7 @@ describe('MessageLogService', () => {
         archivedCount: 2,
         failedCount: 1,
         skippedCount: 0,
+        firstImageFileName: null,
       });
 
       const send = vi.fn().mockResolvedValue(undefined);
@@ -220,6 +223,7 @@ describe('MessageLogService', () => {
         archivedCount: 0,
         failedCount: 0,
         skippedCount: 1,
+        firstImageFileName: null,
       });
 
       const send = vi.fn().mockResolvedValue(undefined);
@@ -242,6 +246,7 @@ describe('MessageLogService', () => {
         archivedCount: 1,
         failedCount: 2,
         skippedCount: 3,
+        firstImageFileName: null,
       });
 
       const send = vi.fn().mockResolvedValue(undefined);
@@ -276,6 +281,7 @@ describe('MessageLogService', () => {
         archivedCount: 1,
         failedCount: 0,
         skippedCount: 0,
+        firstImageFileName: null,
       });
 
       const send = vi.fn().mockResolvedValue(undefined);

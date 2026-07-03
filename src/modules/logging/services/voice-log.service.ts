@@ -100,7 +100,7 @@ export class VoiceLogService {
   }
 
   private buildEmbed(event: VoiceLogEvent) {
-    const { title, color } = this.getEmbedMetadata(event.action);
+    const { title, color, footer } = this.getEmbedMetadata(event.action);
     const fields = this.buildFields(event);
     const thumbnail = event.avatarURL;
 
@@ -109,17 +109,18 @@ export class VoiceLogService {
       color,
       fields,
       thumbnail: thumbnail ?? undefined,
+      footer,
     });
   }
 
-  private getEmbedMetadata(action: VoiceLogAction): { title: string; color: number } {
+  private getEmbedMetadata(action: VoiceLogAction): { title: string; color: number; footer: string } {
     switch (action) {
       case 'join':
-        return { title: '\u27A1\uFE0F Voice Channel Join', color: COLORS.VOICE.JOIN };
+        return { title: '\u27A1\uFE0F Voice Channel Join', color: COLORS.VOICE.JOIN, footer: 'Voice Join' };
       case 'leave':
-        return { title: '\u2B05\uFE0F Voice Channel Leave', color: COLORS.VOICE.LEAVE };
+        return { title: '\u{1F519} Voice Channel Leave', color: COLORS.VOICE.LEAVE, footer: 'Voice Leave' };
       case 'move':
-        return { title: '\uD83D\uDD04 Voice Channel Move', color: COLORS.VOICE.MOVE };
+        return { title: '\uD83D\uDD04 Voice Channel Move', color: COLORS.VOICE.MOVE, footer: 'Voice Move' };
     }
   }
 
@@ -156,12 +157,6 @@ export class VoiceLogService {
         inline: true,
       });
     }
-
-    fields.push({
-      name: 'Timestamp',
-      value: `<t:${Math.floor(Date.now() / 1000)}:F>`,
-      inline: false,
-    });
 
     return fields;
   }

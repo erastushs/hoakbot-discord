@@ -40,6 +40,12 @@ export interface LoggingConfig {
   voice: VoiceLogConfig;
   member: MemberLogConfig;
   message: MessageLogConfig;
+  moderation: ModerationLogConfig;
+}
+
+export interface ModerationLogConfig {
+  enabled: boolean;
+  channelId: string;
 }
 
 export interface WelcomeMessageConfig {

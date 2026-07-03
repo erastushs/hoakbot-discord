@@ -37,11 +37,17 @@ const messageLogSchema = z.object({
   maxAttachmentSizeMb: z.number().int().positive(),
 });
 
+const moderationLogSchema = z.object({
+  enabled: z.boolean(),
+  channelId: z.string(),
+});
+
 const loggingSchema = z.object({
   enabled: z.boolean(),
   voice: voiceLogSchema,
   member: memberLogSchema,
   message: messageLogSchema,
+  moderation: moderationLogSchema,
 });
 
 const welcomeSchema = z.object({

@@ -25,6 +25,7 @@ function makeConfig(overrides?: Partial<AppConfig>): Readonly<AppConfig> {
         voice: { enabled: false, channelId: '' },
         member: { enabled: false, channelId: '' },
         message: { enabled: false, channelId: '', archiveAttachments: false, maxAttachmentSizeMb: 1 },
+        moderation: { enabled: false, channelId: '' },
       },
       welcome: {
         enabled: false,

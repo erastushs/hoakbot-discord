@@ -35,6 +35,10 @@
       "channelId": "1074317469881221271",
       "archiveAttachments": true,
       "maxAttachmentSizeMb": 10
+    },
+    "moderation": {
+      "enabled": true,
+      "channelId": ""
     }
   },
   "welcome": {

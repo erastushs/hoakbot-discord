@@ -4,6 +4,7 @@ import { TOKENS } from '../../core/container/tokens.js';
 import { VoiceLogService } from './services/voice-log.service.js';
 import { MemberLogService } from './services/member-log.service.js';
 import { MessageLogService } from './services/message-log.service.js';
+import { ModerationLogService } from './services/moderation-log.service.js';
 
 export class LoggingModule implements IModule {
   readonly name = 'logging';
@@ -13,6 +14,7 @@ export class LoggingModule implements IModule {
   private voiceLogService: VoiceLogService | null = null;
   private memberLogService: MemberLogService | null = null;
   private messageLogService: MessageLogService | null = null;
+  private moderationLogService: ModerationLogService | null = null;
 
   register(container: IContainer): void {
     const config = container.resolve(TOKENS.AppConfig);
@@ -34,6 +36,9 @@ export class LoggingModule implements IModule {
 
     this.messageLogService = new MessageLogService(client, config.bot.logging.message, logger, metrics, eventBus);
     this.messageLogService.register();
+
+    this.moderationLogService = new ModerationLogService(client, config.bot.logging.moderation, logger, metrics, eventBus);
+    this.moderationLogService.register();
 
     logger.info('Logging module registered');
   }

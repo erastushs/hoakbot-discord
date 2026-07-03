@@ -1,3 +1,4 @@
+export { SettingsRegistry } from './settings-registry.js';
 export type {
   ISettingMetadata,
   ISettingsRegistry,

@@ -66,6 +66,7 @@ describe('v3 architecture contracts', () => {
       getAll: () => [setting],
       getByCategory: (_category) => [setting],
       getByModule: (_moduleId) => [setting],
+      getModule: (_moduleId) => [setting],
       getByGroup: (_moduleId, _group) => [setting],
       get: (_key) => setting,
       validate: (_key, _value) => ({ success: true }),

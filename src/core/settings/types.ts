@@ -69,6 +69,7 @@ export interface ISettingsRegistry {
   getAll(): ISettingMetadata[];
   getByCategory(category: string): ISettingMetadata[];
   getByModule(moduleId: string): ISettingMetadata[];
+  getModule(moduleId: string): ISettingMetadata[];
   getByGroup(moduleId: string, group: string): ISettingMetadata[];
   get(key: string): ISettingMetadata | undefined;
   validate(key: string, value: unknown): SettingValidationResult;

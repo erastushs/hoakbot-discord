@@ -46,10 +46,17 @@ export class ImageService {
     maxWidth: number,
     align: 'center' | 'left' | 'right' = 'center',
     fillStyle: string = '#ffffff',
+    shadow?: { color: string; offsetX: number; offsetY: number; blur: number },
   ): void {
     ctx.save();
     ctx.font = font;
     ctx.textAlign = align;
+    if (shadow) {
+      ctx.shadowColor = shadow.color;
+      ctx.shadowOffsetX = shadow.offsetX;
+      ctx.shadowOffsetY = shadow.offsetY;
+      ctx.shadowBlur = shadow.blur;
+    }
     ctx.fillStyle = fillStyle;
     ctx.fillText(text, x, y, maxWidth);
     ctx.restore();

@@ -12,7 +12,22 @@ export class WelcomeImageBuilder {
   private static readonly WIDTH = 800;
   private static readonly HEIGHT = 450;
   private static readonly AVATAR_SIZE = 128;
-  private static readonly AVATAR_Y = 80;
+  private static readonly AVATAR_Y = 72;
+  private static readonly BORDER_WIDTH = 4;
+
+  private static readonly SHADOW = {
+    color: 'rgba(0, 0, 0, 0.35)',
+    offsetX: 0,
+    offsetY: 4,
+    blur: 12,
+  };
+
+  private static readonly TEXT_SHADOW = {
+    color: 'rgba(0, 0, 0, 0.5)',
+    offsetX: 1,
+    offsetY: 2,
+    blur: 4,
+  };
 
   constructor(private readonly imageService: ImageService) {}
 
@@ -26,9 +41,9 @@ export class WelcomeImageBuilder {
 
     await this.drawAvatar(ctx, input.avatarUrl);
 
-    this.drawUsername(ctx, input.username);
-
     this.drawTitle(ctx, input.title);
+
+    this.drawUsername(ctx, input.username);
 
     this.drawSubtitle(ctx, input.subtitle);
 
@@ -46,8 +61,10 @@ export class WelcomeImageBuilder {
   private drawOverlay(
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
   ): void {
+    ctx.save();
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.fillRect(0, 0, WelcomeImageBuilder.WIDTH, WelcomeImageBuilder.HEIGHT);
+    ctx.restore();
   }
 
   private async drawAvatar(
@@ -55,39 +72,70 @@ export class WelcomeImageBuilder {
     avatarUrl: string,
   ): Promise<void> {
     const avatar = await this.imageService.loadAsset(avatarUrl);
-    const x = (WelcomeImageBuilder.WIDTH - WelcomeImageBuilder.AVATAR_SIZE) / 2;
-    this.imageService.drawRoundedImage(ctx, avatar, x, WelcomeImageBuilder.AVATAR_Y, WelcomeImageBuilder.AVATAR_SIZE, 64);
-  }
+    const cx = WelcomeImageBuilder.WIDTH / 2;
+    const cy = WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE / 2;
+    const radius = WelcomeImageBuilder.AVATAR_SIZE / 2;
 
-  private drawUsername(
-    ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
-    username: string,
-  ): void {
-    this.imageService.drawText(
-      ctx,
-      username,
-      '32px sans-serif',
-      WelcomeImageBuilder.WIDTH / 2,
-      WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE + 50,
-      WelcomeImageBuilder.WIDTH - 80,
-      'center',
-      '#ffffff',
-    );
+    ctx.save();
+    ctx.shadowColor = WelcomeImageBuilder.SHADOW.color;
+    ctx.shadowOffsetX = WelcomeImageBuilder.SHADOW.offsetX;
+    ctx.shadowOffsetY = WelcomeImageBuilder.SHADOW.offsetY;
+    ctx.shadowBlur = WelcomeImageBuilder.SHADOW.blur;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius + WelcomeImageBuilder.BORDER_WIDTH, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = WelcomeImageBuilder.BORDER_WIDTH;
+    ctx.stroke();
+
+    ctx.shadowColor = 'rgba(0, 0, 0, 0)';
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.shadowBlur = 0;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(avatar, cx - radius, cy - radius, WelcomeImageBuilder.AVATAR_SIZE, WelcomeImageBuilder.AVATAR_SIZE);
+
+    ctx.restore();
   }
 
   private drawTitle(
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
     title: string,
   ): void {
+    const y = WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE + 60;
     this.imageService.drawText(
       ctx,
       title,
-      '24px sans-serif',
+      'bold 40px sans-serif',
       WelcomeImageBuilder.WIDTH / 2,
-      WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE + 90,
+      y,
       WelcomeImageBuilder.WIDTH - 80,
       'center',
-      '#cccccc',
+      '#ffffff',
+      WelcomeImageBuilder.TEXT_SHADOW,
+    );
+  }
+
+  private drawUsername(
+    ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
+    username: string,
+  ): void {
+    const y = WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE + 110;
+    this.imageService.drawText(
+      ctx,
+      username,
+      '30px sans-serif',
+      WelcomeImageBuilder.WIDTH / 2,
+      y,
+      WelcomeImageBuilder.WIDTH - 80,
+      'center',
+      '#eeeeee',
+      WelcomeImageBuilder.TEXT_SHADOW,
     );
   }
 
@@ -95,15 +143,17 @@ export class WelcomeImageBuilder {
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
     subtitle: string,
   ): void {
+    const y = WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE + 148;
     this.imageService.drawText(
       ctx,
       subtitle,
-      '20px sans-serif',
+      '22px sans-serif',
       WelcomeImageBuilder.WIDTH / 2,
-      WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE + 120,
+      y,
       WelcomeImageBuilder.WIDTH - 80,
       'center',
       '#aaaaaa',
+      WelcomeImageBuilder.TEXT_SHADOW,
     );
   }
 }

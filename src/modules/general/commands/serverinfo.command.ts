@@ -23,6 +23,9 @@ export class ServerInfoCommand extends BaseCommand {
     const owner = await guild.fetchOwner();
 
     const totalMembers = guild.memberCount;
+
+    await guild.members.fetch();
+
     const humans = guild.members.cache.filter((m) => !m.user.bot).size;
     const bots = totalMembers - humans;
     const textChannels = guild.channels.cache.filter((c) => c.isTextBased()).size;

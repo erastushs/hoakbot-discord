@@ -15,6 +15,13 @@ const mockContext = {
   arc: vi.fn(),
   closePath: vi.fn(),
   clip: vi.fn(),
+  stroke: vi.fn(),
+  shadowColor: '',
+  shadowOffsetX: 0,
+  shadowOffsetY: 0,
+  shadowBlur: 0,
+  strokeStyle: '',
+  lineWidth: 1,
   measureText: vi.fn(() => ({ width: 100 })),
 };
 
@@ -53,8 +60,8 @@ function makeInput(overrides?: Partial<WelcomeImageInput>): WelcomeImageInput {
     username: 'TestUser',
     avatarUrl: 'https://example.com/avatar.png',
     backgroundUrl: 'https://example.com/bg.png',
-    title: 'Welcome to Test Guild!',
-    subtitle: 'You are member #42',
+    title: 'WELCOME',
+    subtitle: 'TO TEST GUILD',
     ...overrides,
   };
 }
@@ -93,40 +100,75 @@ describe('WelcomeImageBuilder', () => {
     expect(mockContext.drawImage).toHaveBeenCalled();
   });
 
-  it('draws overlay', async () => {
+  it('draws dark overlay for readability', async () => {
     await builder.build(makeInput());
 
     expect(mockContext.fillRect).toHaveBeenCalledWith(0, 0, 800, 450);
   });
 
-  it('draws rounded avatar via imageService', async () => {
+  it('draws white border around avatar', async () => {
     await builder.build(makeInput());
 
-    expect(imageService.drawRoundedImage).toHaveBeenCalled();
+    expect(mockContext.stroke).toHaveBeenCalled();
+    expect(mockContext.strokeStyle).toBe('#ffffff');
   });
 
-  it('draws username text', async () => {
+  it('draws avatar image clipped to circle', async () => {
     await builder.build(makeInput());
 
-    expect(imageService.drawText).toHaveBeenCalledWith(
-      mockContext,
-      'TestUser',
-      expect.any(String),
+    expect(mockContext.clip).toHaveBeenCalled();
+    expect(mockContext.drawImage).toHaveBeenCalledWith(
+      mockImage,
       expect.any(Number),
       expect.any(Number),
-      expect.any(Number),
-      'center',
-      '#ffffff',
+      128,
+      128,
     );
   });
 
-  it('draws title text as-provided (no placeholder logic)', async () => {
-    await builder.build(makeInput({ title: 'HELLO WORLD', subtitle: 'lorem ipsum' }));
+  it('draws title with largest font and text shadow', async () => {
+    await builder.build(makeInput());
 
-    const calls = imageService.drawText.mock.calls;
-    const texts = calls.map((c: unknown[]) => c[1]);
-    expect(texts).toContain('HELLO WORLD');
-    expect(texts).toContain('lorem ipsum');
+    const titleCall = imageService.drawText.mock.calls.find(
+      (c: unknown[]) => c[1] === 'WELCOME',
+    );
+    expect(titleCall).toBeDefined();
+    expect(titleCall[2]).toContain('40px');
+    expect(titleCall[7]).toEqual('#ffffff');
+    expect(titleCall[8]).toEqual({ color: 'rgba(0, 0, 0, 0.5)', offsetX: 1, offsetY: 2, blur: 4 });
+  });
+
+  it('draws username with medium font', async () => {
+    await builder.build(makeInput());
+
+    const userCall = imageService.drawText.mock.calls.find(
+      (c: unknown[]) => c[1] === 'TestUser',
+    );
+    expect(userCall).toBeDefined();
+    expect(userCall[2]).toContain('30px');
+  });
+
+  it('draws subtitle with smallest font', async () => {
+    await builder.build(makeInput());
+
+    const subCall = imageService.drawText.mock.calls.find(
+      (c: unknown[]) => c[1] === 'TO TEST GUILD',
+    );
+    expect(subCall).toBeDefined();
+    expect(subCall[2]).toContain('22px');
+  });
+
+  it('text shadow is applied to all text elements', async () => {
+    await builder.build(makeInput());
+
+    for (const call of imageService.drawText.mock.calls) {
+      expect(call[8]).toEqual({
+        color: 'rgba(0, 0, 0, 0.5)',
+        offsetX: 1,
+        offsetY: 2,
+        blur: 4,
+      });
+    }
   });
 
   it('passes through placeholder-like text unchanged', async () => {
@@ -134,7 +176,6 @@ describe('WelcomeImageBuilder', () => {
 
     const calls = imageService.drawText.mock.calls;
     const texts = calls.map((c: unknown[]) => c[1]);
-    // Builder does NOT resolve {server} or {count} — text must pass through as-is
     expect(texts).toContain('Hello {server}');
     expect(texts).toContain('Member #{count}');
   });

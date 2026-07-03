@@ -2,6 +2,7 @@ export { ConfigService } from './config/config.service.js';
 export { DatabaseConfigProvider } from './config/database-config.provider.js';
 export { GuildSettingsRepository } from './config/guild-settings.repository.js';
 export { JsonConfigProvider } from './config/json-config.provider.js';
+export { APIAuthorizationService, APIRouter, MemoryAuthProvider, OpenAPIMetadataRegistry } from './api/index.js';
 export { createLogger } from './logger/logger.service.js';
 export { Container } from './container/container.js';
 export { TOKENS } from './container/tokens.js';
@@ -12,6 +13,44 @@ export { MemoryCacheProvider } from './cache/memory-cache.provider.js';
 export { PermissionRegistry } from './permissions/permission-registry.js';
 export { PermissionServiceV3 } from './permissions/permission-service.js';
 export { SettingsRegistry } from './settings/settings-registry.js';
+export type {
+  APIAuthLevel,
+  APIEndpoint,
+  APIErrorBody,
+  APIErrorCode,
+  APIErrorResponse,
+  APIFieldValidationError,
+  APIHandler,
+  APIHttpMethod,
+  APIMiddleware,
+  APINext,
+  APIOperationMetadata,
+  APIPaginationMeta,
+  APIRegisteredRoute,
+  APIRequest,
+  APIRequestContext,
+  APIResponse,
+  APIRateLimit,
+  APISuccessResponse,
+  APIValidationResult,
+  AuthProvider,
+  GetManifestsResponse,
+  GetMetadataRequest,
+  GetMetadataResponse,
+  GetModulesResponse,
+  GetSettingsRequest,
+  GetSettingsResponse,
+  GuildMembership,
+  GuildOwnershipChecker,
+  Identity,
+  OpenAPIEndpointMetadata,
+  PatchSettingsRequest,
+  PatchSettingsResponse,
+  Session,
+  SettingMetadataContract,
+  SettingValueContract,
+  UserContext,
+} from './api/index.js';
 export type {
   AuditActor,
   AuditActorType,

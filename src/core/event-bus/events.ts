@@ -141,6 +141,13 @@ export interface LoggingKickLoggedEvent {
   reason: string;
 }
 
+export interface LoggingModerationLoggedEvent {
+  guildId: string;
+  action: string;
+  moderatorId: string;
+  targetId: string;
+}
+
 export type ShutdownEvent = void;
 
 export interface EventMap {
@@ -165,5 +172,6 @@ export interface EventMap {
   'logging.message.bulk_deleted': LoggingMessageBulkDeletedEvent;
   'logging.message.attachments_archived': LoggingAttachmentsArchivedEvent;
   'logging.moderation.kick_logged': LoggingKickLoggedEvent;
+  'logging.moderation.logged': LoggingModerationLoggedEvent;
   'system.shutdown': ShutdownEvent;
 }

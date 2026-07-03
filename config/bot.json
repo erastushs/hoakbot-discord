@@ -29,7 +29,7 @@
   },
   "welcome": {
     "enabled": true,
-    "channelId": "561523659748016172",
+    "channelId": "523371374279131156",
     "backgroundUrl": "https://media.discordapp.net/attachments/1471048538095091835/1471048701257453638/welcomeHOAK.png?ex=6a48109d&is=6a46bf1d&hm=9ea0862b3d9687396c5b215a15b45fb944b46fe563f67172a18eda01fa5ac624&=&format=webp&quality=lossless&width=1679&height=820",
     "message": {
       "title": "Welcome to {server} <:hoakfam:1471017721641566362>",
@@ -51,9 +51,9 @@
   },
   "goodbye": {
     "enabled": true,
-    "channelId": "",
+    "channelId": "523371374279131156",
     "image": {
-      "backgroundUrl": "",
+      "backgroundUrl": "https://media.discordapp.net/attachments/1471048538095091835/1471048701794586708/goodbyeHOAK.png?ex=6a48109d&is=6a46bf1d&hm=db142fb39c15c32d97f6b3c9b098a67f18021ef8a4324ec86d96af3b1a7e8d7f&=&format=webp&quality=lossless&width=1679&height=820",
       "title": "GOODBYE",
       "subtitle": "HOPE YOU ENJOY YOUR STAY"
     }

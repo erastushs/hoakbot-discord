@@ -8,36 +8,51 @@ export interface WelcomeImageInput {
   subtitle: string;
 }
 
-export class WelcomeImageBuilder {
-  private static readonly WIDTH = 800;
-  private static readonly HEIGHT = 450;
-  private static readonly AVATAR_SIZE = 128;
-  private static readonly AVATAR_Y = 72;
-  private static readonly BORDER_WIDTH = 4;
-
-  private static readonly SHADOW = {
-    color: 'rgba(0, 0, 0, 0.35)',
+const LAYOUT = {
+  width: 800,
+  height: 450,
+  avatar: {
+    size: 144,
+    y: 44,
+    borderWidth: 6,
+    shadow: {
+      color: 'rgba(0, 0, 0, 0.4)',
+      offsetX: 0,
+      offsetY: 4,
+      blur: 16,
+    },
+  },
+  title: {
+    y: 258,
+    fontSize: 'bold 70px sans-serif',
+    color: '#ffffff',
+  },
+  username: {
+    y: 326,
+    fontSize: 'bold 36px sans-serif',
+    color: '#FFC107',
+  },
+  subtitle: {
+    y: 374,
+    fontSize: 'bold 26px sans-serif',
+    color: '#ffffff',
+  },
+  textShadow: {
+    color: 'rgba(0, 0, 0, 0.7)',
     offsetX: 0,
-    offsetY: 4,
-    blur: 12,
-  };
+    offsetY: 3,
+    blur: 8,
+  },
+} as const;
 
-  private static readonly TEXT_SHADOW = {
-    color: 'rgba(0, 0, 0, 0.5)',
-    offsetX: 1,
-    offsetY: 2,
-    blur: 4,
-  };
-
+export class WelcomeImageBuilder {
   constructor(private readonly imageService: ImageService) {}
 
   async build(input: WelcomeImageInput): Promise<Buffer> {
-    const canvas = this.imageService.createCanvas(WelcomeImageBuilder.WIDTH, WelcomeImageBuilder.HEIGHT);
+    const canvas = this.imageService.createCanvas(LAYOUT.width, LAYOUT.height);
     const ctx = canvas.getContext('2d');
 
     await this.drawBackground(ctx, input.backgroundUrl);
-
-    this.drawOverlay(ctx);
 
     await this.drawAvatar(ctx, input.avatarUrl);
 
@@ -55,16 +70,7 @@ export class WelcomeImageBuilder {
     backgroundUrl: string,
   ): Promise<void> {
     const bg = await this.imageService.loadAsset(backgroundUrl);
-    ctx.drawImage(bg, 0, 0, WelcomeImageBuilder.WIDTH, WelcomeImageBuilder.HEIGHT);
-  }
-
-  private drawOverlay(
-    ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
-  ): void {
-    ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.fillRect(0, 0, WelcomeImageBuilder.WIDTH, WelcomeImageBuilder.HEIGHT);
-    ctx.restore();
+    ctx.drawImage(bg, 0, 0, LAYOUT.width, LAYOUT.height);
   }
 
   private async drawAvatar(
@@ -72,21 +78,22 @@ export class WelcomeImageBuilder {
     avatarUrl: string,
   ): Promise<void> {
     const avatar = await this.imageService.loadAsset(avatarUrl);
-    const cx = WelcomeImageBuilder.WIDTH / 2;
-    const cy = WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE / 2;
-    const radius = WelcomeImageBuilder.AVATAR_SIZE / 2;
+    const cx = LAYOUT.width / 2;
+    const radius = LAYOUT.avatar.size / 2;
+    const cy = LAYOUT.avatar.y + radius;
 
     ctx.save();
-    ctx.shadowColor = WelcomeImageBuilder.SHADOW.color;
-    ctx.shadowOffsetX = WelcomeImageBuilder.SHADOW.offsetX;
-    ctx.shadowOffsetY = WelcomeImageBuilder.SHADOW.offsetY;
-    ctx.shadowBlur = WelcomeImageBuilder.SHADOW.blur;
+
+    ctx.shadowColor = LAYOUT.avatar.shadow.color;
+    ctx.shadowOffsetX = LAYOUT.avatar.shadow.offsetX;
+    ctx.shadowOffsetY = LAYOUT.avatar.shadow.offsetY;
+    ctx.shadowBlur = LAYOUT.avatar.shadow.blur;
 
     ctx.beginPath();
-    ctx.arc(cx, cy, radius + WelcomeImageBuilder.BORDER_WIDTH, 0, Math.PI * 2);
+    ctx.arc(cx, cy, radius + LAYOUT.avatar.borderWidth, 0, Math.PI * 2);
     ctx.closePath();
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = WelcomeImageBuilder.BORDER_WIDTH;
+    ctx.lineWidth = LAYOUT.avatar.borderWidth;
     ctx.stroke();
 
     ctx.shadowColor = 'rgba(0, 0, 0, 0)';
@@ -98,7 +105,7 @@ export class WelcomeImageBuilder {
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
-    ctx.drawImage(avatar, cx - radius, cy - radius, WelcomeImageBuilder.AVATAR_SIZE, WelcomeImageBuilder.AVATAR_SIZE);
+    ctx.drawImage(avatar, cx - radius, cy - radius, LAYOUT.avatar.size, LAYOUT.avatar.size);
 
     ctx.restore();
   }
@@ -107,17 +114,16 @@ export class WelcomeImageBuilder {
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
     title: string,
   ): void {
-    const y = WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE + 60;
     this.imageService.drawText(
       ctx,
       title,
-      'bold 40px sans-serif',
-      WelcomeImageBuilder.WIDTH / 2,
-      y,
-      WelcomeImageBuilder.WIDTH - 80,
+      LAYOUT.title.fontSize,
+      LAYOUT.width / 2,
+      LAYOUT.title.y,
+      LAYOUT.width - 80,
       'center',
-      '#ffffff',
-      WelcomeImageBuilder.TEXT_SHADOW,
+      LAYOUT.title.color,
+      LAYOUT.textShadow,
     );
   }
 
@@ -125,17 +131,16 @@ export class WelcomeImageBuilder {
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
     username: string,
   ): void {
-    const y = WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE + 110;
     this.imageService.drawText(
       ctx,
       username,
-      '30px sans-serif',
-      WelcomeImageBuilder.WIDTH / 2,
-      y,
-      WelcomeImageBuilder.WIDTH - 80,
+      LAYOUT.username.fontSize,
+      LAYOUT.width / 2,
+      LAYOUT.username.y,
+      LAYOUT.width - 80,
       'center',
-      '#eeeeee',
-      WelcomeImageBuilder.TEXT_SHADOW,
+      LAYOUT.username.color,
+      LAYOUT.textShadow,
     );
   }
 
@@ -143,17 +148,16 @@ export class WelcomeImageBuilder {
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
     subtitle: string,
   ): void {
-    const y = WelcomeImageBuilder.AVATAR_Y + WelcomeImageBuilder.AVATAR_SIZE + 148;
     this.imageService.drawText(
       ctx,
-      subtitle,
-      '22px sans-serif',
-      WelcomeImageBuilder.WIDTH / 2,
-      y,
-      WelcomeImageBuilder.WIDTH - 80,
+      subtitle.toUpperCase(),
+      LAYOUT.subtitle.fontSize,
+      LAYOUT.width / 2,
+      LAYOUT.subtitle.y,
+      LAYOUT.width - 80,
       'center',
-      '#aaaaaa',
-      WelcomeImageBuilder.TEXT_SHADOW,
+      LAYOUT.subtitle.color,
+      LAYOUT.textShadow,
     );
   }
 }

@@ -31,6 +31,8 @@ export interface MemberLogConfig {
 export interface MessageLogConfig {
   enabled: boolean;
   channelId: string;
+  archiveAttachments: boolean;
+  maxAttachmentSizeMb: number;
 }
 
 export interface LoggingConfig {

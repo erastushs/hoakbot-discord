@@ -5,10 +5,12 @@ import type { IMetrics } from '../../../core/metrics/types.js';
 import type { MessageLogConfig } from '../../../core/config/types.js';
 import type { IEventBus } from '../../../core/event-bus/types.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
+import { AttachmentArchiveService } from '../../../shared/attachment/attachment-archive.service.js';
 import { COLORS } from '../../../shared/constants/colors.js';
 
 const NEUTRAL_GRAY = 0x8d99ae;
 const CONTENT_MAX = 1024;
+const DELETE_FOOTER = 'Message Delete';
 
 interface BulkMessageCollection {
   readonly size: number;
@@ -57,40 +59,111 @@ export class MessageLogService {
       return;
     }
 
-    const channel = guild.channels.cache.get(channelId) as TextChannel | undefined;
-    if (!channel) {
+    const logChannel = guild.channels.cache.get(channelId) as TextChannel | undefined;
+    if (!logChannel) {
       this.logger.warn({ channelId, guildId: guild.id }, 'Message log channel not found');
       return;
     }
 
     const content = message.content ?? '';
-    const attachmentCount = message.attachments?.size ?? 0;
 
-    const embed = this.buildDeleteEmbed(message, content, attachmentCount);
+    const archiveResult = await this.archiveAttachments(message);
+
+    const embed = this.buildDeleteEmbed(message, content, archiveResult);
+
+    const logPayload: Record<string, unknown> = { embeds: [embed] };
+    if (archiveResult.files.length > 0) {
+      logPayload.files = archiveResult.files;
+    }
 
     try {
-      await channel.send({ embeds: [embed] });
+      const msg = await logChannel.send(logPayload);
+      void msg;
       this.metrics.counter('message_log_total').increment();
+
       this.logger.info(
         {
           guildId: message.guildId,
           channelId: message.channelId,
           messageId: message.id,
           authorId: message.author?.id ?? null,
-          attachments: attachmentCount,
+          attachments: archiveResult.total,
+          archived: archiveResult.archivedCount,
+          failed: archiveResult.failedCount,
+          skipped: archiveResult.skippedCount,
         },
         'Message delete log sent',
       );
+
       this.eventBus.emit('logging.message.deleted', {
         guildId: message.guildId,
         channelId: message.channelId,
         messageId: message.id,
         authorId: message.author?.id ?? '',
-        attachmentCount,
+        attachmentCount: archiveResult.total,
+      });
+
+      this.eventBus.emit('logging.message.attachments_archived', {
+        guildId: message.guildId,
+        channelId: message.channelId,
+        messageId: message.id,
+        archived: archiveResult.archivedCount,
+        failed: archiveResult.failedCount,
+        skipped: archiveResult.skippedCount,
       });
     } catch (err) {
       this.logger.error({ error: err, channelId }, 'Failed to send message log');
     }
+  }
+
+  private async archiveAttachments(
+    message: Message | PartialMessage,
+  ): Promise<{
+    files: Array<Record<string, unknown>>;
+    archivedCount: number;
+    failedCount: number;
+    skippedCount: number;
+    total: number;
+    archiveLabel: string | null;
+  }> {
+    const attachments = message.attachments;
+    if (!attachments || attachments.size === 0) {
+      return { files: [], archivedCount: 0, failedCount: 0, skippedCount: 0, total: 0, archiveLabel: null };
+    }
+
+    if (!this.config.archiveAttachments) {
+      const names = [...attachments.values()].map((a) => a.name);
+      const label = attachments.size === 1 ? names[0]! : `${attachments.size} attachments`;
+      return { files: [], archivedCount: 0, failedCount: 0, skippedCount: 0, total: attachments.size, archiveLabel: label };
+    }
+
+    const service = new AttachmentArchiveService();
+    const maxBytes = AttachmentArchiveService.maxSizeBytes(this.config.maxAttachmentSizeMb);
+
+    const attachmentMap = new Map<string, { url: string; name: string; size: number }>();
+    for (const [, a] of attachments) {
+      attachmentMap.set(a.id, { url: a.url, name: a.name, size: a.size });
+    }
+
+    const result = await service.archive(attachmentMap, { maxSizeBytes: maxBytes });
+
+    this.metrics.counter('message_attachment_archived_total').increment(result.archivedCount);
+    this.metrics.counter('message_attachment_failed_total').increment(result.failedCount);
+    this.metrics.counter('message_attachment_skipped_total').increment(result.skippedCount);
+
+    const parts: string[] = [];
+    if (result.archivedCount > 0) parts.push(`Archived: ${result.archivedCount}`);
+    if (result.skippedCount > 0) parts.push(`Skipped: ${result.skippedCount}`);
+    if (result.failedCount > 0) parts.push(`Failed: ${result.failedCount}`);
+
+    return {
+      files: result.files.map((f) => f as unknown as Record<string, unknown>),
+      archivedCount: result.archivedCount,
+      failedCount: result.failedCount,
+      skippedCount: result.skippedCount,
+      total: attachments.size,
+      archiveLabel: parts.length > 0 ? parts.join('\n') : null,
+    };
   }
 
   async handleMessageEdit(
@@ -200,58 +273,12 @@ export class MessageLogService {
     }
   }
 
-  private buildBulkDeleteEmbed(
-    messages: BulkMessageCollection,
-    channelId: string,
-  ): EmbedBuilder {
-    const ids = [...messages.keys()];
-
-    const fields = [
-      {
-        name: 'Channel',
-        value: `<#${channelId}>`,
-        inline: true,
-      },
-      {
-        name: 'Messages Deleted',
-        value: String(messages.size),
-        inline: true,
-      },
-    ];
-
-    if (ids.length > 0) {
-      fields.push({
-        name: 'First Message ID',
-        value: `\`${ids[0]}\``,
-        inline: true,
-      });
-    }
-
-    if (ids.length > 1) {
-      fields.push({
-        name: 'Oldest Message ID',
-        value: `\`${ids[0]}\``,
-        inline: true,
-      });
-      fields.push({
-        name: 'Newest Message ID',
-        value: `\`${ids[ids.length - 1]}\``,
-        inline: true,
-      });
-    }
-
-    return EmbedFactory.build({
-      title: '\uD83D\uDDD1 Bulk Message Delete',
-      color: NEUTRAL_GRAY,
-      fields,
-      footer: 'Bulk Message Delete',
-    });
-  }
-
   private buildDeleteEmbed(
     message: Message | PartialMessage,
     content: string,
-    attachmentCount: number,
+    archive: {
+      archiveLabel: string | null;
+    },
   ): EmbedBuilder {
     const fields = [
       {
@@ -276,13 +303,10 @@ export class MessageLogService {
       },
     ];
 
-    if (attachmentCount > 0) {
+    if (archive.archiveLabel) {
       fields.push({
         name: 'Attachments',
-        value:
-          attachmentCount === 1
-            ? (message.attachments?.first()?.name ?? '1 attachment')
-            : `${attachmentCount} attachments`,
+        value: archive.archiveLabel,
         inline: true,
       });
     }
@@ -291,7 +315,7 @@ export class MessageLogService {
       title: '\uD83D\uDDD1 Message Deleted',
       color: NEUTRAL_GRAY,
       fields,
-      footer: 'Message Delete',
+      footer: DELETE_FOOTER,
     });
   }
 
@@ -341,6 +365,54 @@ export class MessageLogService {
       color: COLORS.PRIMARY,
       fields,
       footer: 'Message Edit',
+    });
+  }
+
+  private buildBulkDeleteEmbed(
+    messages: BulkMessageCollection,
+    channelId: string,
+  ): EmbedBuilder {
+    const ids = [...messages.keys()];
+
+    const fields = [
+      {
+        name: 'Channel',
+        value: `<#${channelId}>`,
+        inline: true,
+      },
+      {
+        name: 'Messages Deleted',
+        value: String(messages.size),
+        inline: true,
+      },
+    ];
+
+    if (ids.length > 0) {
+      fields.push({
+        name: 'First Message ID',
+        value: `\`${ids[0]}\``,
+        inline: true,
+      });
+    }
+
+    if (ids.length > 1) {
+      fields.push({
+        name: 'Oldest Message ID',
+        value: `\`${ids[0]}\``,
+        inline: true,
+      });
+      fields.push({
+        name: 'Newest Message ID',
+        value: `\`${ids[ids.length - 1]}\``,
+        inline: true,
+      });
+    }
+
+    return EmbedFactory.build({
+      title: '\uD83D\uDDD1 Bulk Message Delete',
+      color: NEUTRAL_GRAY,
+      fields,
+      footer: 'Bulk Message Delete',
     });
   }
 

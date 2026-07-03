@@ -33,6 +33,8 @@ const memberLogSchema = z.object({
 const messageLogSchema = z.object({
   enabled: z.boolean(),
   channelId: z.string(),
+  archiveAttachments: z.boolean(),
+  maxAttachmentSizeMb: z.number().int().positive(),
 });
 
 const loggingSchema = z.object({

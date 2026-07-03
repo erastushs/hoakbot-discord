@@ -124,6 +124,15 @@ export interface LoggingMessageBulkDeletedEvent {
   count: number;
 }
 
+export interface LoggingAttachmentsArchivedEvent {
+  guildId: string;
+  channelId: string;
+  messageId: string;
+  archived: number;
+  failed: number;
+  skipped: number;
+}
+
 export type ShutdownEvent = void;
 
 export interface EventMap {
@@ -146,5 +155,6 @@ export interface EventMap {
   'logging.message.deleted': LoggingMessageDeletedEvent;
   'logging.message.edited': LoggingMessageEditedEvent;
   'logging.message.bulk_deleted': LoggingMessageBulkDeletedEvent;
+  'logging.message.attachments_archived': LoggingAttachmentsArchivedEvent;
   'system.shutdown': ShutdownEvent;
 }

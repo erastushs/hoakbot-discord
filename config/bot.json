@@ -32,7 +32,9 @@
     },
     "message": {
       "enabled": true,
-      "channelId": "1074317469881221271"
+      "channelId": "1074317469881221271",
+      "archiveAttachments": true,
+      "maxAttachmentSizeMb": 10
     }
   },
   "welcome": {

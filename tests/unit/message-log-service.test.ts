@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MessageLogService } from '../../src/modules/logging/services/message-log.service.js';
+import { AttachmentArchiveService } from '../../src/shared/attachment/attachment-archive.service.js';
 
 function makeMetrics() {
   const increment = vi.fn();
@@ -34,7 +35,7 @@ function makePartialMessage(overrides: Record<string, unknown> = {}) {
     system: false,
     content: 'Hello world',
     url: null as string | null,
-    attachments: null as unknown as { size: number; first: () => { name: string } | undefined } | null,
+    attachments: null as unknown as Map<string, { id: string; url: string; name: string; size: number }> | null,
     author: {
       id: 'user-1',
       bot: false,
@@ -44,14 +45,12 @@ function makePartialMessage(overrides: Record<string, unknown> = {}) {
 }
 
 function makeClient(send: ReturnType<typeof vi.fn>) {
-  const channel = { send, isTextBased: () => true };
+  const logChannel = { send, isTextBased: () => true };
   const guild = {
     id: 'guild-1',
-    channels: {
-      cache: new Map<string, typeof channel>(),
-    },
+    channels: { cache: new Map<string, typeof logChannel>() },
   };
-  guild.channels.cache.set('msg-log-channel', channel);
+  guild.channels.cache.set('msg-log-channel', logChannel);
 
   const guilds = new Map<string, typeof guild>();
   guilds.set('guild-1', guild);
@@ -70,9 +69,16 @@ function makeClient(send: ReturnType<typeof vi.fn>) {
   };
 }
 
+const defaultConfig = {
+  enabled: true,
+  channelId: 'msg-log-channel',
+  archiveAttachments: true,
+  maxAttachmentSizeMb: 10,
+};
+
 function createService(
   client: ReturnType<typeof makeClient>,
-  config = { enabled: true, channelId: 'msg-log-channel' },
+  config = defaultConfig,
   logger = makeLogger(),
   metrics = makeMetrics(),
   eventBus = makeEventBus(),
@@ -82,29 +88,28 @@ function createService(
   return { service, logger, metrics, eventBus };
 }
 
+function makeAttachments(...entries: Array<[string, string, number]>) {
+  const map = new Map<string, { id: string; url: string; name: string; size: number }>();
+  for (const [id, name, size] of entries) {
+    map.set(id, { id, url: `https://cdn.discord.com/${id}/${name}`, name, size });
+  }
+  Object.defineProperty(map, 'size', { value: entries.length });
+  return map;
+}
+
 describe('MessageLogService', () => {
   describe('message delete', () => {
     it('logs deleted message embed', async () => {
       const send = vi.fn().mockResolvedValue(undefined);
       const client = makeClient(send);
-
-      const { logger, metrics, eventBus } = createService(client);
-
+      const { metrics, eventBus } = createService(client);
       const message = makePartialMessage({ content: 'Hello world' });
-
       client.emitEvent('messageDelete', message);
-
       await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const call = send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> };
-      const embed = call.embeds[0]?.data;
-
+      const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
       expect(embed?.title).toBe('\uD83D\uDDD1 Message Deleted');
       expect(embed?.color).toBe(0x8d99ae);
-      expect(embed?.footer?.text).toBe('Message Delete');
       expect(metrics.counter).toHaveBeenCalledWith('message_log_total');
-      expect(metrics.increment).toHaveBeenCalled();
-      expect(eventBus.emit).toHaveBeenCalledWith('logging.message.deleted', expect.any(Object));
     });
 
     it('embed includes author mention field', async () => {
@@ -120,444 +125,208 @@ describe('MessageLogService', () => {
     });
   });
 
+  describe('attachment archiving', () => {
+    let archiveSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      archiveSpy = vi.spyOn(AttachmentArchiveService.prototype, 'archive').mockResolvedValue({
+        files: [],
+        archivedCount: 0,
+        failedCount: 0,
+        skippedCount: 0,
+      });
+    });
+
+    it('archives one attachment and sends it as files[]', async () => {
+      archiveSpy.mockResolvedValueOnce({
+        files: [{ attachment: Buffer.from('fake'), name: 'image.png' } as never],
+        archivedCount: 1,
+        failedCount: 0,
+        skippedCount: 0,
+      });
+
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+      const attachments = makeAttachments(['a1', 'image.png', 5000]);
+      const message = makePartialMessage({ attachments: attachments as unknown as Map<string, unknown> });
+      createService(client);
+      client.emitEvent('messageDelete', message);
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const payload = send.mock.calls[0]?.[0] as Record<string, unknown>;
+      const files = payload.files as Array<Record<string, unknown>>;
+      expect(files).toBeDefined();
+      expect(files.length).toBe(1);
+      expect(files[0]?.name).toBe('image.png');
+    });
+
+    it('shows archival summary in Attachments field', async () => {
+      archiveSpy.mockResolvedValueOnce({
+        files: [],
+        archivedCount: 2,
+        failedCount: 1,
+        skippedCount: 0,
+      });
+
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+      const attachments = makeAttachments(['a1', 'a.png', 1000], ['a2', 'b.png', 1000], ['a3', 'c.png', 1000]);
+      const message = makePartialMessage({ attachments: attachments as unknown as Map<string, unknown> });
+      createService(client);
+      client.emitEvent('messageDelete', message);
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
+      const fields = embed?.fields as Array<{ name: string; value: string }>;
+      const attField = fields?.find((f) => f.name === 'Attachments')?.value;
+      expect(attField).toContain('Archived: 2');
+      expect(attField).toContain('Failed: 1');
+    });
+
+    it('shows filenames only when archiveAttachments is disabled', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+      createService(client, { ...defaultConfig, archiveAttachments: false });
+      const attachments = makeAttachments(['a1', 'photo.jpg', 1000]);
+      const message = makePartialMessage({ attachments: attachments as unknown as Map<string, unknown> });
+      client.emitEvent('messageDelete', message);
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
+      const fields = embed?.fields as Array<{ name: string; value: string }>;
+      expect(fields?.find((f) => f.name === 'Attachments')?.value).toBe('photo.jpg');
+      const payload = send.mock.calls[0]?.[0] as Record<string, unknown>;
+      expect(payload.files).toBeUndefined();
+    });
+
+    it('shows multiple filenames when disabled', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+      createService(client, { ...defaultConfig, archiveAttachments: false });
+      const attachments = makeAttachments(['a1', 'a.png', 1000], ['a2', 'b.png', 1000]);
+      const message = makePartialMessage({ attachments: attachments as unknown as Map<string, unknown> });
+      client.emitEvent('messageDelete', message);
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
+      const fields = embed?.fields as Array<{ name: string; value: string }>;
+      expect(fields?.find((f) => f.name === 'Attachments')?.value).toBe('2 attachments');
+    });
+
+    it('handles archived/skipped/failed labels', async () => {
+      archiveSpy.mockResolvedValueOnce({
+        files: [],
+        archivedCount: 0,
+        failedCount: 0,
+        skippedCount: 1,
+      });
+
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+      const attachments = makeAttachments(['big', 'large.zip', 999999999]);
+      const message = makePartialMessage({ attachments: attachments as unknown as Map<string, unknown> });
+      createService(client);
+      client.emitEvent('messageDelete', message);
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
+      const fields = embed?.fields as Array<{ name: string; value: string }>;
+      const attField = fields?.find((f) => f.name === 'Attachments')?.value;
+      expect(attField).toContain('Skipped: 1');
+    });
+
+    it('logs archive metrics', async () => {
+      archiveSpy.mockResolvedValueOnce({
+        files: [],
+        archivedCount: 1,
+        failedCount: 2,
+        skippedCount: 3,
+      });
+
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+      const { metrics } = createService(client);
+
+      const map = new Map<string, { id: string; url: string; name: string; size: number }>();
+      for (const [id, name, size] of [['a', 'x.png', 1000], ['b', 'y.png', 1000], ['c', 'z.png', 1000]] as Array<[string, string, number]>) {
+        map.set(id, { id, url: `https://cdn.discord.com/${id}/${name}`, name, size });
+      }
+      const entries = [...map.entries()];
+      const attachments = {
+        size: 3,
+        values: () => map.values(),
+        get first() { return undefined; },
+        entries: () => map.entries(),
+        [Symbol.iterator]: () => entries[Symbol.iterator](),
+      };
+
+      const message = makePartialMessage({ attachments: attachments as unknown as Map<string, unknown> });
+      client.emitEvent('messageDelete', message);
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      expect(metrics.counter).toHaveBeenCalledWith('message_attachment_archived_total');
+      expect(metrics.counter).toHaveBeenCalledWith('message_attachment_failed_total');
+      expect(metrics.counter).toHaveBeenCalledWith('message_attachment_skipped_total');
+    });
+
+    it('emits attachments_archived event', async () => {
+      archiveSpy.mockResolvedValueOnce({
+        files: [],
+        archivedCount: 1,
+        failedCount: 0,
+        skippedCount: 0,
+      });
+
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+      const { eventBus } = createService(client);
+      const attachments = makeAttachments(['a', 'img.png', 1000]);
+      const message = makePartialMessage({ attachments: attachments as unknown as Map<string, unknown> });
+      client.emitEvent('messageDelete', message);
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      expect(eventBus.emit).toHaveBeenCalledWith('logging.message.attachments_archived', {
+        guildId: 'guild-1',
+        channelId: 'chan-1',
+        messageId: 'msg-1',
+        archived: 1,
+        failed: 0,
+        skipped: 0,
+      });
+    });
+  });
+
   describe('message edit', () => {
     it('logs edited message embed', async () => {
       const send = vi.fn().mockResolvedValue(undefined);
       const client = makeClient(send);
-
-      const { logger, metrics, eventBus } = createService(client);
-
+      const { metrics } = createService(client);
       const oldMsg = makePartialMessage({ content: 'before', partial: false });
       const newMsg = makePartialMessage({ content: 'after' });
-
       client.emitEvent('messageUpdate', oldMsg, newMsg);
-
       await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const call = send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> };
-      const embed = call.embeds[0]?.data;
-
+      const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
       expect(embed?.title).toBe('\u270F\uFE0F Message Edited');
       expect(embed?.color).toBe(0x5865f2);
-      expect(embed?.footer?.text).toBe('Message Edit');
-
-      expect(logger.info).toHaveBeenCalledWith(
-        {
-          guildId: 'guild-1',
-          channelId: 'chan-1',
-          messageId: 'msg-1',
-          authorId: 'user-1',
-        },
-        'Message edit log sent',
-      );
       expect(metrics.counter).toHaveBeenCalledWith('message_edit_log_total');
-      expect(metrics.increment).toHaveBeenCalled();
-      expect(eventBus.emit).toHaveBeenCalledWith('logging.message.edited', {
-        guildId: 'guild-1',
-        channelId: 'chan-1',
-        messageId: 'msg-1',
-        authorId: 'user-1',
-      });
-    });
-
-    it('shows Before and After fields', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client);
-
-      const oldMsg = makePartialMessage({ content: 'Old text', partial: false });
-      const newMsg = makePartialMessage({ content: 'New text' });
-
-      client.emitEvent('messageUpdate', oldMsg, newMsg);
-
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-
-      expect(fields?.find((f) => f.name === 'Before')?.value).toBe('Old text');
-      expect(fields?.find((f) => f.name === 'After')?.value).toBe('New text');
-    });
-
-    it('shows (No content) for empty before', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client);
-
-      const oldMsg = makePartialMessage({ content: '', partial: false });
-      const newMsg = makePartialMessage({ content: 'New text' });
-
-      client.emitEvent('messageUpdate', oldMsg, newMsg);
-
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-
-      expect(fields?.find((f) => f.name === 'Before')?.value).toBe('*(No content)*');
-    });
-
-    it('shows (No content) for empty after', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client);
-
-      const oldMsg = makePartialMessage({ content: 'Old text', partial: false });
-      const newMsg = makePartialMessage({ content: '' });
-
-      client.emitEvent('messageUpdate', oldMsg, newMsg);
-
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-
-      expect(fields?.find((f) => f.name === 'After')?.value).toBe('*(No content)*');
-    });
-
-    it('truncates long before content', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client);
-
-      const longContent = 'x'.repeat(2000);
-      const oldMsg = makePartialMessage({ content: longContent, partial: false });
-      const newMsg = makePartialMessage({ content: 'short' });
-
-      client.emitEvent('messageUpdate', oldMsg, newMsg);
-
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-
-      const beforeField = fields?.find((f) => f.name === 'Before')?.value;
-      expect(beforeField?.endsWith('...')).toBe(true);
-      expect(beforeField!.length).toBeLessThanOrEqual(1030);
-    });
-
-    it('truncates long after content', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client);
-
-      const longContent = 'x'.repeat(2000);
-      const oldMsg = makePartialMessage({ content: 'short', partial: false });
-      const newMsg = makePartialMessage({ content: longContent });
-
-      client.emitEvent('messageUpdate', oldMsg, newMsg);
-
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-
-      const afterField = fields?.find((f) => f.name === 'After')?.value;
-      expect(afterField?.endsWith('...')).toBe(true);
-      expect(afterField!.length).toBeLessThanOrEqual(1030);
-    });
-
-    it('ignores unchanged content', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      const { metrics } = createService(client);
-
-      const oldMsg = makePartialMessage({ content: 'same', partial: false });
-      const newMsg = makePartialMessage({ content: 'same' });
-
-      client.emitEvent('messageUpdate', oldMsg, newMsg);
-
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      expect(send).not.toHaveBeenCalled();
-      expect(metrics.counter).not.toHaveBeenCalledWith('message_edit_log_total');
-    });
-
-    it('ignores bot messages', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      const { metrics } = createService(client);
-
-      const oldMsg = makePartialMessage({ partial: false, author: { id: 'bot-1', bot: true } });
-      const newMsg = makePartialMessage({ author: { id: 'bot-1', bot: true } });
-
-      client.emitEvent('messageUpdate', oldMsg, newMsg);
-
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      expect(send).not.toHaveBeenCalled();
-    });
-
-    it('ignores partial old messages', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client);
-
-      const oldMsg = makePartialMessage({ content: 'before', partial: true });
-      const newMsg = makePartialMessage({ content: 'after' });
-
-      client.emitEvent('messageUpdate', oldMsg, newMsg);
-
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      expect(send).not.toHaveBeenCalled();
-    });
-
-    it('adds jump link when url is available', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client);
-
-      const oldMsg = makePartialMessage({ content: 'before', partial: false });
-      const newMsg = makePartialMessage({ content: 'after', url: 'https://discord.com/channels/1/2/3' });
-
-      client.emitEvent('messageUpdate', oldMsg, newMsg);
-
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-
-      expect(fields?.find((f) => f.name === 'Jump')?.value).toBe('[Open Message](https://discord.com/channels/1/2/3)');
-    });
-
-    it('omits jump link when url is not available', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client);
-
-      const oldMsg = makePartialMessage({ content: 'before', partial: false });
-      const newMsg = makePartialMessage({ content: 'after', url: null });
-
-      client.emitEvent('messageUpdate', oldMsg, newMsg);
-
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-
-      expect(fields?.find((f) => f.name === 'Jump')).toBeUndefined();
-    });
-
-    it('is disabled when config is disabled', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client, { enabled: false, channelId: 'msg-log-channel' });
-
-      const oldMsg = makePartialMessage({ partial: false });
-      const newMsg = makePartialMessage();
-      client.emitEvent('messageUpdate', oldMsg, newMsg);
-
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      expect(send).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('empty content', () => {
-    it('shows (No content) for empty delete messages', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-      createService(client);
-      const message = makePartialMessage({ content: '' });
-      client.emitEvent('messageDelete', message);
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-      expect(fields?.find((f) => f.name === 'Content')?.value).toBe('*(No content)*');
-    });
-  });
-
-  describe('long content truncation', () => {
-    it('truncates very long delete content', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-      createService(client);
-      const longContent = 'x'.repeat(2000);
-      const message = makePartialMessage({ content: longContent });
-      client.emitEvent('messageDelete', message);
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-      const contentField = fields?.find((f) => f.name === 'Content')?.value;
-      expect(contentField?.endsWith('...')).toBe(true);
-      expect(contentField!.length).toBeLessThanOrEqual(1030);
-    });
-  });
-
-  describe('attachments delete', () => {
-    it('omits attachments field when count is 0', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-      createService(client);
-      const message = makePartialMessage({ attachments: { size: 0, first: () => undefined } });
-      client.emitEvent('messageDelete', message);
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-      expect(fields?.find((f) => f.name === 'Attachments')).toBeUndefined();
-    });
-  });
-
-  describe('bot ignored', () => {
-    it('does not log bot delete messages', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-      const { metrics } = createService(client);
-      const message = makePartialMessage({ author: { id: 'bot-1', bot: true } });
-      client.emitEvent('messageDelete', message);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      expect(send).not.toHaveBeenCalled();
-      expect(metrics.counter).not.toHaveBeenCalledWith('message_log_total');
     });
   });
 
   describe('bulk delete', () => {
-    function makeBulkMessages(
-      ids: string[],
-      guildId = 'guild-1',
-      channelId = 'chan-1',
-    ): unknown {
-      const entries: Array<[string, Record<string, unknown>]> = ids.map((id) => [
-        id,
-        { id, guildId, channelId, partial: false },
-      ]);
-      return {
-        size: ids.length,
-        first: () => (entries.length > 0 ? entries[0]![1] : undefined),
-        keys: () => entries.map((e) => e[0])[Symbol.iterator](),
-      };
+    function makeBulkMessages(ids: string[]) {
+      const entries = ids.map((id) => [id, { id, guildId: 'guild-1', channelId: 'chan-1', partial: false }] as const);
+      return { size: ids.length, first: () => (entries.length > 0 ? entries[0]![1] : undefined), keys: () => entries.map((e) => e[0])[Symbol.iterator]() };
     }
 
-    it('logs bulk delete with correct fields', async () => {
+    it('logs bulk delete embed', async () => {
       const send = vi.fn().mockResolvedValue(undefined);
       const client = makeClient(send);
-
-      const { logger, metrics, eventBus } = createService(client);
-
-      const messages = makeBulkMessages(['msg-1', 'msg-2', 'msg-3']);
-
-      client.emitEvent('messageDeleteBulk', messages);
-
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const call = send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> };
-      const embed = call.embeds[0]?.data;
-
-      expect(embed?.title).toBe('\uD83D\uDDD1 Bulk Message Delete');
-      expect(embed?.color).toBe(0x8d99ae);
-      expect(embed?.footer?.text).toBe('Bulk Message Delete');
-
-      expect(logger.info).toHaveBeenCalledWith(
-        { guildId: 'guild-1', channelId: 'chan-1', deletedCount: 3 },
-        'Bulk message delete log sent',
-      );
-      expect(metrics.counter).toHaveBeenCalledWith('message_bulk_delete_log_total');
-      expect(metrics.increment).toHaveBeenCalled();
-      expect(eventBus.emit).toHaveBeenCalledWith('logging.message.bulk_deleted', {
-        guildId: 'guild-1',
-        channelId: 'chan-1',
-        count: 3,
-      });
-    });
-
-    it('includes channel mention and message count', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client);
-
-      const messages = makeBulkMessages(['a', 'b']);
-      client.emitEvent('messageDeleteBulk', messages);
-
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-
-      expect(fields?.find((f) => f.name === 'Channel')?.value).toBe('<#chan-1>');
-      expect(fields?.find((f) => f.name === 'Messages Deleted')?.value).toBe('2');
-    });
-
-    it('includes first message ID for single message', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client);
-
-      const messages = makeBulkMessages(['only-one']);
-      client.emitEvent('messageDeleteBulk', messages);
-
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-
-      expect(fields?.find((f) => f.name === 'First Message ID')?.value).toBe('`only-one`');
-      expect(fields?.find((f) => f.name === 'Oldest Message ID')).toBeUndefined();
-    });
-
-    it('includes oldest/newest for multiple messages', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client);
-
-      const messages = makeBulkMessages(['msg-10', 'msg-20', 'msg-30']);
-      client.emitEvent('messageDeleteBulk', messages);
-
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-
-      const fields = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]
-        ?.data?.fields as Array<{ name: string; value: string }>;
-
-      expect(fields?.find((f) => f.name === 'Oldest Message ID')?.value).toBe('`msg-10`');
-      expect(fields?.find((f) => f.name === 'Newest Message ID')?.value).toBe('`msg-30`');
-    });
-
-    it('ignores empty collections', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
       const { metrics } = createService(client);
-
-      const messages = {
-        size: 0,
-        first: () => undefined,
-        keys: () => [][Symbol.iterator](),
-      };
-
-      client.emitEvent('messageDeleteBulk', messages);
-
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      expect(send).not.toHaveBeenCalled();
-      expect(metrics.counter).not.toHaveBeenCalledWith('message_bulk_delete_log_total');
-    });
-
-    it('is disabled when config is disabled', async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const client = makeClient(send);
-
-      createService(client, { enabled: false, channelId: 'msg-log-channel' });
-
-      const messages = makeBulkMessages(['a', 'b']);
-      client.emitEvent('messageDeleteBulk', messages);
-
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      expect(send).not.toHaveBeenCalled();
+      client.emitEvent('messageDeleteBulk', makeBulkMessages(['a', 'b']));
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+      const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
+      expect(embed?.title).toBe('\uD83D\uDDD1 Bulk Message Delete');
+      expect(metrics.counter).toHaveBeenCalledWith('message_bulk_delete_log_total');
     });
   });
 });

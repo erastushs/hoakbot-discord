@@ -2,6 +2,7 @@ import type { IContainer } from '../core/container/types.js';
 import type { ConfigChangeEvent } from '../core/config/provider.types.js';
 import type { IEventBus } from '../core/event-bus/types.js';
 import type { ILogger } from '../core/logger/logger.service.js';
+import type { IPermissionRegistry } from '../core/permissions/types.js';
 import type { ISettingsRegistry } from '../core/settings/types.js';
 import type { IModuleManifest } from './manifest.types.js';
 
@@ -18,6 +19,7 @@ export interface IModuleContext {
   logger?: ILogger;
   eventBus?: IEventBus;
   settings?: ISettingsRegistry;
+  permissions?: IPermissionRegistry;
 }
 
 export interface IModule {

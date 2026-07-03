@@ -9,7 +9,18 @@ export { EventBus } from './event-bus/event-bus.js';
 export { HealthService } from './health/health.service.js';
 export { MetricsService } from './metrics/metrics.service.js';
 export { MemoryCacheProvider } from './cache/memory-cache.provider.js';
+export { PermissionRegistry } from './permissions/permission-registry.js';
+export { PermissionServiceV3 } from './permissions/permission-service.js';
 export { SettingsRegistry } from './settings/settings-registry.js';
+export type {
+  AuditActor,
+  AuditActorType,
+  AuditEntry,
+  AuditQuery,
+  AuditReader,
+  AuditWriteOptions,
+  AuditWriter,
+} from './audit/types.js';
 export type { CacheSetOptions, ICacheProvider } from './cache/types.js';
 export type { ILogger } from './logger/logger.service.js';
 export type { GuildSettingRecord } from './config/guild-settings.repository.js';
@@ -25,8 +36,25 @@ export type {
 export type { IContainer, InjectionToken, Factory } from './container/types.js';
 export type { IEventBus, EventHandler, EventName, Subscription } from './event-bus/types.js';
 export type { EventMap } from './event-bus/events.js';
+export type {
+  ConfigurationChangedEvent,
+  ConfigurationChangeSource,
+  PlatformConfigurationEventMap,
+} from './event-bus/configuration.events.js';
+export type { BotErrorEvent, BotReadyEvent, CoreSystemEventMap, ShutdownEvent } from './event-bus/system.events.js';
 export type { IHealthService, HealthReport, SubsystemHealth, HealthStatus, HealthCheck } from './health/types.js';
 export type { IMetrics, ICounter, IGauge, ITimer, MetricsSnapshot } from './metrics/types.js';
+export type {
+  IPermissionAction,
+  IPermissionRegistry,
+  IPermissionService,
+  PermissionCheckContext,
+  PermissionCheckResult,
+  PermissionOverride,
+  PermissionOverrideEffect,
+  RolePermissionOverride,
+  UserPermissionOverride,
+} from './permissions/types.js';
 export type {
   ISettingMetadata,
   ISettingsRegistry,

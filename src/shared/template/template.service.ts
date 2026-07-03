@@ -1,3 +1,6 @@
+import { PlaceholderRegistry } from './placeholder-registry.js';
+import { FormatterRegistry } from './formatter-registry.js';
+
 export interface TemplateContext {
   user?: string;
   mention?: string;
@@ -10,10 +13,29 @@ export interface TemplateContext {
 }
 
 export class TemplateService {
+  private readonly placeholderRegistry: PlaceholderRegistry;
+  private readonly formatterRegistry: FormatterRegistry;
+
+  constructor(
+    placeholderRegistry?: PlaceholderRegistry,
+    formatterRegistry?: FormatterRegistry,
+  ) {
+    this.placeholderRegistry = placeholderRegistry ?? new PlaceholderRegistry();
+    this.formatterRegistry = formatterRegistry ?? new FormatterRegistry();
+  }
+
+  getPlaceholderRegistry(): PlaceholderRegistry {
+    return this.placeholderRegistry;
+  }
+
+  getFormatterRegistry(): FormatterRegistry {
+    return this.formatterRegistry;
+  }
+
   render(template: string, context: TemplateContext): string {
-    return template.replace(/\{(\w+(?:\.(?:ordinal|ordinal_id))?)\}/g, (_match, key: string) => {
-      const resolved = this.resolvePlaceholder(key, context);
-      return resolved ?? `{${key}}`;
+    return template.replace(/\{(\w+)(?:\.(\w+))?\}/g, (_match, key: string, formatter?: string) => {
+      const resolved = this.resolvePlaceholder(key, formatter, context);
+      return resolved ?? _match;
     });
   }
 
@@ -46,7 +68,21 @@ export class TemplateService {
     return `ke-${n}`;
   }
 
-  private resolvePlaceholder(key: string, context: TemplateContext): string | null {
+  private resolvePlaceholder(key: string, formatter: string | undefined, context: TemplateContext): string | null {
+    if (!this.placeholderRegistry.get(key)) return null;
+
+    const value = this.resolveValue(key, context);
+    if (value === null) return null;
+
+    if (formatter) {
+      if (!this.formatterRegistry.has(formatter)) return null;
+      return this.formatterRegistry.format(value, formatter);
+    }
+
+    return value;
+  }
+
+  private resolveValue(key: string, context: TemplateContext): string | null {
     switch (key) {
       case 'user':
         return context.user ?? null;
@@ -60,10 +96,6 @@ export class TemplateService {
         return context.server ?? null;
       case 'membercount':
         return context.membercount !== undefined ? String(context.membercount) : null;
-      case 'membercount.ordinal':
-        return context.membercount !== undefined ? this.toOrdinal(context.membercount) : null;
-      case 'membercount.ordinal_id':
-        return context.membercount !== undefined ? this.toOrdinalId(context.membercount) : null;
       case 'created':
         return context.created ?? null;
       case 'joined':

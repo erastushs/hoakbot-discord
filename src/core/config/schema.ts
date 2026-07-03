@@ -28,6 +28,7 @@ const voiceLogSchema = z.object({
 const memberLogSchema = z.object({
   enabled: z.boolean(),
   channelId: z.string(),
+  roles: z.boolean().default(true),
 });
 
 const messageLogSchema = z.object({

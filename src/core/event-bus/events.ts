@@ -141,6 +141,18 @@ export interface LoggingKickLoggedEvent {
   reason: string;
 }
 
+export interface LoggingRoleAddedEvent {
+  guildId: string;
+  userId: string;
+  roles: string[];
+}
+
+export interface LoggingRoleRemovedEvent {
+  guildId: string;
+  userId: string;
+  roles: string[];
+}
+
 export interface LoggingModerationLoggedEvent {
   guildId: string;
   action: string;
@@ -167,6 +179,8 @@ export interface EventMap {
   'permission.denied': PermissionDeniedEvent;
   'scheduler.jobDue': SchedulerJobDueEvent;
   'logging.member.nickname_updated': LoggingNicknameUpdatedEvent;
+  'logging.member.role_added': LoggingRoleAddedEvent;
+  'logging.member.role_removed': LoggingRoleRemovedEvent;
   'logging.message.deleted': LoggingMessageDeletedEvent;
   'logging.message.edited': LoggingMessageEditedEvent;
   'logging.message.bulk_deleted': LoggingMessageBulkDeletedEvent;

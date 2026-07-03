@@ -28,7 +28,8 @@
     },
     "member": {
       "enabled": true,
-      "channelId": "1074317469881221271"
+      "channelId": "1074317469881221271",
+      "roles": true
     },
     "message": {
       "enabled": true,

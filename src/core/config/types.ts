@@ -26,6 +26,7 @@ export interface VoiceLogConfig {
 export interface MemberLogConfig {
   enabled: boolean;
   channelId: string;
+  roles: boolean;
 }
 
 export interface MessageLogConfig {

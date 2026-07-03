@@ -1,5 +1,5 @@
-import type { Client, Message, PartialMessage, TextChannel, EmbedBuilder } from 'discord.js';
-import { Events } from 'discord.js';
+import type { Client, Message, PartialMessage, TextChannel, EmbedBuilder, Guild } from 'discord.js';
+import { Events, AuditLogEvent } from 'discord.js';
 import type { ILogger } from '../../../core/logger/logger.service.js';
 import type { IMetrics } from '../../../core/metrics/types.js';
 import type { MessageLogConfig } from '../../../core/config/types.js';
@@ -244,22 +244,25 @@ export class MessageLogService {
       return;
     }
 
-    const channel = guild.channels.cache.get(channelId) as TextChannel | undefined;
-    if (!channel) {
+    const logChannel = guild.channels.cache.get(channelId) as TextChannel | undefined;
+    if (!logChannel) {
       this.logger.warn({ channelId, guildId: guild.id }, 'Bulk delete log channel not found');
       return;
     }
 
-    const embed = this.buildBulkDeleteEmbed(messages, first.channelId);
+    const moderatorId = await this.resolveBulkDeleteModerator(guild, first.channelId, messages.size);
+
+    const embed = this.buildBulkDeleteEmbed(moderatorId, first.channelId, messages.size);
 
     try {
-      await channel.send({ embeds: [embed] });
+      await logChannel.send({ embeds: [embed] });
       this.metrics.counter('message_bulk_delete_log_total').increment();
       this.logger.info(
         {
           guildId: first.guildId,
           channelId: first.channelId,
           deletedCount: messages.size,
+          moderatorId,
         },
         'Bulk message delete log sent',
       );
@@ -267,10 +270,73 @@ export class MessageLogService {
         guildId: first.guildId,
         channelId: first.channelId,
         count: messages.size,
+        moderatorId,
       });
     } catch (err) {
       this.logger.error({ error: err, channelId }, 'Failed to send bulk delete log');
     }
+  }
+
+  private async resolveBulkDeleteModerator(
+    guild: Guild,
+    targetChannelId: string,
+    count: number,
+  ): Promise<string | null> {
+    const TOLERANCE_MS = 10_000;
+
+    try {
+      const logs = await guild.fetchAuditLogs({
+        type: AuditLogEvent.MessageBulkDelete,
+        limit: 5,
+      });
+
+      const now = Date.now();
+
+      for (const [, entry] of logs.entries) {
+        if (now - entry.createdTimestamp > TOLERANCE_MS) continue;
+
+        const extra = entry.extra as { channel: { id: string }; count: number };
+        if (extra.channel?.id !== targetChannelId) continue;
+        if (extra.count !== count) continue;
+
+        return entry.executor?.id ?? null;
+      }
+    } catch (err) {
+      this.logger.warn({ error: err }, 'Failed to fetch audit logs for bulk delete');
+    }
+
+    return null;
+  }
+
+  private buildBulkDeleteEmbed(
+    moderatorId: string | null,
+    channelId: string,
+    count: number,
+  ): EmbedBuilder {
+    const fields = [
+      {
+        name: 'Moderator',
+        value: moderatorId ? `<@${moderatorId}>` : '*Unknown*',
+        inline: true,
+      },
+      {
+        name: 'Channel',
+        value: `<#${channelId}>`,
+        inline: true,
+      },
+      {
+        name: 'Messages Deleted',
+        value: String(count),
+        inline: true,
+      },
+    ];
+
+    return EmbedFactory.build({
+      title: '\uD83D\uDDD1 Bulk Message Delete',
+      color: NEUTRAL_GRAY,
+      fields,
+      footer: 'Bulk Message Delete',
+    });
   }
 
   private buildDeleteEmbed(
@@ -365,54 +431,6 @@ export class MessageLogService {
       color: COLORS.PRIMARY,
       fields,
       footer: 'Message Edit',
-    });
-  }
-
-  private buildBulkDeleteEmbed(
-    messages: BulkMessageCollection,
-    channelId: string,
-  ): EmbedBuilder {
-    const ids = [...messages.keys()];
-
-    const fields = [
-      {
-        name: 'Channel',
-        value: `<#${channelId}>`,
-        inline: true,
-      },
-      {
-        name: 'Messages Deleted',
-        value: String(messages.size),
-        inline: true,
-      },
-    ];
-
-    if (ids.length > 0) {
-      fields.push({
-        name: 'First Message ID',
-        value: `\`${ids[0]}\``,
-        inline: true,
-      });
-    }
-
-    if (ids.length > 1) {
-      fields.push({
-        name: 'Oldest Message ID',
-        value: `\`${ids[0]}\``,
-        inline: true,
-      });
-      fields.push({
-        name: 'Newest Message ID',
-        value: `\`${ids[ids.length - 1]}\``,
-        inline: true,
-      });
-    }
-
-    return EmbedFactory.build({
-      title: '\uD83D\uDDD1 Bulk Message Delete',
-      color: NEUTRAL_GRAY,
-      fields,
-      footer: 'Bulk Message Delete',
     });
   }
 

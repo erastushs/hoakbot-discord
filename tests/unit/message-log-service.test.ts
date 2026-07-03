@@ -44,11 +44,12 @@ function makePartialMessage(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function makeClient(send: ReturnType<typeof vi.fn>) {
+function makeClient(send: ReturnType<typeof vi.fn>, fetchAuditLogs = vi.fn()) {
   const logChannel = { send, isTextBased: () => true };
   const guild = {
     id: 'guild-1',
     channels: { cache: new Map<string, typeof logChannel>() },
+    fetchAuditLogs,
   };
   guild.channels.cache.set('msg-log-channel', logChannel);
 
@@ -318,15 +319,134 @@ describe('MessageLogService', () => {
       return { size: ids.length, first: () => (entries.length > 0 ? entries[0]![1] : undefined), keys: () => entries.map((e) => e[0])[Symbol.iterator]() };
     }
 
-    it('logs bulk delete embed', async () => {
+    function makeAuditLogs(moderatorId: string | null) {
+      const entries = new Map();
+      entries.set('entry-1', {
+        executor: moderatorId ? { id: moderatorId } : null,
+        extra: { channel: { id: 'chan-1' }, count: 3 },
+        createdTimestamp: Date.now(),
+      });
+      return {
+        entries,
+      };
+    }
+
+    it('shows moderator from audit log', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const fetchAuditLogs = vi.fn().mockResolvedValue(makeAuditLogs('mod-123'));
+      const client = makeClient(send, fetchAuditLogs);
+
+      const { logger, eventBus, metrics } = createService(client);
+
+      client.emitEvent('messageDeleteBulk', makeBulkMessages(['a', 'b', 'c']));
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
+      const fields = embed?.fields as Array<{ name: string; value: string }>;
+
+      expect(fields?.find((f) => f.name === 'Moderator')?.value).toBe('<@mod-123>');
+      expect(fields?.find((f) => f.name === 'Channel')?.value).toBe('<#chan-1>');
+      expect(fields?.find((f) => f.name === 'Messages Deleted')?.value).toBe('3');
+      expect(fields?.find((f) => f.name === 'First Message ID')).toBeUndefined();
+      expect(fields?.find((f) => f.name === 'Oldest Message ID')).toBeUndefined();
+
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ moderatorId: 'mod-123' }),
+        expect.any(String),
+      );
+      expect(eventBus.emit).toHaveBeenCalledWith('logging.message.bulk_deleted', {
+        guildId: 'guild-1',
+        channelId: 'chan-1',
+        count: 3,
+        moderatorId: 'mod-123',
+      });
+      expect(metrics.counter).toHaveBeenCalledWith('message_bulk_delete_log_total');
+    });
+
+    it('shows Unknown moderator when audit log is empty', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const fetchAuditLogs = vi.fn().mockResolvedValue({ entries: new Map() });
+      const client = makeClient(send, fetchAuditLogs);
+
+      createService(client);
+
+      client.emitEvent('messageDeleteBulk', makeBulkMessages(['a', 'b']));
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
+      const fields = embed?.fields as Array<{ name: string; value: string }>;
+
+      expect(fields?.find((f) => f.name === 'Moderator')?.value).toBe('*Unknown*');
+    });
+
+    it('shows Unknown moderator when audit log fetch fails', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const fetchAuditLogs = vi.fn().mockRejectedValue(new Error('API error'));
+      const client = makeClient(send, fetchAuditLogs);
+
+      createService(client);
+
+      client.emitEvent('messageDeleteBulk', makeBulkMessages(['a']));
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
+      const fields = embed?.fields as Array<{ name: string; value: string }>;
+
+      expect(fields?.find((f) => f.name === 'Moderator')?.value).toBe('*Unknown*');
+    });
+
+    it('emits moderatorId as null when unknown', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const fetchAuditLogs = vi.fn().mockResolvedValue({ entries: new Map() });
+      const client = makeClient(send, fetchAuditLogs);
+
+      const { eventBus } = createService(client);
+
+      client.emitEvent('messageDeleteBulk', makeBulkMessages(['x']));
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+
+      expect(eventBus.emit).toHaveBeenCalledWith('logging.message.bulk_deleted', {
+        guildId: 'guild-1',
+        channelId: 'chan-1',
+        count: 1,
+        moderatorId: null,
+      });
+    });
+
+    it('ignores empty collections', async () => {
       const send = vi.fn().mockResolvedValue(undefined);
       const client = makeClient(send);
+
       const { metrics } = createService(client);
-      client.emitEvent('messageDeleteBulk', makeBulkMessages(['a', 'b']));
-      await vi.waitFor(() => expect(send).toHaveBeenCalled());
-      const embed = (send.mock.calls[0]?.[0] as { embeds: Array<{ data: Record<string, unknown> }> }).embeds[0]?.data;
-      expect(embed?.title).toBe('\uD83D\uDDD1 Bulk Message Delete');
-      expect(metrics.counter).toHaveBeenCalledWith('message_bulk_delete_log_total');
+
+      const messages = {
+        size: 0,
+        first: () => undefined,
+        keys: () => [][Symbol.iterator](),
+      };
+
+      client.emitEvent('messageDeleteBulk', messages);
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it('is disabled when config is disabled', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+
+      createService(client, { ...defaultConfig, enabled: false });
+
+      client.emitEvent('messageDeleteBulk', makeBulkMessages(['a']));
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(send).not.toHaveBeenCalled();
     });
   });
 });

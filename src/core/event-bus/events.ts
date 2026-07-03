@@ -122,6 +122,7 @@ export interface LoggingMessageBulkDeletedEvent {
   guildId: string;
   channelId: string;
   count: number;
+  moderatorId: string | null;
 }
 
 export interface LoggingAttachmentsArchivedEvent {

@@ -44,6 +44,16 @@ const welcomeSchema = z.object({
   }),
 });
 
+const goodbyeSchema = z.object({
+  enabled: z.boolean(),
+  channelId: z.string(),
+  image: z.object({
+    backgroundUrl: z.string(),
+    title: z.string(),
+    subtitle: z.string(),
+  }),
+});
+
 const botSchema = z.object({
   prefix: z.string(),
   guildId: z.string(),
@@ -54,6 +64,7 @@ const botSchema = z.object({
   voice: voiceSchema,
   logging: loggingSchema,
   welcome: welcomeSchema,
+  goodbye: goodbyeSchema,
 });
 
 const permissionsSchema = z.object({

@@ -48,5 +48,14 @@
       "title": "WELCOME",
       "subtitle": "TO {server}"
     }
+  },
+  "goodbye": {
+    "enabled": true,
+    "channelId": "",
+    "image": {
+      "backgroundUrl": "",
+      "title": "GOODBYE",
+      "subtitle": "HOPE YOU ENJOY YOUR STAY"
+    }
   }
 }

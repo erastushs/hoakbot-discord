@@ -31,6 +31,11 @@ function makeConfig(overrides?: Partial<AppConfig>): Readonly<AppConfig> {
         message: { title: '', body: [] },
         image: { title: '', subtitle: '' },
       },
+      goodbye: {
+        enabled: false,
+        channelId: '',
+        image: { backgroundUrl: '', title: '', subtitle: '' },
+      },
     },
     permissions: { roles: { administrator: [], moderator: [], trusted: [] } },
     featureFlags: { modules: {} },

@@ -5,6 +5,7 @@
     "moderation": true,
     "logging": true,
     "welcome": true,
+    "goodbye": true,
     "metrics": true,
     "tickets": false,
     "ai": false,

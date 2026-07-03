@@ -46,6 +46,18 @@ export interface WelcomeConfig {
   image: WelcomeImageConfig;
 }
 
+export interface GoodbyeImageConfig {
+  backgroundUrl: string;
+  title: string;
+  subtitle: string;
+}
+
+export interface GoodbyeConfig {
+  enabled: boolean;
+  channelId: string;
+  image: GoodbyeImageConfig;
+}
+
 export interface BotConfig {
   prefix: string;
   guildId: string;
@@ -56,6 +68,7 @@ export interface BotConfig {
   voice: VoiceConfig;
   logging: LoggingConfig;
   welcome: WelcomeConfig;
+  goodbye: GoodbyeConfig;
 }
 
 export interface PermissionsConfig {

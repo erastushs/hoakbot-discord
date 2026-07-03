@@ -1,408 +1,698 @@
-# Hoak Bot v3.0 Roadmap
+# Hoak Bot v3.0 Roadmap — Configuration Platform
 
-## Dashboard & Configuration Platform
-
-The objective of v3.0 is not simply creating a web dashboard — it is transforming Hoak Bot into a configurable platform where every feature can be managed without editing `bot.json`.
-
----
-
-## Phase 1 — Configuration Provider Layer
-
-Create a configuration abstraction that decouples services from the JSON file system.
-
-```
-Services
-    ↓
-ConfigProvider (interface)
-    ├── JsonConfigProvider     ← current bot.json
-    ├── DatabaseConfigProvider ← Supabase
-    └── CacheConfigProvider    ← in-memory (Redis/Valkey ready)
-```
-
-**Requirements**
-
-- Define `IConfigProvider` interface with `get<T>(path, defaultValue?)` and `set<T>(path, value)`
-- Implement `JsonConfigProvider` as the initial backend
-- All services access config via provider, never via direct file reads
-- Design interface for future backends (database, cache, remote)
-
-**Acceptance**
-
-- Zero direct imports of `bot.json` outside providers
-- All existing config consumers migrated to provider
+**Version:** 3.0  
+**Status:** Architecture Approved  
+**Target Node:** 22 LTS  
+**Target Discord.js:** v14  
+**Database:** Supabase PostgreSQL  
+**Style:** Single-repo monolith with manifest-driven modules
 
 ---
 
-## Phase 2 — Database Configuration
+## Architecture Summary
 
-Introduce persistent, guild-scoped configuration tables.
+### v2 → v3 Improvements
+
+| v2 Limitation | v3 Solution |
+|---------------|-------------|
+| Settings hardcoded in `bot.json` `config/types.ts` | Settings defined per-module via `ISettingMetadata`, aggregated by `SettingsRegistry` |
+| Modules manually imported in `bootstrap.ts` | Build-time manifest index + dependency graph resolution |
+| Single lifecycle (register → start → shutdown) | Full lifecycle: 10 hooks across pre-register → post-stop |
+| All events in one file (`core/event-bus/events.ts`) | Module-owned events, infrastructure events only in core |
+| Permission system: role names → numeric levels | Action-based: `voice:configure`, `moderation:ban` with role/user overrides |
+| No REST API | Embedded API server with full CRUD, OAuth2, rate limiting |
+| No dashboard | Metadata-driven SPA — no switch/if per module |
+| No cache implementation | MemoryCacheProvider with TTL + cache warming |
+| No configuration change propagation | `config:changed` event → cache invalidation → module `onConfigChange()` → WebSocket push |
+| No audit trail for config changes | `config_audit_log` table — every change is timestamped and actor-stamped |
+
+---
+
+## Architecture Principles
+
+### P1 — Platform over Product
+
+The platform's contracts (IConfigProvider, IModuleManifest, ISettingsRegistry, IAPIRegistry) are the product. The dashboard is one client. The bot is one client. Future clients are welcome.
+
+### P2 — Metadata over Code
+
+Every module declares its structure as data. Manifest, settings, permissions, and API endpoints are data objects. The dashboard renders from metadata. No switch(module), no if(module==="voice"), no hardcoded pages.
+
+### P3 — Registry over Discovery
+
+Canonical registries exist for every concern: ModuleRegistry, SettingsRegistry, PermissionRegistry, APIRegistry. Registries are populated at module registration time. Consumers query registries.
+
+### P4 — Explicit over Implicit
+
+Every module declares dependencies, settings, permissions, API endpoints, events, and feature flags in its manifest. No runtime directory scanning. No magic.
+
+### P5 — Forward-Only Dependencies
+
+Milestone N depends on Milestone N-1. No milestone requires rewriting a previous milestone. If a later milestone reveals a flaw, the fix is an additive extension — never a breaking interface change.
+
+### P6 — Schema-First Validation
+
+Every data structure that crosses a boundary has a Zod schema. Config files, settings values, API payloads, manifest declarations — invalid data is rejected at the boundary.
+
+### P7 — Zero Polling
+
+Configuration changes propagate via events. Cache is invalidated on write. Modules react via `onConfigChange()`. Dashboard updates via WebSocket. No polling anywhere in the system.
+
+---
+
+## Dependency Graph
 
 ```
-guild_settings      → { guild_id, prefix, language, timezone, ... }
-logging_settings    → { guild_id, enabled, channel_id, voice/member/message/moderation ... }
-voice_settings      → { guild_id, standby_channel_id, volume, cooldown_ms, ... }
-welcome_settings    → { guild_id, enabled, channel_id, background_url, ... }
-goodbye_settings    → { guild_id, enabled, channel_id, background_url, ... }
-moderation_settings → { guild_id, enabled, log_channel_id, auto_mod, ... }
-feature_settings    → { guild_id, module_name, enabled }
+Milestone 1: Architecture Foundation (ADRs + Specs)
+    │
+    ▼
+Milestone 2: Core Configuration Infrastructure
+    │               ────────────────────────────────
+    ▼               │                              │
+Milestone 3:     Milestone 5:                    Milestone 6:
+Database Config  Permission + Event Redesign      API Layer
+    │               │                              │
+    ▼               │                              │
+Milestone 4:       │                              │
+Plugin System v2  ◄┘                              │
+    │                                              │
+    ▼                                              ▼
+Milestone 7: Dashboard Frontend (consumes API + registries)
+    │
+    ▼
+Milestone 8: Live Configuration + Polish
+
+Key dependencies:
+  Milestone 2 ← Milestone 3, 4, 5, 6, 7, 8 (all depend on settings + config infra)
+  Milestone 3 ← Milestone 4 (DB provider needs settings registry)
+  Milestone 5 ← Milestone 4 (full lifecycle needs plugin system)
+  Milestone 6 ← Milestone 4, 5 (API needs registries)
+  Milestone 7 ← Milestone 6 (dashboard needs API)
+  Milestone 8 ← All previous (live config needs everything)
 ```
 
-**Requirements**
+**Arrow = "depends on"**  
+Every milestone depends on all milestones above it in the graph. No milestone depends on a milestone below it.
 
-- Each configuration group versioned independently (`schema_version` column)
-- Migration system for schema evolution
-- `DatabaseConfigProvider` implements `IConfigProvider`
-- Fallback chain: database → JSON defaults
+---
 
-**Suggested Schema (guild_settings)**
+## Milestone 1: Architecture Foundation
+
+**Goal:** Establish the architectural contracts before any code is written. Every subsequent milestone references these documents.
+
+**Effort:** 2-3 days  
+**Depends on:** Nothing  
+**Risk:** Low  
+
+### Deliverables
+
+| # | Artifact | Description |
+|---|----------|-------------|
+| 1 | ADR-001 → ADR-010 | 10 Architecture Decision Records (created in `docs/architecture/adr/`) |
+| 2 | Specifications | 6 specification documents in `docs/architecture/specifications/` |
+| 3 | Directory structure | Create `docs/architecture/`, `docs/modules/`, `docs/deployment/`, `docs/api/` directories |
+| 4 | Type-only definitions | TypeScript interfaces for all contracts (no runtime code) |
+
+### ADR Index
+
+| ADR | Title | Defines |
+|-----|-------|---------|
+| 001 | Module Manifest Schema | IModuleManifest, ModuleCategory, DashboardConfig |
+| 002 | Settings Metadata & Registry | ISettingMetadata, SettingType, ISettingsRegistry |
+| 003 | Configuration Provider Interface | IConfigProvider, ConfigChangeEvent, ConfigSetOptions |
+| 004 | Permission Model | IPermissionAction, PermissionLevel, IPermissionService |
+| 005 | API Convention & REST Design | IAPIEndpoint, APIAuthLevel, URL structure, response format |
+| 006 | Database Configuration Schema | guild_settings, config_audit_log, module_states tables |
+| 007 | Plugin System & Module Loading | IModule (v3), IModuleContext, IDependencyGraph |
+| 008 | Dashboard Architecture | Component tree, data flow, zero-coupling contract |
+| 009 | Event Naming Convention & Ownership | Naming rules, module-owned events, core events |
+| 010 | Configuration Change Lifecycle | Full write path, cache invalidation, concurrency |
+
+### Acceptance Criteria
+
+- All 10 ADRs exist in `docs/architecture/adr/`
+- All 6 specification documents exist in `docs/architecture/specifications/`
+- Type-only definitions compile with `tsc --noEmit`
+- No runtime code is written
+
+---
+
+## Milestone 2: Core Configuration Infrastructure
+
+**Goal:** Build the configuration platform — config provider, settings registry, cache layer, and module manifests for existing modules.
+
+**Effort:** 5-7 days  
+**Depends on:** Milestone 1  
+**Risk:** Medium (high-touch changes to existing services)
+
+### Deliverables
+
+#### 2.1 Config Provider
+- `IConfigProvider` interface (from ADR-003)
+- `JsonConfigProvider` — reads `config/bot.json`, merges `.env`, validates with Zod
+- Replace `ConfigService` with the new provider in the DI container
+- Migrate every existing service from direct config access to `configProvider.get()`
+
+#### 2.2 Settings Registry
+- `ISettingMetadata` types and `SettingType` discriminated union
+- `ISettingsRegistry` implementation with key collision detection
+- Zod validation integration (per-setting validation schemas)
+
+#### 2.3 Cache Layer
+- `ICacheProvider` interface
+- `MemoryCacheProvider` (Map-based, TTL support)
+- Cache key convention: `{guildId}:{settingKey}` for guild-scoped, `{settingKey}` for global
+- Cache warming on startup
+
+#### 2.4 Module Manifest Foundations
+- `IModuleManifest` types and Zod validation
+- Declare manifests for ALL existing modules:
+  - `voice/voice.manifest.ts`
+  - `moderation/moderation.manifest.ts`
+  - `logging/logging.manifest.ts`
+  - `welcome/welcome.manifest.ts`
+  - `goodbye/goodbye.manifest.ts`
+  - `general/general.manifest.ts`
+  - `metrics/metrics.manifest.ts`
+- Each manifest includes: settings metadata, permission actions, command list, event list
+- Build-time manifest index generator script
+
+#### 2.5 Module Directory Structure Update
+
+```
+modules/voice/
+├── voice.module.ts        # IModule implementation
+├── voice.manifest.ts      # IModuleManifest export ★
+├── voice.settings.ts      # ISettingMetadata[] export ★
+├── voice.api.ts           # IAPIEndpoint[] export (optional, Milestone 6) ★
+├── voice.permissions.ts   # IPermissionAction[] export ★
+├── commands/
+├── events/
+├── services/
+├── repositories/
+└── types.ts               # Includes module-owned event types ★
+
+modules/_template/         # Updated template with all new files ★
+```
+
+### Acceptance Criteria
+
+- All services use `IConfigProvider` via constructor injection
+- Zero direct `bot.json` imports outside the config provider
+- Settings registry rejects duplicate keys
+- Cache stores/retrieves/invalidates correctly
+- All 7 existing modules have valid manifests
+- `npm run build && npm run typecheck && npm run lint && npm test` passes
+
+### Migration: Service Config Access
+
+| Current Pattern | New Pattern |
+|----------------|-------------|
+| `this.config.voice.volume` | `await this.configProvider.get('voice.volume', guildId)` |
+| `appConfig.bot.logging.channelId` | `await this.configProvider.get('logging.voice.channelId', guildId)` |
+| `this.config.bot.prefix` | `await this.configProvider.get('general.prefix', guildId)` |
+
+---
+
+## Milestone 3: Database Configuration
+
+**Goal:** Store per-guild settings in PostgreSQL. Implement the fallback chain: cache → database → defaults.
+
+**Effort:** 4-5 days  
+**Depends on:** Milestone 2  
+**Risk:** Low-Medium
+
+### Deliverables
+
+#### 3.1 Database Tables
 
 ```sql
-CREATE TABLE guild_settings (
-  id          BIGSERIAL PRIMARY KEY,
-  guild_id    TEXT NOT NULL UNIQUE,
-  settings    JSONB NOT NULL DEFAULT '{}',
-  version     INTEGER NOT NULL DEFAULT 1,
-  created_at  TIMESTAMPTZ DEFAULT now(),
-  updated_at  TIMESTAMPTZ DEFAULT now()
-);
+CREATE TABLE guild_settings (...);
+CREATE TABLE config_audit_log (...);
+CREATE TABLE module_states (...);
 ```
+
+#### 3.2 DatabaseConfigProvider
+- Implements `IConfigProvider`
+- Reads/writes `guild_settings` table
+- Falls back to `JsonConfigProvider` defaults when no row exists
+- Writes invalidate cache via `CacheProvider.del()`
+- Optimistic locking via `version` column
+
+#### 3.3 Migration Runner
+- `IMigration` interface with `up()` / `down()`
+- Migration runner executes pending migrations on startup
+- `_migrations` tracking table
+- Core migrations in `src/core/database/migrations/`
+
+#### 3.4 Default Seeding
+- On guild join event: seed default settings for all enabled modules
+- Manifest `defaultValue` is the source of truth for defaults
+- Existing guilds: seed on first config read (lazy initialization)
+
+#### 3.5 Feature Flags V2
+- Per-guild module enable/disable via `module_states` table
+- Global overrides via `config/feature-flags.json`
+- Feature flag keys defined in module manifests
+
+### Acceptance Criteria
+
+- New database tables created via migration
+- Fallback chain: cache hit → return, cache miss → DB → return, no DB row → defaults → return
+- Settings writes update DB → invalidate cache → return new value
+- Migration runner applies pending migrations on startup
+- Multiple guilds have independent settings
+- Per-guild module enable/disable works
+- All existing features work with the new chain
 
 ---
 
-## Phase 3 — Configuration Cache
+## Milestone 4: Plugin System v2
 
-Introduce an in-memory cache layer between services and the database.
+**Goal:** Manifest-aware module loading with dependency resolution, full lifecycle hooks, and module registry.
+
+**Effort:** 4-5 days  
+**Depends on:** Milestones 2, 3  
+**Risk:** Medium
+
+### Deliverables
+
+#### 4.1 Module Interface (v3)
+
+Replace the v2 `IModule` with the full lifecycle interface:
+
+```typescript
+interface IModule {
+  readonly manifest: IModuleManifest;
+  onPreRegister?(ctx: IModuleContext): Promise<void>;
+  onRegister?(ctx: IModuleContext): Promise<void>;
+  onPostRegister?(ctx: IModuleContext): Promise<void>;
+  onPreStart?(ctx: IModuleContext): Promise<void>;
+  onStart?(ctx: IModuleContext): Promise<void>;
+  onPostStart?(ctx: IModuleContext): Promise<void>;
+  onConfigChange?(changes: ConfigChangeEvent[], ctx: IModuleContext): Promise<void>;
+  onPreStop?(ctx: IModuleContext): Promise<void>;
+  onStop?(ctx: IModuleContext): Promise<void>;
+  onPostStop?(ctx: IModuleContext): Promise<void>;
+}
+```
+
+#### 4.2 Dependency Graph
+- `IDependencyGraph` with topological sort
+- Circular dependency detection with path reporting
+- Missing dependency detection
+- Version compatibility checking (SemVer ranges in v4+)
+
+#### 4.3 Module Registry
+- `IModuleRegistry` — register, unregister, get, getAll, isEnabled
+- Module state (enabled/disabled) per guild from `module_states` table
+
+#### 4.4 Module Loader (v3)
+- Manifest validation before any module code runs
+- Dependency-order loading
+- Full lifecycle execution with error isolation
+- Build-time manifest index (`src/modules/module-index.ts`)
+
+#### 4.5 Update Existing Modules
+- Adapt all existing modules to the v3 `IModule` interface
+- Add no-op implementations for new lifecycle hooks
+- Move event type definitions from core to module directories
+
+### Registration Order (enforced)
 
 ```
-ConfigProvider
-    ↓
-Memory Cache (TTL + invalidation)
-    ↓
-Database / JSON fallback
+1. DependencyGraph.validate() — hard fail on circular/missing
+2. For each module (dependency-first):
+     onPreRegister → onRegister → onPostRegister
+3. For each module (dependency-first):
+     onPreStart → onStart → onPostStart
+4. Bot is ready
 ```
 
-**Features**
+### Acceptance Criteria
 
-- Hash-based change detection (invalidate on write)
-- Per-key TTL with smart expiry
-- Cache warming on bot startup
-- Pub/sub invalidation ready for multi-instance (future Redis/Valkey)
-
-**No bot restart required** for configuration changes.
+- Dependency resolution rejects circular dependencies with clear error + cycle path
+- Modules load in dependency order
+- All lifecycle hooks execute in correct order
+- Error in one module's hook does not prevent other modules from loading
+- Module manifest index is generated at build time
+- All existing modules work with the v3 interface
 
 ---
 
-## Phase 4 — Dashboard Backend API
+## Milestone 5: Permission & Event System Redesign
 
-Build a REST API for the dashboard to consume.
+**Goal:** Action-based permission system, module-owned events, configuration audit trail.
 
-**Authentication**
+**Effort:** 3-4 days  
+**Depends on:** Milestone 4  
+**Risk:** Low
 
-| Method | Scope |
-|---|---|
-| Discord OAuth2 | `identify`, `guilds` |
-| Guild ownership | Owner-restricted endpoints |
-| Permission check | Administrator or Manage Guild permission |
+### Deliverables
 
-**API Structure**
+#### 5.1 Permission Registry
+- `IPermissionService` and `IPermissionRegistry` implementations
+- `permission_overrides` database table
+- Permission resolution with role/user overrides
+- Default level mapping (everyone → owner)
 
-```
-/api/auth          → login, callback, logout, session
-/api/guilds        → list, select
-/api/settings      → guild general settings
-/api/logging       → voice, member, message, moderation
-/api/voice         → standby channel, volume, cooldown
-/api/welcome       → toggle, channel, background, template
-/api/goodbye       → toggle, channel, background, template
-/api/moderation    → log channel, auto-mod
-/api/system        → health, version, metrics
-```
+#### 5.2 Event Convention Migration
+- Move module event types from `core/event-bus/events.ts` to each module's `types.ts`
+- Core events remain: `bot.ready`, `bot.error`, `config.setting.changed`, `system.shutdown`
+- Apply new naming convention: `voice.member.joined`, `moderation.action.executed`
+- Deprecate old event names with backward-compatible aliases
 
-**Tech**
+#### 5.3 Configuration Events
+- `ConfigChangedEvent` type published on every settings write
+- Event payload includes: key, oldValue, newValue, guildId, changedBy, source, timestamp
+- Modules subscribe to react to config changes
 
-- Express or Fastify
-- Discord OAuth2 with `passport-discord`
-- Session-based auth with secure cookies
-- Rate limiting per guild
-- Input validation with Zod (shared schemas with bot)
+#### 5.4 Audit Trail
+- `config_audit_log` table populated on every config write
+- API endpoint: `GET /api/v1/guilds/:id/audit?page=1`
+- Dashboard renders audit table from this endpoint
+
+#### 5.5 Permission-Aware API
+- `PermissionService.check()` integrated with API auth middleware
+- `/api/v1/guilds/:id/permissions` endpoints for dashboard
+
+### Acceptance Criteria
+
+- Permission resolution works for all 5 levels
+- Role and user overrides stored in DB and respected
+- Events follow the new naming convention
+- Core events.ts no longer contains module events
+- Config audit trail records every change
+- API permission checks are functional
 
 ---
 
-## Phase 5 — Dashboard Frontend Foundation
+## Milestone 6: API Layer
 
-Build the foundation shell.
+**Goal:** Implement the REST API server with auth, rate limiting, and all CRUD endpoints. Modules register their API endpoints.
 
-**Tech Stack**
+**Effort:** 4-5 days  
+**Depends on:** Milestones 4, 5  
+**Risk:** Medium
 
-- Next.js 14+ (App Router)
-- Tailwind CSS
-- TypeScript
-- Shadcn/ui or Radix primitives
+### Deliverables
 
-**Features**
+#### 6.1 API Server
+- Embedded Express or Fastify server in the bot process
+- Server starts after all modules initialized
+- Graceful shutdown integrated with bot lifecycle
+- CORS locked to dashboard origin
+- Configurable port via `API_PORT` env var
 
+#### 6.2 Middleware Chain
+- Auth middleware (session cookie validation)
+- Rate limit middleware (per-user, per-guild, per-IP)
+- Validation middleware (Zod schema per endpoint)
+- Response formatter (standard envelope)
+
+#### 6.3 Core Routes
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/v1/auth/*` | OAuth2 login/callback/logout/session |
+| `GET /api/v1/guilds` | List user's guilds |
+| `GET /api/v1/guilds/:id/settings` | Read guild settings |
+| `PUT /api/v1/guilds/:id/settings/:key` | Update one setting |
+| `GET /api/v1/modules` | All module manifests |
+| `GET /api/v1/modules/:id/settings` | Setting metadata |
+| `GET /api/v1/system/*` | Health, version, metrics |
+
+#### 6.4 Module API Registration
+- Modules declare endpoints in `<name>.api.ts`
+- `IAPIRegistry.register()` during `onRegister()`
+- Route collision detection at registration time
+
+#### 6.5 API Convention Enforcement
+- Standard response envelope wrapper
+- Unified error handling
+- Pagination helper
+- Rate limit headers
+
+### Acceptance Criteria
+
+- API server starts and responds on configured port
+- Discord OAuth2 login flow works end-to-end
+- Settings CRUD reads/writes through ConfigProvider chain
+- Module metadata endpoints return correct data from registries
+- Rate limiting prevents abuse
+- Module API endpoints register without collisions
+- All endpoints use standard response envelope
+
+---
+
+## Milestone 7: Dashboard Frontend
+
+**Goal:** Metadata-driven dashboard SPA. No hardcoded pages. No switch(module). No if(module).
+
+**Effort:** 5-7 days  
+**Depends on:** Milestone 6  
+**Risk:** Medium
+
+### Deliverables
+
+#### 7.1 Application Shell
+- React + Vite + Tailwind CSS SPA
 - Discord OAuth2 login flow
-- Guild selector (`/guilds`)
-- Sidebar navigation (collapsible)
+- Guild selector page
+- Sidebar generated from `/api/v1/modules` manifest data
 - Responsive layout (mobile-friendly)
-- Dark mode toggle
-- Permission-aware UI (hide restricted sections)
-- Loading states and error boundaries
 
-**Layout**
+#### 7.2 Component Architecture
 
 ```
-┌──────────────────────────────────────┐
-│  Navbar (user avatar, guild name)    │
-├──────────┬───────────────────────────┤
-│ Sidebar  │                           │
-│  ├ Guild │       Page Content        │
-│  ├ Voice │                           │
-│  ├ Log   │                           │
-│  ├ Mod   │                           │
-│  └ System│                           │
-└──────────┴───────────────────────────┘
+App
+├── AuthGuard
+├── Layout
+│   ├── Sidebar (generated from module manifests)
+│   │   ├── GuildSelector
+│   │   └── NavSection (per category)
+│   │       └── NavItem (icon + name from manifest)
+│   ├── Topbar (Breadcrumb + Search + UserMenu)
+│   └── Main Content
+│       ├── HomePage
+│       │   └── ModuleCardGrid (from manifest data)
+│       ├── ModuleSettingsPage (GENERIC — no module-specific code)
+│       │   ├── ModuleHeader (manifest data)
+│       │   ├── ModuleStatus (enable/disable toggle)
+│       │   ├── SettingsGroup (grouped by category)
+│       │   │   └── SettingControl (rendered by type)
+│       │   └── SaveIndicator
+│       └── PermissionPage (GENERIC)
+│           └── PermissionMatrix (action × role)
 ```
+
+#### 7.3 Dynamic Settings Renderer
+Controls rendered by `SettingType`:
+
+| Type | Component |
+|------|-----------|
+| `string` | TextInput |
+| `text` | Textarea |
+| `number` | NumberInput / Slider |
+| `boolean` | Toggle |
+| `select` | Select |
+| `multiSelect` | MultiSelect |
+| `channel` | ChannelPicker |
+| `role` | RolePicker |
+| `user` | UserPicker |
+| `color` | ColorPicker |
+| `duration` | DurationControl |
+| `image` | ImageInput (URL + preview) |
+| `json` | JSONEditor |
+| `template` | TemplateEditor (with placeholder preview) |
+
+#### 7.4 State Management
+- API client with typed responses
+- React Query or SWR for server state
+- Optimistic updates for settings saves
+- Toast notifications for success/error
+
+#### 7.5 UI Components
+- Button, Input, Select, Toggle, Card, Modal, Toast
+- Search (filters modules + settings)
+- Breadcrumb
+- Command Palette (`Ctrl+K`)
+- Permission Guard (hide/show controls based on user permissions)
+- Loading states + Error boundaries
+
+### Acceptance Criteria
+
+- User logs in via Discord OAuth2
+- User selects a guild → sidebar shows enabled modules
+- Each module page is fully generated from metadata
+- Changing a setting saves and reflects immediately
+- Validation errors show inline
+- Non-admin users see read-only state
+- New module appears in sidebar without any code changes
+- No hardcoded module references anywhere in the codebase
+
+### Zero-Coupling Guarantee
+
+The dashboard codebase must contain:
+- Zero references to "voice", "welcome", "goodbye", "logging", "moderation"
+- Zero switch/if statements checking module names
+- Zero hardcoded setting keys or setting types
+- The `SettingType` union is the ONLY shared type contract
 
 ---
 
-## Phase 6 — Settings Framework
+## Milestone 8: Live Configuration & Polish
 
-Create a metadata-driven settings system so future feature pages require no custom UI code.
+**Goal:** Settings changes propagate instantly without bot restart. WebSocket push, module hot-reload, document finalized architecture.
 
-**Setting Definition**
+**Effort:** 3-4 days  
+**Depends on:** All previous milestones  
+**Risk:** Low-Medium
 
-```typescript
-interface Setting {
-  key: string;
-  type: 'string' | 'number' | 'boolean' | 'select' | 'channel' | 'role';
-  label: string;
-  description: string;
-  default: unknown;
-  validation?: ZodSchema;
-  category: string;
-  options?: { label: string; value: string }[]; // for select type
-}
-```
+### Deliverables
 
-**Rendering**
+#### 8.1 Module Hot-Reload
+- Implement `onConfigChange()` in each module that supports it:
+  - VoiceModule: volume → AudioManager, channel → standby target
+  - WelcomeModule: channel → target, message → template update
+  - LoggingModule: channel → log target, enabled → toggle
+  - ModerationModule: (restart required for permission changes)
+- Modules without hot-reload show "Restart required" badge in dashboard
 
-The dashboard automatically renders the correct control based on `type`:
+#### 8.2 WebSocket Support
+- WebSocket endpoint at `/api/v1/ws`
+- Client authenticates and subscribes to guild config changes
+- Server pushes `config.setting.changed` events to subscribed clients
+- Dashboard updates in real-time when another admin changes settings
+- WebSocket is optional — REST polling is the fallback
 
-- `string` → text input
-- `number` → number input with min/max constraints
-- `boolean` → toggle switch
-- `select` → dropdown
-- `channel` → Discord channel picker
-- `role` → Discord role picker
+#### 8.3 Configuration History UI
+- Dashboard audit log page: `GET /api/v1/guilds/:id/audit`
+- Table shows: setting, old value, new value, changed by, timestamp
+- Filter by module, setting, user, date range
 
-Adding a new feature module should require **zero frontend code changes** — only a settings definition array.
+#### 8.4 Final Migration
+- Remove deprecated `ConfigService` (fully replaced by `IConfigProvider`)
+- Remove any remaining direct `bot.json` references
+- Deprecate `config/bot.json` as primary config (keep as bootstrap defaults only)
+- Archive v2 `module.interface.ts`
 
----
+#### 8.5 Testing & Documentation
+- Integration tests for the entire write → cache invalidation → module reaction → WebSocket push path
+- API end-to-end tests
+- Dashboard component tests (render every SettingType)
+- Finalize all documentation
+- Update README.md, CONTRIBUTING.md, ARCHITECTURE.md
 
-## Phase 7 — Feature Pages
+### Acceptance Criteria
 
-Implement configuration pages using the shared settings framework.
-
-| Page | Settings |
-|---|---|
-| Voice | Standby channel, volume, cooldown, join delay, reconnect retries |
-| Welcome | Enabled, channel, background URL, title, subtitle, body template |
-| Goodbye | Enabled, channel, background URL, title, subtitle |
-| Logging | Master toggle + Voice/Member/Message/Moderation sub-sections |
-| Moderation | Log channel, auto-mod thresholds |
-| General | Prefix, language, timezone |
-
-**Every page uses `renderSettings(settings: Setting[])`** — no custom forms.
-
----
-
-## Phase 8 — Live Configuration
-
-Dashboard changes take effect immediately on the running bot.
-
-```
-Dashboard Save
-    ↓
-PUT /api/settings/:guild/:module
-    ↓
-Database UPSERT
-    ↓
-Cache invalidation
-    ↓
-ConfigProvider.get() returns new value
-    ↓
-Bot uses new config on next event
-```
-
-**No restart. No reload. No redeploy.**
-
-Config consumers that cache values use the provider's `onChange` hook to subscribe to updates. Stateless lookups (most handlers) pick up changes automatically.
+- Changing a setting via API → cache invalidates → bot reads new value immediately
+- WebSocket pushes config change events to connected dashboard clients
+- Bot does not need restarting for (non-restart-required) settings
+- Module `onConfigChange()` fires with correct payload for supported modules
+- Audit log records every configuration change
+- Full test suite passes
+- All deprecated code paths are removed
 
 ---
 
-## Phase 9 — Plugin-ready Architecture
+## Risks
 
-Design modules to self-register everything: commands, config sections, dashboard pages, API routes.
-
-**Module Manifest**
-
-```typescript
-interface ModulePlugin {
-  name: string;
-  version: string;
-  commands?: CommandClass[];
-  settings?: Setting[];
-  apiRoutes?: RouterFactory;
-  dashboard?: {
-    navItem: NavItem;
-    pages?: PageEntry[];
-  };
-}
-```
-
-**Registration**
-
-```typescript
-// Each module folder has a manifest.ts
-export default {
-  name: 'voice',
-  version: '1.0.0',
-  commands: [VoiceCommand],
-  settings: voiceSettings,
-  apiRoutes: voiceApiRouter,
-  dashboard: {
-    navItem: { label: 'Voice', icon: 'mic', path: '/voice' },
-  },
-} satisfies ModulePlugin;
-```
-
-Future modules (Music, Economy, Tickets, Reaction Roles, AI) follow the same pattern and register automatically — **no core changes needed**.
+| # | Risk | L | I | Mitigation |
+|---|------|---|----|-----------|
+| 1 | Milestone 2 service migration touches every file. High regression risk. | H | H | Integration tests before/after each service migration. Migrate one service at a time. |
+| 2 | Module manifest drift — metadata may not match actual module capabilities. | M | M | Build-time validation script (`validate-manifests`) checks declared vs actual commands, settings, events. |
+| 3 | API server shares bot's event loop. Heavy API requests could delay Discord handlers. | M | M | All handlers are lightweight (cache reads, DB writes). If needed, offload to a worker thread. |
+| 4 | Cache invalidation bugs cause stale settings. | M | H | Tests for write → cache invalidate → read returns new value. TTL fallback (30s) as safety net. |
+| 5 | Dashboard SPA grows without module coupling discipline. | M | M | Code review enforces zero module-name references. CI check fails if any module name string appears. |
+| 6 | Motivation wanes across 8 milestones (~8-10 weeks). | H | M | Each milestone delivers working value. Milestone 2 alone eliminates major tech debt. Milestone 4 makes modules self-describing. |
+| 7 | Per-guild config adds complexity to a single-guild bot. | L | L | Single-guild optimization can bypass guild-scoped cache keys. Architecture supports both. |
 
 ---
 
-## Phase 10 — Dashboard Polish
+## Future-Proofing
 
-Production-ready dashboard features.
+### v4 — Third-Party Modules
 
-- Audit log (who changed what, when)
-- Full-text search across settings
-- Pagination for large guild lists
-- Export guild config as JSON
-- Import / Restore config from backup
-- System health dashboard (metrics, uptime, latency)
-- Real-time status via WebSocket
-- Version checker (alert on new bot release)
-- Error tracking and alerting
+No architecture changes needed. The manifest system, dependency graph, lifecycle hooks, and API registry already support external modules. Add:
+- `node_modules/hoak-module-*` scanning
+- Module SDK package (`@hoak/sdk`)
+- Sandboxed execution (resource limits, error isolation)
 
----
+### v5 — Multi-Instance
 
-## Suggested Directory Structure
+No architecture changes needed. `ICacheProvider` is interface-based — swap `MemoryCacheProvider` for `RedisCacheProvider`. Events already flow through EventBus (which can be backed by Redis pub/sub). Config is already in the database.
 
-### ConfigProvider (Phase 1)
+### v6 — Advanced Modules
 
-```
-src/core/config-provider/
-  provider.interface.ts      IConfigProvider
-  json.provider.ts           JsonConfigProvider
-  config.module.ts           Registers the provider in the container
-  index.ts
-```
-
-### Database Config (Phase 2)
-
-```
-src/modules/config/
-  database/
-    migrations/
-      001_guild_settings.sql
-      002_logging_settings.sql
-      003_voice_settings.sql
-      ...
-    database-config.provider.ts  DatabaseConfigProvider
-  cache/
-    cache-config.provider.ts     CacheConfigProvider
-```
-
-### Dashboard Backend (Phase 4)
-
-```
-dashboard/
-  server/
-    src/
-      routes/
-        auth.ts
-        guilds.ts
-        settings.ts
-        logging.ts
-        voice.ts
-        welcome.ts
-        goodbye.ts
-        moderation.ts
-        system.ts
-      middleware/
-        auth.ts
-        rate-limit.ts
-      app.ts
-    package.json
-```
-
-### Dashboard Frontend (Phase 5)
-
-```
-dashboard/
-  web/
-    app/
-      layout.tsx
-      page.tsx
-      (dashboard)/        ← authenticated routes
-        layout.tsx
-        guilds/page.tsx
-        settings/page.tsx
-        voice/page.tsx
-        logging/page.tsx
-        moderation/page.tsx
-        welcome/page.tsx
-        goodbye/page.tsx
-        system/page.tsx
-    components/
-      ui/                 ← shadcn/ui
-      sidebar.tsx
-      navbar.tsx
-      guild-selector.tsx
-      settings-form.tsx   ← metadata-driven renderer
-      channel-picker.tsx
-      role-picker.tsx
-    lib/
-      api.ts              ← typed API client
-      auth.ts
-    package.json
-```
+No architecture changes needed. Economy, Tickets, AI, Reaction Roles, Leveling, Starboard — all follow the same manifest-driven pattern. Zero dashboard changes for new modules.
 
 ---
 
-## Milestone Breakdown
+## v2 → v3 Migration Checklist
 
-| Milestone | Estimate | Target |
-|---|---|---|
-| M1 — ConfigProvider Layer | 1-2 weeks | Phase 1 complete |
-| M2 — Database Schema + Migration | 2-3 weeks | Phase 2 complete |
-| M3 — Cache Layer | 1-2 weeks | Phase 3 complete |
-| M4 — Backend API (Auth + Core) | 2-3 weeks | Phase 4 complete |
-| M5 — Dashboard Shell + Auth | 2-3 weeks | Phase 5 complete |
-| M6 — Settings Framework + Voice Page | 1-2 weeks | Phase 6 + first Phase 7 page |
-| M7 — All Feature Pages | 2-3 weeks | Phase 7 complete |
-| M8 — Live Config + Plugin Architecture | 2-3 weeks | Phase 8 + 9 complete |
-| M9 — Polish + Testing | 1-2 weeks | Phase 10 complete |
-| **Total** | **14-23 weeks** | |
+### Pre-Migration
+- [ ] Verify all 338+ tests pass on v2 baseline
+- [ ] Create `next` branch for v3 development
+- [ ] Tag current v2 state as `v2.0.0`
+- [ ] Archive current `ROADMAP.md` (preserved as `ROADMAP-v2.md`)
+
+### Milestone 2 Migration
+- [ ] Create `IConfigProvider` interface
+- [ ] Implement `JsonConfigProvider`
+- [ ] Identify every file that reads `bot.json` or `config.*` directly
+- [ ] Migrate each service: add `IConfigProvider` to constructor, replace direct reads
+- [ ] After each migration: `npm run build && npm run typecheck && npm test`
+- [ ] Create manifests for all 7 existing modules
+- [ ] Verify no manifest key collisions
+
+### Milestone 3 Migration
+- [ ] Run migration scripts on Supabase
+- [ ] Implement `DatabaseConfigProvider`
+- [ ] Test fallback chain: cache → DB → defaults
+- [ ] Seed initial guild settings on first run
+
+### Milestone 4 Migration
+- [ ] Update `IModule` interface to v3 (add lifecycle hooks)
+- [ ] Adapt all modules to new interface with no-op hooks
+- [ ] Create build-time manifest index generator
+- [ ] Move event types to module directories
+
+### Milestone 5 Migration
+- [ ] Create `permission_overrides` table
+- [ ] Migrate v2 role-level config to initial permission actions
+- [ ] Rename events to new convention
+- [ ] Add backward-compatible event aliases
+
+### Milestone 7 Migration
+- [ ] Dashboard SPA created in `dashboard/` directory
+- [ ] No coupling between dashboard and bot code
+- [ ] Verify all module settings render correctly
+- [ ] No hardcoded module references in dashboard codebase
+
+### Post-Migration
+- [ ] Run full test suite and CI/CD pipeline
+- [ ] Deploy to VPS
+- [ ] Monitor logs for config-related errors
+- [ ] Deprecate `bot.json` editing in documentation
+- [ ] Update README.md, CONTRIBUTING.md, SECURITY.md
+- [ ] Archive v2 module interface and bootstrap patterns
 
 ---
 
-## Version 3.0 Goal
+## Project Status
 
-Hoak Bot becomes a **platform** instead of a configurable script.
+| Milestone | Status | Target | ADRs |
+|-----------|--------|--------|------|
+| 1. Architecture Foundation | **COMPLETE** | Day 1-3 | ADR-001 → ADR-010 ✓ |
+| 2. Core Configuration | PENDING | Day 4-10 | — |
+| 3. Database Configuration | PENDING | Day 11-15 | — |
+| 4. Plugin System v2 | PENDING | Day 16-20 | — |
+| 5. Permission & Events | PENDING | Day 21-24 | — |
+| 6. API Layer | PENDING | Day 25-29 | — |
+| 7. Dashboard Frontend | PENDING | Day 30-36 | — |
+| 8. Live Config & Polish | PENDING | Day 37-40 | — |
 
-- Future modules installable with minimal code changes
-- Dashboard never rewritten when features are added
-- Everything driven by **modules**, **configuration metadata**, and **extensible interfaces**
-- Maintainable. Future-proof. Extensible.
+**Total estimated effort:** ~8-10 weeks
+
+> **This roadmap is a living document.** ADRs are the source of truth for architectural decisions. This roadmap is the guide for project planning.

@@ -1,29 +1,24 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { mockManifests, mockSettings } from '../src/api/mock-data.js';
 import { ModulePage } from '../src/modules/ModulePage.js';
+import { manifests, settings } from './test-data.js';
 
 describe('ModulePage', () => {
   it('renders General settings through metadata groups and the generic renderer', () => {
-    const manifest = mockManifests.find((candidate) => candidate.id === 'general');
+    const manifest = manifests[0]!;
 
     render(
       <ModulePage
-        manifest={manifest!}
-        settings={mockSettings.filter((setting) => setting.key.startsWith('general.'))}
-        values={{ 'general.prefix': '!' }}
+        manifest={manifest}
+        settings={settings}
+        values={{ 'generic.title': 'Updated title' }}
       />,
     );
 
+    expect(screen.getByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'General' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Commands' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Presence' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Cooldowns' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /Command Prefix/ })).toHaveValue('!');
-    expect(screen.getByRole('combobox', { name: /Default Language/ })).toHaveValue('en');
-
-    const cooldowns = screen.getByRole('heading', { name: 'Cooldowns' }).closest('section');
-    expect(within(cooldowns!).getByRole('spinbutton', { name: /Global Cooldown/ })).toHaveValue(1000);
+    expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('Updated title');
+    expect(screen.getByRole('spinbutton', { name: /Count/ })).toHaveValue(3);
   });
 });

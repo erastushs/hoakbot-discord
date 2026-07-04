@@ -5,11 +5,12 @@ import { SettingsRenderer } from '../settings/SettingsRenderer.js';
 
 export interface ModulePageProps {
   manifest: ModuleManifest;
+  onSave?(values: Record<string, unknown>): Promise<void>;
   settings: SettingMetadata[];
   values?: Record<string, unknown>;
 }
 
-export function ModulePage({ manifest, settings, values }: ModulePageProps) {
+export function ModulePage({ manifest, onSave, settings, values }: ModulePageProps) {
   const groups = [...(manifest.dashboard?.settings.groups ?? [])].sort(
     (a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER),
   );
@@ -41,7 +42,7 @@ export function ModulePage({ manifest, settings, values }: ModulePageProps) {
               <h2 className="text-base font-semibold text-slate-950">{group.label}</h2>
               {group.description ? <p className="mt-1 text-sm text-slate-600">{group.description}</p> : null}
             </div>
-            <SettingsRenderer initialValues={values} settings={groupSettings} />
+            <SettingsRenderer initialValues={values} onSave={onSave} settings={groupSettings} />
           </section>
         );
       })}

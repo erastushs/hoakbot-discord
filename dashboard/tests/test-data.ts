@@ -14,7 +14,7 @@ export const manifests: ModuleManifest[] = [
     dashboard: {
       navigation: { sidebarPriority: 2, sidebarSection: 'General' },
       homePage: { featured: true, priority: 2 },
-      settings: { groups: [] },
+      settings: { groups: [{ key: 'general', label: 'General' }] },
     },
   },
   {

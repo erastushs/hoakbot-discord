@@ -1,6 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
-import { mockUser } from '../api/mock-data.js';
 import type { DashboardUser } from '../contracts.js';
 
 export interface AuthState {
@@ -15,14 +14,14 @@ export interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export function AuthProvider({ children, initialUser = mockUser }: { children: ReactNode; initialUser?: DashboardUser }) {
+export function AuthProvider({ children, initialUser }: { children: ReactNode; initialUser?: DashboardUser }) {
   const [user, setUser] = useState<DashboardUser | undefined>(initialUser);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       authenticated: Boolean(user),
-      signIn: (nextUser = mockUser) => setUser(nextUser),
+      signIn: (nextUser) => setUser(nextUser),
       signOut: () => setUser(undefined),
     }),
     [user],

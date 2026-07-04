@@ -24,14 +24,13 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
               <div className="grid h-10 w-10 place-items-center rounded-md text-white" style={{ background: manifest.color }}>
                 <Boxes className="h-5 w-5" />
               </div>
-              {manifest.supportsHotReload ? (
-                <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">Live</span>
-              ) : (
-                <span className="rounded-full bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">Restart required</span>
-              )}
+              <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium capitalize text-slate-700">
+                {manifest.category}
+              </span>
             </div>
             <h2 className="mt-4 text-base font-semibold text-slate-950">{manifest.name}</h2>
             <p className="mt-1 text-sm text-slate-600">{manifest.description}</p>
+            <p className="mt-3 text-xs text-slate-500">v{manifest.version}</p>
           </article>
         ))}
       </div>

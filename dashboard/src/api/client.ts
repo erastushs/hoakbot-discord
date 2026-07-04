@@ -1,4 +1,11 @@
-import type { APIResponse } from '../contracts.js';
+import type {
+  APIResponse,
+  GetManifestsResponse,
+  GetMetadataResponse,
+  GetModulesResponse,
+  GetSettingsResponse,
+  PatchSettingsResponse,
+} from '../contracts.js';
 
 export class DashboardAPIError extends Error {
   constructor(
@@ -42,13 +49,46 @@ export class APIClient {
     return this.request<T>('DELETE', path);
   }
 
+  getManifests(): Promise<GetManifestsResponse> {
+    return this.get<GetManifestsResponse>('/modules');
+  }
+
+  getGuildModules(guildId: string): Promise<GetModulesResponse> {
+    return this.get<GetModulesResponse>(`/guilds/${encodeURIComponent(guildId)}/modules`);
+  }
+
+  getModuleSettings(moduleId: string): Promise<GetMetadataResponse> {
+    return this.get<GetMetadataResponse>(`/modules/${encodeURIComponent(moduleId)}/settings`);
+  }
+
+  getGuildSettings(guildId: string): Promise<GetSettingsResponse> {
+    return this.get<GetSettingsResponse>(`/guilds/${encodeURIComponent(guildId)}/settings`);
+  }
+
+  patchGuildSettings(guildId: string, settings: Record<string, unknown>): Promise<PatchSettingsResponse> {
+    return this.patch<PatchSettingsResponse>(`/guilds/${encodeURIComponent(guildId)}/settings`, { settings });
+  }
+
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const response = await this.fetcher(`${this.baseUrl}${path}`, {
-      method,
-      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    const payload = (await response.json()) as APIResponse<T>;
+    let response: Response;
+    try {
+      response = await this.fetcher(`${this.baseUrl}${path}`, {
+        method,
+        headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+    } catch (error) {
+      throw new DashboardAPIError(
+        error instanceof Error ? error.message : 'Backend is offline or unreachable',
+        'NETWORK_ERROR',
+        0,
+      );
+    }
+
+    const payload = (await response.json().catch(() => ({
+      success: false,
+      error: { code: 'INVALID_RESPONSE', message: 'Backend returned an invalid response.' },
+    }))) as APIResponse<T>;
 
     if (!response.ok || !payload.success) {
       throw new DashboardAPIError(

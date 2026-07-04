@@ -127,3 +127,33 @@ export interface APIResponse<T> {
     details?: Record<string, unknown>;
   };
 }
+
+export interface GetManifestsResponse {
+  manifests: ModuleManifest[];
+}
+
+export interface GetModulesResponse {
+  modules: ModuleManifest[];
+}
+
+export interface GetMetadataResponse {
+  settings: SettingMetadata[];
+}
+
+export interface SettingValue {
+  key: string;
+  value: unknown;
+  version?: number;
+  updatedAt?: number;
+}
+
+export interface GetSettingsResponse {
+  guildId: string;
+  settings: SettingValue[];
+}
+
+export interface PatchSettingsResponse {
+  guildId: string;
+  settings: SettingValue[];
+  version?: number;
+}

@@ -1,6 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
-import { mockGuilds } from '../api/mock-data.js';
 import type { GuildSummary } from '../contracts.js';
 
 export interface GuildContextValue {
@@ -11,7 +10,7 @@ export interface GuildContextValue {
 
 const GuildContext = createContext<GuildContextValue | undefined>(undefined);
 
-export function GuildProvider({ children, guilds = mockGuilds }: { children: ReactNode; guilds?: GuildSummary[] }) {
+export function GuildProvider({ children, guilds = [] }: { children: ReactNode; guilds?: GuildSummary[] }) {
   const [currentGuildId, setCurrentGuildId] = useState(guilds[0]?.id);
 
   const value = useMemo<GuildContextValue>(

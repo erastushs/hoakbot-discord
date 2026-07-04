@@ -14,8 +14,8 @@ describe('SettingsRenderer', () => {
     expect(screen.getByRole('spinbutton', { name: /Count/ })).toHaveValue(3);
     expect(screen.getByRole('combobox', { name: /Mode/ })).toHaveValue('a');
     expect(screen.getByRole('textbox', { name: /Body/ })).toHaveValue('Body');
-    expect(screen.getByText('Channel selector placeholder')).toBeInTheDocument();
-    expect(screen.getByText('Role selector placeholder')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /Channel/ })).toHaveAttribute('placeholder', 'Discord channel ID');
+    expect(screen.getByRole('textbox', { name: /Role/ })).toHaveAttribute('placeholder', 'Discord role ID');
   });
 
   it('updates local values without module-specific logic', async () => {

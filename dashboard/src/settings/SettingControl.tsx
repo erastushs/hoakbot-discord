@@ -87,27 +87,26 @@ function renderInput(setting: SettingMetadata, id: string, value: unknown, onCha
     );
   }
 
-  if (setting.type === 'channel' || setting.type === 'role') {
-    return (
-      <select
-        className="h-10 rounded-md border border-dashed border-slate-300 px-3 text-sm text-slate-500"
-        disabled
-        id={id}
-        value=""
-      >
-        <option>{setting.type === 'channel' ? 'Channel selector placeholder' : 'Role selector placeholder'}</option>
-      </select>
-    );
-  }
-
   return (
     <input
       className="h-10 rounded-md border border-slate-200 px-3 text-sm"
       id={id}
       onChange={(event) => onChange(event.target.value)}
-      placeholder={setting.placeholder}
+      placeholder={setting.placeholder ?? defaultPlaceholder(setting.type)}
       type="text"
       value={typeof value === 'string' ? value : ''}
     />
   );
+}
+
+function defaultPlaceholder(type: SettingMetadata['type']): string | undefined {
+  if (type === 'channel') {
+    return 'Discord channel ID';
+  }
+
+  if (type === 'role') {
+    return 'Discord role ID';
+  }
+
+  return undefined;
 }

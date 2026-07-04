@@ -11,7 +11,8 @@ describe('DashboardHome', () => {
     expect(screen.getByRole('heading', { name: 'Dashboard Home' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Beta' })).toBeInTheDocument();
-    expect(screen.getByText('Restart required')).toBeInTheDocument();
-    expect(screen.getByText('Live')).toBeInTheDocument();
+    expect(screen.getByText('utility')).toBeInTheDocument();
+    expect(screen.getByText('automation')).toBeInTheDocument();
+    expect(screen.getAllByText('v1.0.0')).toHaveLength(2);
   });
 });

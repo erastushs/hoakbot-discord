@@ -23,7 +23,7 @@ function GuildProbe() {
 }
 
 describe('authentication and guild context', () => {
-  it('uses the mock auth flow and supports sign out/sign in', async () => {
+  it('keeps auth passive until a real user is supplied by the platform', async () => {
     const user = userEvent.setup();
     render(
       <AuthProvider initialUser={{ id: 'user-1', username: 'Admin' }}>
@@ -35,11 +35,7 @@ describe('authentication and guild context', () => {
 
     await user.click(screen.getByRole('button', { name: 'Admin' }));
 
-    expect(screen.getByText('Sign in to manage available guilds.')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Sign in' }));
-
-    expect(screen.getByText('Demo Admin')).toBeInTheDocument();
+    expect(screen.getByText('signed out')).toBeInTheDocument();
   });
 
   it('provides current guild and switches guild context', async () => {

@@ -24,12 +24,14 @@ export interface APIClientOptions {
   fetcher?: typeof fetch;
 }
 
+const DEFAULT_API_BASE_URL = '/api/v1';
+
 export class APIClient {
   private readonly baseUrl: string;
   private readonly fetcher: typeof fetch;
 
   constructor(options: APIClientOptions = {}) {
-    this.baseUrl = options.baseUrl ?? '/api/v1';
+    this.baseUrl = resolveAPIBaseUrl(options.baseUrl);
     this.fetcher = options.fetcher ?? fetch;
   }
 
@@ -101,4 +103,11 @@ export class APIClient {
 
     return payload.data as T;
   }
+}
+
+function resolveAPIBaseUrl(baseUrl?: string): string {
+  const configured = baseUrl ?? import.meta.env.VITE_API_BASE_URL;
+  const resolved = configured?.trim() || DEFAULT_API_BASE_URL;
+
+  return resolved.replace(/\/+$/, '');
 }

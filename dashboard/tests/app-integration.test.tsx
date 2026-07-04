@@ -55,7 +55,7 @@ describe('App backend integration', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
-    expect(fetcher).toHaveBeenCalledWith('/api/v1/guilds/guild-1/modules', {
+    expect(fetcher).toHaveBeenCalledWith('http://localhost:3000/api/v1/guilds/guild-1/modules', {
       method: 'GET',
       headers: undefined,
       body: undefined,
@@ -98,7 +98,7 @@ describe('App backend integration', () => {
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
-    expect(fetcher).toHaveBeenCalledWith('/api/v1/guilds/guild-1/settings', {
+    expect(fetcher).toHaveBeenCalledWith('http://localhost:3000/api/v1/guilds/guild-1/settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ settings: { 'generic.title': 'Saved title' } }),

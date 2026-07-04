@@ -20,7 +20,7 @@ interface DashboardState {
 
 export function App() {
   const moduleId = getModuleIdFromPath(window.location.pathname);
-  const api = useMemo(() => new APIClient({ baseUrl: import.meta.env.VITE_API_BASE_URL ?? '/api/v1' }), []);
+  const api = useMemo(() => new APIClient(), []);
   const guild = useMemo(() => resolveGuild(), []);
   const [state, setState] = useState<DashboardState>({
     status: 'loading',

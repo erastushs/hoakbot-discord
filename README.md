@@ -162,6 +162,23 @@ The backend API runs in the bot process.
 - Startup command: `npm run dev` for development, or `npm run build && npm start` for production
 - Health endpoint: `GET http://localhost:3000/api/v1/system/health`
 
+### Dashboard Development
+
+Create `dashboard/.env.local` from `dashboard/.env.example`:
+
+```bash
+cp dashboard/.env.example dashboard/.env.local
+```
+
+Required dashboard development variables:
+
+```bash
+VITE_API_BASE_URL=http://localhost:3000/api/v1
+VITE_GUILD_ID=504841992900182027
+```
+
+When `VITE_API_BASE_URL` is omitted, the dashboard defaults to `/api/v1`. In Vite development, `/api` is proxied to `http://localhost:3000`.
+
 ---
 
 ## Environment Variables

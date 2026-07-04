@@ -1,0 +1,60 @@
+import type { IModuleManifest } from '../manifest.types.js';
+
+export const loggingManifest: IModuleManifest = {
+  id: 'logging',
+  name: 'Logging',
+  description: 'Audit trails for voice, member, message, and moderation activity.',
+  icon: 'ScrollText',
+  color: '#0891b2',
+  category: 'logging',
+  version: '1.0.0',
+  author: 'Erastus HS',
+  settings: [
+    'logging.enabled',
+    'logging.voice.enabled',
+    'logging.voice.channelId',
+    'logging.member.enabled',
+    'logging.member.channelId',
+    'logging.member.roles',
+    'logging.message.enabled',
+    'logging.message.channelId',
+    'logging.message.archiveAttachments',
+    'logging.message.maxAttachmentSizeMb',
+    'logging.moderation.enabled',
+    'logging.moderation.channelId',
+  ],
+  permissions: [],
+  commands: [],
+  events: [
+    'voiceStateUpdate',
+    'guildMemberUpdate',
+    'messageDelete',
+    'messageUpdate',
+    'messageBulkDelete',
+    'moderation.action',
+    'moderation.warningIssued',
+  ],
+  routes: ['/modules/logging/settings', '/guilds/:guildId/settings'],
+  dependencies: [],
+  dashboard: {
+    navigation: {
+      sidebarPriority: 30,
+      sidebarSection: 'Operations',
+    },
+    homePage: {
+      featured: true,
+      priority: 30,
+    },
+    settings: {
+      groups: [
+        { key: 'general', label: 'General', order: 10 },
+        { key: 'voice', label: 'Voice Logs', order: 20 },
+        { key: 'member', label: 'Member Logs', order: 30 },
+        { key: 'message', label: 'Message Logs', order: 40 },
+        { key: 'moderation', label: 'Moderation Logs', order: 50 },
+      ],
+    },
+  },
+  tags: ['logging', 'audit'],
+  supportsHotReload: false,
+};

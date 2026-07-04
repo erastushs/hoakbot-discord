@@ -97,14 +97,17 @@ try {
 
   const generalModule = new GeneralModule();
   const voiceModule = new VoiceModule();
+  const loggingModule = new LoggingModule();
   manifestRegistry.register(generalModule.manifest);
   manifestRegistry.register(voiceModule.manifest);
+  manifestRegistry.register(loggingModule.manifest);
   moduleRegistry.register(generalModule);
   moduleRegistry.register(voiceModule);
+  moduleRegistry.register(loggingModule);
   moduleLoader.registerModule(generalModule);
   moduleLoader.registerModule(voiceModule);
   moduleLoader.registerModule(new ModerationModule());
-  moduleLoader.registerModule(new LoggingModule());
+  moduleLoader.registerModule(loggingModule);
   moduleLoader.registerModule(new WelcomeModule());
   moduleLoader.registerModule(new GoodbyeModule());
 

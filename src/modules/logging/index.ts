@@ -1,4 +1,6 @@
 export { LoggingModule } from './logging.module.js';
+export { loggingManifest } from './manifest.js';
+export { createLoggingSettings } from './settings.js';
 export type {
   LoggingAttachmentsArchivedEvent,
   LoggingAvatarUpdatedEvent,

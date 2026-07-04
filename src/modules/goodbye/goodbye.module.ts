@@ -25,11 +25,6 @@ export class GoodbyeModule implements IModule {
       container.resolve(TOKENS.SettingsRegistry).register(this.name, createGoodbyeSettings(config));
     }
 
-    if (!config.bot.goodbye.enabled) {
-      logger.info('Goodbye module disabled via config');
-      return;
-    }
-
     const imageService = new ImageService(logger);
     const templateService = new TemplateService();
 
@@ -43,6 +38,6 @@ export class GoodbyeModule implements IModule {
     );
     this.goodbyeService.register();
 
-    logger.info('Goodbye module registered');
+    logger.info({ enabled: config.bot.goodbye.enabled }, 'Goodbye module registered');
   }
 }

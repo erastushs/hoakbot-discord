@@ -313,5 +313,56 @@ describe('WelcomeService', () => {
       expect(metrics.counter).toHaveBeenCalledWith('welcome_total');
       expect(metrics.increment).toHaveBeenCalled();
     });
+
+    it('logs structured errors with stack traces when sending fails', async () => {
+      const sendError = new Error('Discord send failed');
+      const send = vi.fn().mockRejectedValue(sendError);
+      const client = makeClient(send);
+
+      const { logger, metrics } = createService(client);
+
+      const member = makeGuildMember();
+      member.guild.channels.cache.set('welcome-channel', { send, isTextBased: () => true } as never);
+
+      client.emit('guildMemberAdd', member);
+
+      await vi.waitFor(() => expect(logger.error).toHaveBeenCalled());
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          channelId: 'welcome-channel',
+          guildId: 'guild-1',
+          userId: 'user-1',
+          error: expect.objectContaining({
+            message: 'Discord send failed',
+            name: 'Error',
+            stack: expect.stringContaining('Discord send failed'),
+          }),
+        }),
+        'Failed to send welcome message',
+      );
+      expect(metrics.counter).toHaveBeenCalledWith('welcome_error_total');
+    });
+
+    it('uses runtime config updates after registration', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+      const config = {
+        enabled: false,
+        channelId: 'welcome-channel',
+        backgroundUrl: '',
+        message: { title: 'Runtime title', body: ['Runtime body'] },
+        image: { title: 'WELCOME', subtitle: 'RUNTIME' },
+      };
+
+      createService(client, config);
+      config.enabled = true;
+
+      const member = makeGuildMember();
+      member.guild.channels.cache.set('welcome-channel', { send, isTextBased: () => true } as never);
+
+      client.emit('guildMemberAdd', member);
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+    });
   });
 });

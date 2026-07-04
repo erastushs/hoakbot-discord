@@ -12,6 +12,54 @@ body {
   min-width: 320px;
 }
 
+:root[data-theme='dark'] {
+  color: #e5e7eb;
+  background: #0f172a;
+}
+
+:root[data-theme='dark'] body {
+  background: #0f172a;
+}
+
+:root[data-theme='dark'] .bg-slate-50 {
+  background-color: #0f172a;
+}
+
+:root[data-theme='dark'] .bg-white {
+  background-color: #111827;
+}
+
+:root[data-theme='dark'] .bg-slate-100 {
+  background-color: #1f2937;
+}
+
+:root[data-theme='dark'] .text-slate-950,
+:root[data-theme='dark'] .text-slate-900,
+:root[data-theme='dark'] .text-slate-800,
+:root[data-theme='dark'] .text-slate-700 {
+  color: #e5e7eb;
+}
+
+:root[data-theme='dark'] .text-slate-600,
+:root[data-theme='dark'] .text-slate-500 {
+  color: #94a3b8;
+}
+
+:root[data-theme='dark'] .border-slate-200 {
+  border-color: #334155;
+}
+
+:root[data-theme='dark'] .hover\:bg-slate-100:hover {
+  background-color: #1e293b;
+}
+
+:root[data-theme='dark'] input,
+:root[data-theme='dark'] select,
+:root[data-theme='dark'] textarea {
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
 button,
 input,
 select,

@@ -7,6 +7,7 @@ import { MemberCardBuilder } from '../../../shared/builders/member-card.builder.
 import type { TemplateService } from '../../../shared/template/template.service.js';
 import type { TemplateContext } from '../../../shared/template/template.service.js';
 import type { ImageService } from '../../../shared/image/image.service.js';
+import { serializeError } from '../../../shared/utils/error.js';
 
 export class GoodbyeService {
   constructor(
@@ -71,7 +72,10 @@ export class GoodbyeService {
       this.metrics.counter('goodbye_total').increment();
       this.logger.info({ userId: member.id, guildId: guild.id }, 'Goodbye message sent');
     } catch (err) {
-      this.logger.error({ error: err, userId: member.id }, 'Failed to send goodbye message');
+      this.logger.error(
+        { error: serializeError(err), userId: member.id, guildId: guild.id, channelId },
+        'Failed to send goodbye message',
+      );
       this.metrics.counter('goodbye_error_total').increment();
     }
   }

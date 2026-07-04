@@ -7,6 +7,7 @@ import { WelcomeImageBuilder } from '../builders/welcome-image.builder.js';
 import type { TemplateService } from '../../../shared/template/template.service.js';
 import type { TemplateContext } from '../../../shared/template/template.service.js';
 import type { ImageService } from '../../../shared/image/image.service.js';
+import { serializeError } from '../../../shared/utils/error.js';
 
 export class WelcomeService {
   constructor(
@@ -76,7 +77,10 @@ export class WelcomeService {
       this.metrics.counter('welcome_total').increment();
       this.logger.info({ userId: member.id, guildId: guild.id }, 'Welcome message sent');
     } catch (err) {
-      this.logger.error({ error: err, userId: member.id }, 'Failed to send welcome message');
+      this.logger.error(
+        { error: serializeError(err), userId: member.id, guildId: guild.id, channelId },
+        'Failed to send welcome message',
+      );
       this.metrics.counter('welcome_error_total').increment();
     }
   }

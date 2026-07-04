@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 
 import { AuthProvider } from '../src/auth/AuthContext.js';
 import { GuildProvider } from '../src/guilds/GuildContext.js';
@@ -38,5 +39,20 @@ describe('dashboard layout and navigation', () => {
     const links = within(moduleNav).getAllByRole('link').map((link) => link.textContent);
 
     expect(links).toEqual(['Home', 'Beta', 'Alpha']);
+  });
+
+  it('persists and applies dark mode without a refresh', async () => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+    });
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByRole('button', { name: 'Toggle theme' }));
+
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(storage.get('hoak-dashboard-theme')).toBe('dark');
   });
 });

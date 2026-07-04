@@ -25,11 +25,6 @@ export class WelcomeModule implements IModule {
       container.resolve(TOKENS.SettingsRegistry).register(this.name, createWelcomeSettings(config));
     }
 
-    if (!config.bot.welcome.enabled) {
-      logger.info('Welcome module disabled via config');
-      return;
-    }
-
     const imageService = new ImageService(logger);
     const templateService = new TemplateService();
 
@@ -43,6 +38,6 @@ export class WelcomeModule implements IModule {
     );
     this.welcomeService.register();
 
-    logger.info('Welcome module registered');
+    logger.info({ enabled: config.bot.welcome.enabled }, 'Welcome module registered');
   }
 }

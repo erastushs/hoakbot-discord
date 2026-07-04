@@ -53,4 +53,15 @@ describe('authentication and guild context', () => {
 
     expect(screen.getByTestId('current-guild')).toHaveTextContent('Guild Two');
   });
+
+  it('shows the guild name and icon from metadata', () => {
+    render(
+      <GuildProvider guilds={[{ id: 'guild-1', name: 'Guild One', iconUrl: 'https://example.com/icon.png' }]}>
+        <GuildSwitcher />
+      </GuildProvider>,
+    );
+
+    expect(screen.getByRole('option', { name: 'Guild One' })).toBeInTheDocument();
+    expect(document.querySelector('img')).toHaveAttribute('src', 'https://example.com/icon.png');
+  });
 });

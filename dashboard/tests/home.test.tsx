@@ -14,5 +14,7 @@ describe('DashboardHome', () => {
     expect(screen.getByText('utility')).toBeInTheDocument();
     expect(screen.getByText('automation')).toBeInTheDocument();
     expect(screen.getAllByText('v1.0.0')).toHaveLength(2);
+    expect(screen.getByRole('link', { name: /Alpha/ })).toHaveAttribute('href', '/modules/module%3Aalpha');
+    expect(screen.getByRole('link', { name: /Beta/ })).toHaveAttribute('href', '/modules/module%3Abeta');
   });
 });

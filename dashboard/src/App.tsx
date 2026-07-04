@@ -298,6 +298,8 @@ function DashboardStateMessage({
 function resolveGuild(): GuildSummary | undefined {
   const params = new URLSearchParams(window.location.search);
   const guildId = params.get('guildId') ?? import.meta.env.VITE_GUILD_ID;
+  const guildName = params.get('guildName') ?? import.meta.env.VITE_GUILD_NAME;
+  const iconUrl = params.get('guildIconUrl') ?? import.meta.env.VITE_GUILD_ICON_URL;
 
   if (!guildId) {
     return undefined;
@@ -305,7 +307,8 @@ function resolveGuild(): GuildSummary | undefined {
 
   return {
     id: guildId,
-    name: params.get('guildName') ?? guildId,
+    name: guildName?.trim() || 'Current guild',
+    iconUrl: iconUrl?.trim() || undefined,
   };
 }
 

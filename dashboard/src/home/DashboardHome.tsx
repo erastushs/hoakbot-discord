@@ -19,7 +19,11 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {sortedManifests(manifests).map((manifest) => (
-          <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" key={manifest.id}>
+          <a
+            className="block rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-400"
+            href={`/modules/${encodeURIComponent(manifest.id)}${window.location.search}`}
+            key={manifest.id}
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="grid h-10 w-10 place-items-center rounded-md text-white" style={{ background: manifest.color }}>
                 <Boxes className="h-5 w-5" />
@@ -31,7 +35,7 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
             <h2 className="mt-4 text-base font-semibold text-slate-950">{manifest.name}</h2>
             <p className="mt-1 text-sm text-slate-600">{manifest.description}</p>
             <p className="mt-3 text-xs text-slate-500">v{manifest.version}</p>
-          </article>
+          </a>
         ))}
       </div>
     </section>

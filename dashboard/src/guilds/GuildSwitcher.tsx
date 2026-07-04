@@ -7,11 +7,20 @@ export function GuildSwitcher() {
 
   return (
     <label className="grid gap-1 text-xs font-medium text-slate-500">
-      <span>Current guild</span>
+      <span>Guild</span>
       <span className="relative">
+        {currentGuild?.iconUrl ? (
+          <img
+            alt=""
+            className="pointer-events-none absolute left-3 top-2 h-6 w-6 rounded-full"
+            src={currentGuild.iconUrl}
+          />
+        ) : null}
         <select
           aria-label="Current guild"
-          className="h-10 w-full appearance-none rounded-md border border-slate-200 bg-white px-3 pr-9 text-sm font-medium text-slate-900"
+          className={`h-10 w-full appearance-none rounded-md border border-slate-200 bg-white pr-9 text-sm font-medium text-slate-900 ${
+            currentGuild?.iconUrl ? 'pl-11' : 'px-3'
+          }`}
           onChange={(event) => setCurrentGuild(event.target.value)}
           value={currentGuild?.id ?? ''}
         >

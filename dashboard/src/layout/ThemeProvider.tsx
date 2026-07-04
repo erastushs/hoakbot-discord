@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -8,9 +8,17 @@ export interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+const THEME_STORAGE_KEY = 'hoak-dashboard-theme';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<ThemeMode>('light');
+  const [theme, setTheme] = useState<ThemeMode>(() => readStoredTheme());
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    getThemeStorage()?.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
+
   const value = useMemo(
     () => ({
       theme,
@@ -26,6 +34,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       </div>
     </ThemeContext.Provider>
   );
+}
+
+function readStoredTheme(): ThemeMode {
+  const stored = getThemeStorage()?.getItem(THEME_STORAGE_KEY);
+  return stored === 'dark' || stored === 'light' ? stored : 'light';
+}
+
+function getThemeStorage(): Storage | undefined {
+  try {
+    return globalThis.localStorage;
+  } catch {
+    return undefined;
+  }
 }
 
 export function useTheme(): ThemeContextValue {

@@ -72,14 +72,20 @@ export class APIClient {
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+    const url = `${this.baseUrl}${path}`;
+    console.debug('[dashboard-api] request:start', { method, path, url });
+
     let response: Response;
     try {
-      response = await this.fetcher(`${this.baseUrl}${path}`, {
+      console.debug('[dashboard-api] fetch:execute', { method, url });
+      response = await this.fetcher(url, {
         method,
         headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
+      console.debug('[dashboard-api] response:status', { method, url, status: response.status });
     } catch (error) {
+      console.debug('[dashboard-api] request:throw', { method, url, error });
       throw new DashboardAPIError(
         error instanceof Error ? error.message : 'Backend is offline or unreachable',
         'NETWORK_ERROR',
@@ -91,8 +97,10 @@ export class APIClient {
       success: false,
       error: { code: 'INVALID_RESPONSE', message: 'Backend returned an invalid response.' },
     }))) as APIResponse<T>;
+    console.debug('[dashboard-api] response:json', { method, url, payload });
 
     if (!response.ok || !payload.success) {
+      console.debug('[dashboard-api] request:throw', { method, url, status: response.status, payload });
       throw new DashboardAPIError(
         payload.error?.message ?? 'Request failed',
         payload.error?.code ?? 'UNKNOWN_ERROR',
@@ -109,5 +117,12 @@ function resolveAPIBaseUrl(baseUrl?: string): string {
   const configured = baseUrl ?? import.meta.env.VITE_API_BASE_URL;
   const resolved = configured?.trim() || DEFAULT_API_BASE_URL;
 
-  return resolved.replace(/\/+$/, '');
+  const normalized = resolved.replace(/\/+$/, '');
+  console.debug('[dashboard-api] resolveAPIBaseUrl', {
+    explicitBaseUrl: baseUrl,
+    envBaseUrl: import.meta.env.VITE_API_BASE_URL,
+    resolvedBaseUrl: normalized,
+  });
+
+  return normalized;
 }

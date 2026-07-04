@@ -30,7 +30,13 @@ export function App() {
   });
 
   const loadDashboard = useCallback(async () => {
+    console.debug('[dashboard-app] loadDashboard:start', { guild, moduleId });
+
     if (!guild) {
+      console.debug('[dashboard-app] loadDashboard:throw', {
+        error: 'Missing guild id',
+        moduleId,
+      });
       setState({
         status: 'error',
         manifests: [],
@@ -44,13 +50,26 @@ export function App() {
     setState((current) => ({ ...current, status: 'loading', error: undefined }));
 
     try {
+      console.debug('[dashboard-app] loadDashboard:requestModulesAndMetadata', {
+        guildId: guild.id,
+        moduleId,
+      });
       const [{ modules }, { settings }] = await Promise.all([
         api.getGuildModules(guild.id),
         moduleId ? api.getModuleSettings(moduleId) : Promise.resolve({ settings: [] }),
       ]);
+      console.debug('[dashboard-app] loadDashboard:modulesAndMetadataLoaded', {
+        moduleCount: modules.length,
+        settingCount: settings.length,
+      });
       const manifest = moduleId ? modules.find((candidate) => candidate.id === moduleId) : undefined;
 
       if (moduleId && !manifest) {
+        console.debug('[dashboard-app] loadDashboard:throw', {
+          error: 'Module not found',
+          moduleId,
+          moduleCount: modules.length,
+        });
         setState({
           status: 'error',
           manifests: modules,
@@ -61,14 +80,27 @@ export function App() {
         return;
       }
 
+      console.debug('[dashboard-app] loadDashboard:requestGuildSettings', {
+        guildId: guild.id,
+        moduleId,
+      });
       const valuesResponse = moduleId ? await api.getGuildSettings(guild.id) : undefined;
+      console.debug('[dashboard-app] loadDashboard:guildSettingsLoaded', {
+        settingValueCount: valuesResponse?.settings.length ?? 0,
+      });
       setState({
         status: 'ready',
         manifests: modules,
         settings,
         values: Object.fromEntries(valuesResponse?.settings.map((setting) => [setting.key, setting.value]) ?? []),
       });
+      console.debug('[dashboard-app] loadDashboard:ready', {
+        moduleCount: modules.length,
+        settingCount: settings.length,
+        settingValueCount: valuesResponse?.settings.length ?? 0,
+      });
     } catch (error) {
+      console.debug('[dashboard-app] loadDashboard:throw', { error });
       setState({
         status: 'error',
         manifests: [],

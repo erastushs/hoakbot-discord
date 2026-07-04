@@ -1,9 +1,16 @@
 import { pino } from 'pino';
 import { ConfigService } from './core/config/config.service.js';
+import { DatabaseConfigProvider } from './core/config/database-config.provider.js';
+import { GuildSettingsRepository } from './core/config/guild-settings.repository.js';
+import { JsonConfigProvider } from './core/config/json-config.provider.js';
 import { createLogger } from './core/logger/logger.service.js';
 import { Container } from './core/container/container.js';
 import { TOKENS } from './core/container/tokens.js';
+import { APIRouter, createModuleConfigEndpoints } from './core/api/index.js';
+import { SettingsRegistry } from './core/settings/settings-registry.js';
 import { ModuleLoader } from './modules/module-loader.js';
+import { ManifestRegistry } from './modules/manifest-registry.js';
+import { ModuleRegistry } from './modules/module-registry.js';
 import { EventBus } from './core/event-bus/event-bus.js';
 import { SupabaseAdapter } from './core/database/supabase.adapter.js';
 import { HealthService } from './core/health/health.service.js';
@@ -72,7 +79,26 @@ try {
   const sharedRegistry = new CommandRegistry();
   container.registerSingleton(TOKENS.CommandRegistry, () => sharedRegistry);
 
-  moduleLoader.registerModule(new GeneralModule());
+  const settingsRegistry = new SettingsRegistry();
+  const manifestRegistry = new ManifestRegistry();
+  const moduleRegistry = new ModuleRegistry();
+  const apiRouter = new APIRouter();
+  const guildSettingsRepository = new GuildSettingsRepository(databaseAdapter);
+  const configProvider = new DatabaseConfigProvider(
+    guildSettingsRepository,
+    new JsonConfigProvider(),
+    settingsRegistry,
+  );
+
+  container.registerSingleton(TOKENS.SettingsRegistry, () => settingsRegistry);
+  container.registerSingleton(TOKENS.ManifestRegistry, () => manifestRegistry);
+  container.registerSingleton(TOKENS.ModuleRegistry, () => moduleRegistry);
+  container.registerSingleton(TOKENS.ConfigProvider, () => configProvider);
+
+  const generalModule = new GeneralModule();
+  manifestRegistry.register(generalModule.manifest);
+  moduleRegistry.register(generalModule);
+  moduleLoader.registerModule(generalModule);
   moduleLoader.registerModule(new VoiceModule());
   moduleLoader.registerModule(new ModerationModule());
   moduleLoader.registerModule(new LoggingModule());
@@ -80,6 +106,13 @@ try {
   moduleLoader.registerModule(new GoodbyeModule());
 
   await moduleLoader.loadAll(container);
+  for (const endpoint of createModuleConfigEndpoints({
+    manifests: manifestRegistry,
+    settings: settingsRegistry,
+    config: configProvider,
+  })) {
+    apiRouter.register(endpoint);
+  }
   await moduleLoader.startAll();
   metricsService.gauge('module_count').set(moduleLoader.getLoadedModules().length);
 

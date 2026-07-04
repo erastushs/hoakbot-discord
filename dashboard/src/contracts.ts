@@ -102,6 +102,7 @@ export interface SettingMetadata {
   pattern?: string;
   restartRequired?: boolean;
   advanced?: boolean;
+  order?: number;
 }
 
 export interface GuildSummary {

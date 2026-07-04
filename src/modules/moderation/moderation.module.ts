@@ -11,17 +11,25 @@ import { WarnRemoveCommand } from './commands/warn-remove.command.js';
 import { WarnClearCommand } from './commands/warn-clear.command.js';
 import { WarningRepository } from './repositories/warning.repository.js';
 import { WarningService } from './services/warning.service.js';
+import { moderationManifest } from './manifest.js';
+import { createModerationSettings } from './settings.js';
 
 export class ModerationModule implements IModule {
   readonly name = 'moderation';
   readonly version = '1.0.0';
   readonly enabled = true;
+  readonly manifest = moderationManifest;
 
   register(container: IContainer): void {
     const registry = container.resolve(TOKENS.CommandRegistry);
+    const config = container.resolve(TOKENS.AppConfig);
     const logger = container.resolve(TOKENS.Logger);
     const eventBus = container.resolve(TOKENS.EventBus);
     const metrics = container.resolve(TOKENS.MetricsService);
+
+    if (container.has(TOKENS.SettingsRegistry)) {
+      container.resolve(TOKENS.SettingsRegistry).register(this.name, createModerationSettings(config));
+    }
 
     const cleanCommand = new CleanCommand();
     const kickCommand = new KickCommand(metrics);

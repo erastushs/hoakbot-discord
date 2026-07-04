@@ -4,11 +4,14 @@ import { TOKENS } from '../../core/container/tokens.js';
 import { ImageService } from '../../shared/image/image.service.js';
 import { TemplateService } from '../../shared/template/template.service.js';
 import { GoodbyeService } from './services/goodbye.service.js';
+import { goodbyeManifest } from './manifest.js';
+import { createGoodbyeSettings } from './settings.js';
 
 export class GoodbyeModule implements IModule {
   readonly name = 'goodbye';
   readonly version = '1.0.0';
   readonly enabled = true;
+  readonly manifest = goodbyeManifest;
 
   private goodbyeService: GoodbyeService | null = null;
 
@@ -17,6 +20,10 @@ export class GoodbyeModule implements IModule {
     const logger = container.resolve(TOKENS.Logger);
     const client = container.resolve(TOKENS.DiscordClient);
     const metrics = container.resolve(TOKENS.MetricsService);
+
+    if (container.has(TOKENS.SettingsRegistry)) {
+      container.resolve(TOKENS.SettingsRegistry).register(this.name, createGoodbyeSettings(config));
+    }
 
     if (!config.bot.goodbye.enabled) {
       logger.info('Goodbye module disabled via config');

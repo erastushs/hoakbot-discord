@@ -97,19 +97,28 @@ try {
 
   const generalModule = new GeneralModule();
   const voiceModule = new VoiceModule();
+  const moderationModule = new ModerationModule();
   const loggingModule = new LoggingModule();
+  const welcomeModule = new WelcomeModule();
+  const goodbyeModule = new GoodbyeModule();
   manifestRegistry.register(generalModule.manifest);
   manifestRegistry.register(voiceModule.manifest);
+  manifestRegistry.register(moderationModule.manifest);
   manifestRegistry.register(loggingModule.manifest);
+  manifestRegistry.register(welcomeModule.manifest);
+  manifestRegistry.register(goodbyeModule.manifest);
   moduleRegistry.register(generalModule);
   moduleRegistry.register(voiceModule);
+  moduleRegistry.register(moderationModule);
   moduleRegistry.register(loggingModule);
+  moduleRegistry.register(welcomeModule);
+  moduleRegistry.register(goodbyeModule);
   moduleLoader.registerModule(generalModule);
   moduleLoader.registerModule(voiceModule);
-  moduleLoader.registerModule(new ModerationModule());
+  moduleLoader.registerModule(moderationModule);
   moduleLoader.registerModule(loggingModule);
-  moduleLoader.registerModule(new WelcomeModule());
-  moduleLoader.registerModule(new GoodbyeModule());
+  moduleLoader.registerModule(welcomeModule);
+  moduleLoader.registerModule(goodbyeModule);
 
   await moduleLoader.loadAll(container);
   for (const endpoint of createModuleConfigEndpoints({

@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { Buffer } from 'node:buffer';
 import { URL } from 'node:url';
 
 import type { ILogger } from '../logger/logger.service.js';
@@ -6,6 +7,7 @@ import type { APIRouter } from './router.js';
 import type { APIHttpMethod, APIRequest, APIResponse } from './types.js';
 
 const SUPPORTED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
+const MAX_BODY_BYTES = 1_048_576; // 1 MB
 
 export interface APIHttpServerOptions {
   port: number;
@@ -82,9 +84,15 @@ function toHeaders(request: IncomingMessage): Record<string, string | undefined>
 
 async function readBody(request: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
+  let totalBytes = 0;
 
   for await (const chunk of request) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    totalBytes += buf.length;
+    if (totalBytes > MAX_BODY_BYTES) {
+      throw new Error('Request body exceeds maximum allowed size');
+    }
+    chunks.push(buf);
   }
 
   if (chunks.length === 0) {
@@ -130,7 +138,7 @@ function listen(server: Server, port: number, logger: ILogger): Promise<void> {
 
     server.once('error', onError);
     server.once('listening', onListening);
-    server.listen(port);
+    server.listen(port, '127.0.0.1');
   });
 }
 

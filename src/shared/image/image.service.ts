@@ -4,11 +4,19 @@ import type { ILogger } from '../../core/logger/logger.service.js';
 export class ImageService {
   private readonly assetCache = new Map<string, Image>();
 
-  constructor(private readonly logger: ILogger) {}
+  constructor(
+    private readonly logger: ILogger,
+    private readonly maxCacheSize = 20,
+  ) {}
 
   async loadAsset(url: string): Promise<Image> {
     const cached = this.assetCache.get(url);
     if (cached) return cached;
+
+    if (this.assetCache.size >= this.maxCacheSize) {
+      this.assetCache.clear();
+      this.logger.warn({ size: this.maxCacheSize }, 'Image cache limit reached, cleared');
+    }
 
     const image = await loadImage(url);
     this.assetCache.set(url, image);

@@ -36,6 +36,24 @@ const bootstrapLogger = pino({
 
 let shuttingDown = false;
 
+function registerCrashHanders(logger: ReturnType<typeof createLogger>, shutdown: () => Promise<void>): void {
+  const forceExit = (code: number) => {
+    setTimeout(() => process.exit(code), 5000).unref();
+  };
+
+  process.on('unhandledRejection', (reason) => {
+    logger.fatal({ error: reason }, 'Unhandled promise rejection – shutting down');
+    shutdown().finally(() => process.exit(1));
+    forceExit(1);
+  });
+
+  process.on('uncaughtException', (error) => {
+    logger.fatal({ error }, 'Uncaught exception – shutting down');
+    shutdown().finally(() => process.exit(1));
+    forceExit(1);
+  });
+}
+
 try {
   const metricsService = new MetricsService();
   const startupTimer = metricsService.timer('startup');
@@ -157,7 +175,8 @@ try {
   });
   await apiServer.start();
 
-  registerShutdownHandlers(logger, client, moduleLoader, databaseAdapter, eventBus, apiServer);
+  const shutdown = registerShutdownHandlers(logger, client, moduleLoader, databaseAdapter, eventBus, apiServer);
+  registerCrashHanders(logger, shutdown);
 
   logger.info('Logging in to Discord...');
   await client.login(appConfig.discord.token);
@@ -207,7 +226,7 @@ function registerShutdownHandlers(
   databaseAdapter: SupabaseAdapter,
   eventBus: EventBus,
   apiServer: ReturnType<typeof createAPIHttpServer>,
-): void {
+): () => Promise<void> {
   const shutdown = async () => {
     if (shuttingDown) return;
     shuttingDown = true;
@@ -240,11 +259,12 @@ function registerShutdownHandlers(
     }
 
     logger.info('Shutdown complete');
-    process.exit(0);
   };
 
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', () => { void shutdown().then(() => process.exit(0)); });
+  process.on('SIGTERM', () => { void shutdown().then(() => process.exit(0)); });
+
+  return shutdown;
 }
 
 function registerHealthChecks(

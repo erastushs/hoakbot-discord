@@ -52,9 +52,11 @@ export function createDiscordClient(
     logger.warn({ warning, source: 'discord' }, 'Discord client warning');
   });
 
-  client.on(Events.Debug, (message) => {
-    logger.trace({ message, source: 'discord' }, 'Discord client debug');
-  });
+  if (config.env.nodeEnv !== 'production' || config.env.logLevel === 'trace') {
+    client.on(Events.Debug, (message) => {
+      logger.trace({ message, source: 'discord' }, 'Discord client debug');
+    });
+  }
 
   client.once(Events.ClientReady, () => {
     const presence = config.bot.presence;

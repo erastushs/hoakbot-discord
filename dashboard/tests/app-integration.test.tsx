@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '../src/App.js';
 import type { APIResponse, ModuleManifest, SettingMetadata } from '../src/contracts.js';
@@ -43,10 +43,15 @@ function jsonResponse<T>(body: APIResponse<T>, ok = true, status = 200): Respons
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   window.history.pushState({}, '', '/');
 });
 
 describe('App backend integration', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_API_BASE_URL', '');
+  });
+
   it('loads home modules from the guild modules endpoint', async () => {
     const fetcher = vi.fn(async () => jsonResponse({ success: true, data: { modules: [manifest] } }));
     vi.stubGlobal('fetch', fetcher);
@@ -55,7 +60,7 @@ describe('App backend integration', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
-    expect(fetcher).toHaveBeenCalledWith('http://localhost:3000/api/v1/guilds/guild-1/modules', {
+    expect(fetcher).toHaveBeenCalledWith('/api/v1/guilds/guild-1/modules', {
       method: 'GET',
       headers: undefined,
       body: undefined,
@@ -98,7 +103,13 @@ describe('App backend integration', () => {
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
-    expect(fetcher).toHaveBeenCalledWith('http://localhost:3000/api/v1/guilds/guild-1/settings', {
+
+    const patchCall = fetcher.mock.calls.find(
+      ([url, init]: [string, RequestInit]) => url === '/api/v1/guilds/guild-1/settings' && init?.method === 'PATCH',
+    );
+    expect(patchCall).toBeDefined();
+    expect(patchCall[0]).toBe('/api/v1/guilds/guild-1/settings');
+    expect(patchCall[1]).toEqual({
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ settings: { 'generic.title': 'Saved title' } }),

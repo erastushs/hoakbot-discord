@@ -10,6 +10,8 @@ import type { IMetrics } from '../../core/metrics/types.js';
 import type { VoiceMemberJoinedEvent } from '../../core/event-bus/events.js';
 import type { Client, VoiceState } from 'discord.js';
 import { Events } from 'discord.js';
+import { voiceManifest } from './manifest.js';
+import { createVoiceSettings } from './settings.js';
 
 enum VoiceStateEnum {
   IDLE = 'IDLE',
@@ -24,6 +26,7 @@ export class VoiceModule implements IModule {
   readonly name = 'voice';
   readonly version = '1.0.0';
   readonly enabled = true;
+  readonly manifest = voiceManifest;
 
   private connectionManager: ConnectionManager | null = null;
   private audioManager: AudioManager | null = null;
@@ -43,6 +46,10 @@ export class VoiceModule implements IModule {
     const client = container.resolve(TOKENS.DiscordClient);
     const eventBus = container.resolve(TOKENS.EventBus);
     const metrics = container.resolve(TOKENS.MetricsService);
+
+    if (container.has(TOKENS.SettingsRegistry)) {
+      container.resolve(TOKENS.SettingsRegistry).register(this.name, createVoiceSettings(config));
+    }
 
     const { standbyChannelId, reconnectDelayMs, maxReconnectRetries, defaultSound, volume, cooldownMs, joinDelayMs } =
       config.bot.voice;

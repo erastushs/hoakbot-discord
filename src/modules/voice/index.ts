@@ -1,3 +1,6 @@
+export { VoiceModule } from './voice.module.js';
+export { voiceManifest } from './manifest.js';
+export { createVoiceSettings } from './settings.js';
 export type {
   VoiceConnectionLostEvent,
   VoiceConnectionRestoredEvent,

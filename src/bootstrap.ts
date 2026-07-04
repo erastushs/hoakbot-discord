@@ -96,10 +96,13 @@ try {
   container.registerSingleton(TOKENS.ConfigProvider, () => configProvider);
 
   const generalModule = new GeneralModule();
+  const voiceModule = new VoiceModule();
   manifestRegistry.register(generalModule.manifest);
+  manifestRegistry.register(voiceModule.manifest);
   moduleRegistry.register(generalModule);
+  moduleRegistry.register(voiceModule);
   moduleLoader.registerModule(generalModule);
-  moduleLoader.registerModule(new VoiceModule());
+  moduleLoader.registerModule(voiceModule);
   moduleLoader.registerModule(new ModerationModule());
   moduleLoader.registerModule(new LoggingModule());
   moduleLoader.registerModule(new WelcomeModule());

@@ -32,7 +32,7 @@ export class APIClient {
 
   constructor(options: APIClientOptions = {}) {
     this.baseUrl = resolveAPIBaseUrl(options.baseUrl);
-    this.fetcher = options.fetcher ?? fetch;
+    this.fetcher = options.fetcher ?? globalThis.fetch.bind(globalThis);
   }
 
   get<T>(path: string): Promise<T> {

@@ -13,6 +13,7 @@ function jsonResponse(body: unknown, ok = true, status = 200): Response {
 describe('APIClient', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
   it('supports typed GET, POST, PATCH, and DELETE requests', async () => {
@@ -63,6 +64,26 @@ describe('APIClient', () => {
     await client.get('/modules');
 
     expect(fetcher).toHaveBeenCalledWith('http://localhost:3000/api/v1/modules', {
+      method: 'GET',
+      headers: undefined,
+      body: undefined,
+    });
+  });
+
+  it('binds the default global fetch before storing it', async () => {
+    const fetcher = vi.fn(function (this: unknown) {
+      if (this !== globalThis) {
+        throw new TypeError("Failed to execute 'fetch' on 'Window': Illegal invocation");
+      }
+
+      return Promise.resolve(jsonResponse({ success: true, data: { ok: true } }));
+    });
+    vi.stubGlobal('fetch', fetcher);
+    const client = new APIClient({ baseUrl: '/api/v1' });
+
+    await expect(client.get('/modules')).resolves.toEqual({ ok: true });
+
+    expect(fetcher).toHaveBeenCalledWith('/api/v1/modules', {
       method: 'GET',
       headers: undefined,
       body: undefined,

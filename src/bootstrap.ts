@@ -7,7 +7,7 @@ import { JsonConfigProvider } from './core/config/json-config.provider.js';
 import { createLogger } from './core/logger/logger.service.js';
 import { Container } from './core/container/container.js';
 import { TOKENS } from './core/container/tokens.js';
-import { APIRouter, createModuleConfigEndpoints } from './core/api/index.js';
+import { APIRouter, createAPIHttpServer, createModuleConfigEndpoints, ok } from './core/api/index.js';
 import { SettingsRegistry } from './core/settings/settings-registry.js';
 import { ModuleLoader } from './modules/module-loader.js';
 import { ManifestRegistry } from './modules/manifest-registry.js';
@@ -141,7 +141,23 @@ try {
   const report = await healthService.runAll();
   healthTimer.stop();
 
-  registerShutdownHandlers(logger, client, moduleLoader, databaseAdapter, eventBus);
+  apiRouter.register({
+    module: 'platform',
+    method: 'GET',
+    path: '/system/health',
+    auth: 'public',
+    metadata: { operationId: 'getSystemHealth', tags: ['system', 'health'] },
+    handler: async () => ok(await healthService.runAll()),
+  });
+
+  const apiServer = createAPIHttpServer({
+    port: appConfig.api.port,
+    router: apiRouter,
+    logger,
+  });
+  await apiServer.start();
+
+  registerShutdownHandlers(logger, client, moduleLoader, databaseAdapter, eventBus, apiServer);
 
   logger.info('Logging in to Discord...');
   await client.login(appConfig.discord.token);
@@ -190,6 +206,7 @@ function registerShutdownHandlers(
   moduleLoader: ModuleLoader,
   databaseAdapter: SupabaseAdapter,
   eventBus: EventBus,
+  apiServer: ReturnType<typeof createAPIHttpServer>,
 ): void {
   const shutdown = async () => {
     if (shuttingDown) return;
@@ -208,6 +225,12 @@ function registerShutdownHandlers(
       await moduleLoader.shutdownAll();
     } catch (err) {
       logger.error({ error: err }, 'Error shutting down modules');
+    }
+
+    try {
+      await apiServer.stop();
+    } catch (err) {
+      logger.error({ error: err }, 'Error stopping API server');
     }
 
     try {

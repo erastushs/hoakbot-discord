@@ -154,6 +154,14 @@ For development with auto-reload:
 npm run dev
 ```
 
+### Backend API
+
+The backend API runs in the bot process.
+
+- Listening port: `API_PORT`, default `3000`
+- Startup command: `npm run dev` for development, or `npm run build && npm start` for production
+- Health endpoint: `GET http://localhost:3000/api/v1/system/health`
+
 ---
 
 ## Environment Variables
@@ -163,6 +171,7 @@ npm run dev
 | `BOT_TOKEN` | Yes | – | Discord bot token |
 | `CLIENT_ID` | Yes | – | Discord application client ID |
 | `DATABASE_URL` | Yes | – | PostgreSQL connection string |
+| `API_PORT` | No | `3000` | Backend API HTTP port |
 | `GUILD_ID` | No | – | Primary guild ID (overrides `bot.json`) |
 | `OWNER_IDS` | No | – | Comma-separated owner IDs (overrides `bot.json`) |
 | `NODE_ENV` | No | `production` | `development` or `production` |

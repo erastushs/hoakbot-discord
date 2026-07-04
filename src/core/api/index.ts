@@ -4,6 +4,7 @@ export { MemoryAuthProvider } from './memory-auth.provider.js';
 export { createModuleConfigEndpoints } from './module-config.endpoints.js';
 export { OpenAPIMetadataRegistry } from './openapi.js';
 export { APIRouter } from './router.js';
+export { createAPIHttpServer } from './server.js';
 export { fail, noContent, ok, paginated } from './responses.js';
 export { validateRequest, validateSchema, validationMiddleware } from './validation.js';
 export {
@@ -38,6 +39,7 @@ export type {
 } from './contracts.js';
 export type { ModuleConfigEndpointDependencies } from './module-config.endpoints.js';
 export type { OpenAPIEndpointMetadata } from './openapi.js';
+export type { APIHttpServer, APIHttpServerOptions } from './server.js';
 export type {
   APIAuthLevel,
   APIEndpoint,

@@ -113,6 +113,9 @@ export interface AppConfig {
     clientId: string;
   };
   databaseUrl: string;
+  api: {
+    port: number;
+  };
   env: {
     nodeEnv: string;
     logLevel: string;

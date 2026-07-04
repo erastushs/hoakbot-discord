@@ -38,6 +38,7 @@ export class ConfigService {
       BOT_TOKEN: process.env['BOT_TOKEN'],
       CLIENT_ID: process.env['CLIENT_ID'],
       DATABASE_URL: process.env['DATABASE_URL'],
+      API_PORT: process.env['API_PORT'],
       NODE_ENV: process.env['NODE_ENV'],
       LOG_LEVEL: process.env['LOG_LEVEL'],
       GUILD_ID: process.env['GUILD_ID'],
@@ -75,6 +76,9 @@ export class ConfigService {
         clientId: env.CLIENT_ID,
       },
       databaseUrl: env.DATABASE_URL,
+      api: {
+        port: env.API_PORT,
+      },
       env: {
         nodeEnv: env.NODE_ENV,
         logLevel: env.LOG_LEVEL,

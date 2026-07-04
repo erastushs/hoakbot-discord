@@ -1,4 +1,10 @@
+import { fileURLToPath } from 'node:url';
+import { resolve, dirname } from 'node:path';
 import type { ImageService } from '../image/image.service.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const DEFAULT_BG_PATH = resolve(__dirname, '../../../assets/images/default-welcome-bg.png');
 
 export interface MemberCardInput {
   username: string;
@@ -7,6 +13,8 @@ export interface MemberCardInput {
   title: string;
   subtitle: string;
 }
+
+const FONT_FAMILY = '"Noto Sans", "Noto Sans CJK JP", "Noto Color Emoji", sans-serif';
 
 const LAYOUT = {
   width: 800,
@@ -23,18 +31,19 @@ const LAYOUT = {
     },
   },
   title: {
-    y: 258,
-    fontSize: 'bold 70px sans-serif',
+    y: 240,
+    fontSize: 52,
     color: '#ffffff',
   },
   username: {
-    y: 326,
-    fontSize: 'bold 36px sans-serif',
+    y: 300,
+    fontSize: 36,
+    minFontSize: 14,
     color: '#FFC107',
   },
   subtitle: {
-    y: 374,
-    fontSize: 'bold 26px sans-serif',
+    y: 348,
+    fontSize: 22,
     color: '#ffffff',
   },
   textShadow: {
@@ -43,7 +52,13 @@ const LAYOUT = {
     offsetY: 3,
     blur: 8,
   },
+  placeholderAvatarBg: '#4a5568',
+  placeholderAvatarInitials: '#ffffff',
 } as const;
+
+function fontString(size: number, weight: 'bold' | 'normal' = 'bold'): string {
+  return `${weight} ${size}px ${FONT_FAMILY}`;
+}
 
 export class MemberCardBuilder {
   constructor(private readonly imageService: ImageService) {}
@@ -54,7 +69,7 @@ export class MemberCardBuilder {
 
     await this.drawBackground(ctx, input.backgroundUrl);
 
-    await this.drawAvatar(ctx, input.avatarUrl);
+    await this.drawAvatar(ctx, input.avatarUrl, input.username);
 
     this.drawTitle(ctx, input.title);
 
@@ -69,15 +84,32 @@ export class MemberCardBuilder {
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
     backgroundUrl: string,
   ): Promise<void> {
-    const bg = await this.imageService.loadAsset(backgroundUrl);
-    ctx.drawImage(bg, 0, 0, LAYOUT.width, LAYOUT.height);
+    try {
+      const bg = await this.imageService.loadAsset(backgroundUrl);
+      ctx.drawImage(bg, 0, 0, LAYOUT.width, LAYOUT.height);
+      return;
+    } catch {
+      this.imageService.warn({ url: backgroundUrl }, 'Failed to load background image, trying bundled default');
+    }
+
+    try {
+      const fallback = await this.imageService.loadAsset(DEFAULT_BG_PATH);
+      ctx.drawImage(fallback, 0, 0, LAYOUT.width, LAYOUT.height);
+    } catch {
+      this.imageService.warn({ path: DEFAULT_BG_PATH }, 'Bundled default background also failed, rendering solid color');
+      const gradient = ctx.createLinearGradient(0, 0, 0, LAYOUT.height);
+      gradient.addColorStop(0, '#1a1a2e');
+      gradient.addColorStop(1, '#16213e');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, LAYOUT.width, LAYOUT.height);
+    }
   }
 
   private async drawAvatar(
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
     avatarUrl: string,
+    username?: string,
   ): Promise<void> {
-    const avatar = await this.imageService.loadAsset(avatarUrl);
     const cx = LAYOUT.width / 2;
     const radius = LAYOUT.avatar.size / 2;
     const cy = LAYOUT.avatar.y + radius;
@@ -105,7 +137,21 @@ export class MemberCardBuilder {
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
-    ctx.drawImage(avatar, cx - radius, cy - radius, LAYOUT.avatar.size, LAYOUT.avatar.size);
+
+    try {
+      const avatar = await this.imageService.loadAsset(avatarUrl);
+      ctx.drawImage(avatar, cx - radius, cy - radius, LAYOUT.avatar.size, LAYOUT.avatar.size);
+    } catch {
+      ctx.fillStyle = LAYOUT.placeholderAvatarBg;
+      ctx.fillRect(cx - radius, cy - radius, LAYOUT.avatar.size, LAYOUT.avatar.size);
+
+      const initial = this.deriveInitial(username);
+      ctx.fillStyle = LAYOUT.placeholderAvatarInitials;
+      ctx.font = fontString(48, 'normal');
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(initial, cx, cy);
+    }
 
     ctx.restore();
   }
@@ -117,7 +163,7 @@ export class MemberCardBuilder {
     this.imageService.drawText(
       ctx,
       title,
-      LAYOUT.title.fontSize,
+      fontString(LAYOUT.title.fontSize),
       LAYOUT.width / 2,
       LAYOUT.title.y,
       LAYOUT.width - 80,
@@ -131,13 +177,25 @@ export class MemberCardBuilder {
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
     username: string,
   ): void {
+    const maxWidth = LAYOUT.width - 80;
+    let size = LAYOUT.username.fontSize;
+
+    ctx.save();
+    ctx.font = fontString(size);
+    while (ctx.measureText(username).width > maxWidth && size > LAYOUT.username.minFontSize) {
+      size -= 1;
+      ctx.font = fontString(size);
+    }
+    const adaptedFont = ctx.font;
+    ctx.restore();
+
     this.imageService.drawText(
       ctx,
       username,
-      LAYOUT.username.fontSize,
+      adaptedFont,
       LAYOUT.width / 2,
       LAYOUT.username.y,
-      LAYOUT.width - 80,
+      maxWidth,
       'center',
       LAYOUT.username.color,
       LAYOUT.textShadow,
@@ -151,7 +209,7 @@ export class MemberCardBuilder {
     this.imageService.drawText(
       ctx,
       subtitle.toUpperCase(),
-      LAYOUT.subtitle.fontSize,
+      fontString(LAYOUT.subtitle.fontSize),
       LAYOUT.width / 2,
       LAYOUT.subtitle.y,
       LAYOUT.width - 80,
@@ -159,5 +217,12 @@ export class MemberCardBuilder {
       LAYOUT.subtitle.color,
       LAYOUT.textShadow,
     );
+  }
+
+  private deriveInitial(username?: string): string {
+    if (username && username.length > 0) {
+      return [...username][0]?.toUpperCase() ?? '?';
+    }
+    return '?';
   }
 }

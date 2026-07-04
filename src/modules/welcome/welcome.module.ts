@@ -16,7 +16,8 @@ export class WelcomeModule implements IModule {
   private welcomeService: WelcomeService | null = null;
 
   register(container: IContainer): void {
-    const config = container.resolve(TOKENS.ConfigurationService).current();
+    const configurationService = container.resolve(TOKENS.ConfigurationService);
+    const config = configurationService.current();
     const logger = container.resolve(TOKENS.Logger);
     const client = container.resolve(TOKENS.DiscordClient);
     const metrics = container.resolve(TOKENS.MetricsService);
@@ -30,7 +31,7 @@ export class WelcomeModule implements IModule {
 
     this.welcomeService = new WelcomeService(
       client,
-      config.bot.welcome,
+      configurationService,
       imageService,
       templateService,
       logger,

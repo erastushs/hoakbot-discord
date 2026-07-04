@@ -3,16 +3,25 @@ import { Events } from 'discord.js';
 import type { ILogger } from '../../../core/logger/logger.service.js';
 import type { IMetrics } from '../../../core/metrics/types.js';
 import type { GoodbyeConfig } from '../../../core/config/types.js';
+import type { ConfigurationService } from '../../../core/config/configuration.service.js';
 import { MemberCardBuilder } from '../../../shared/builders/member-card.builder.js';
 import type { TemplateService } from '../../../shared/template/template.service.js';
 import type { TemplateContext } from '../../../shared/template/template.service.js';
 import type { ImageService } from '../../../shared/image/image.service.js';
 import { serializeError } from '../../../shared/utils/error.js';
 
+const GOODBYE_SETTING_KEYS = [
+  'goodbye.enabled',
+  'goodbye.channelId',
+  'goodbye.image.backgroundUrl',
+  'goodbye.image.title',
+  'goodbye.image.subtitle',
+] as const;
+
 export class GoodbyeService {
   constructor(
     private readonly client: Client,
-    private readonly config: GoodbyeConfig,
+    private readonly config: ConfigurationService,
     private readonly imageService: ImageService,
     private readonly templateService: TemplateService,
     private readonly logger: ILogger,
@@ -26,16 +35,18 @@ export class GoodbyeService {
   }
 
   async handleMemberLeave(member: GuildMember): Promise<void> {
-    if (!this.config.enabled) return;
+    const guild = member.guild;
+    const config = await this.loadConfig(guild.id);
+
+    if (!config.enabled) return;
     if (member.user.bot) return;
 
-    const channelId = this.config.channelId;
+    const channelId = config.channelId;
     if (!channelId) {
       this.logger.warn('Goodbye channelId not configured');
       return;
     }
 
-    const guild = member.guild;
     const channel = guild.channels.cache.get(channelId) as TextChannel | undefined;
     if (!channel) {
       this.logger.warn({ channelId, guildId: guild.id }, 'Goodbye channel not found');
@@ -54,13 +65,13 @@ export class GoodbyeService {
     try {
       const builder = new MemberCardBuilder(this.imageService);
 
-      const imageTitle = this.templateService.render(this.config.image.title, context);
-      const imageSubtitle = this.templateService.render(this.config.image.subtitle, context);
+      const imageTitle = this.templateService.render(config.image.title, context);
+      const imageSubtitle = this.templateService.render(config.image.subtitle, context);
 
       const imageBuffer = await builder.build({
         username: member.displayName,
         avatarUrl: member.user.displayAvatarURL({ extension: 'png', size: 256 }),
-        backgroundUrl: this.config.image.backgroundUrl,
+        backgroundUrl: config.image.backgroundUrl,
         title: imageTitle,
         subtitle: imageSubtitle,
       });
@@ -78,5 +89,19 @@ export class GoodbyeService {
       );
       this.metrics.counter('goodbye_error_total').increment();
     }
+  }
+
+  private async loadConfig(guildId: string): Promise<GoodbyeConfig> {
+    const values = await this.config.getMany<unknown>([...GOODBYE_SETTING_KEYS], guildId);
+
+    return {
+      enabled: values['goodbye.enabled'] as GoodbyeConfig['enabled'],
+      channelId: values['goodbye.channelId'] as GoodbyeConfig['channelId'],
+      image: {
+        backgroundUrl: values['goodbye.image.backgroundUrl'] as GoodbyeConfig['image']['backgroundUrl'],
+        title: values['goodbye.image.title'] as GoodbyeConfig['image']['title'],
+        subtitle: values['goodbye.image.subtitle'] as GoodbyeConfig['image']['subtitle'],
+      },
+    };
   }
 }

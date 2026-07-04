@@ -3,16 +3,27 @@ import { Events } from 'discord.js';
 import type { ILogger } from '../../../core/logger/logger.service.js';
 import type { IMetrics } from '../../../core/metrics/types.js';
 import type { WelcomeConfig } from '../../../core/config/types.js';
+import type { ConfigurationService } from '../../../core/config/configuration.service.js';
 import { WelcomeImageBuilder } from '../builders/welcome-image.builder.js';
 import type { TemplateService } from '../../../shared/template/template.service.js';
 import type { TemplateContext } from '../../../shared/template/template.service.js';
 import type { ImageService } from '../../../shared/image/image.service.js';
 import { serializeError } from '../../../shared/utils/error.js';
 
+const WELCOME_SETTING_KEYS = [
+  'welcome.enabled',
+  'welcome.channelId',
+  'welcome.backgroundUrl',
+  'welcome.message.title',
+  'welcome.message.body',
+  'welcome.image.title',
+  'welcome.image.subtitle',
+] as const;
+
 export class WelcomeService {
   constructor(
     private readonly client: Client,
-    private readonly config: WelcomeConfig,
+    private readonly config: ConfigurationService,
     private readonly imageService: ImageService,
     private readonly templateService: TemplateService,
     private readonly logger: ILogger,
@@ -26,16 +37,18 @@ export class WelcomeService {
   }
 
   async handleMemberJoin(member: GuildMember): Promise<void> {
-    if (!this.config.enabled) return;
+    const guild = member.guild;
+    const config = await this.loadConfig(guild.id);
+
+    if (!config.enabled) return;
     if (member.user.bot) return;
 
-    const channelId = this.config.channelId;
+    const channelId = config.channelId;
     if (!channelId) {
       this.logger.warn('Welcome channelId not configured');
       return;
     }
 
-    const guild = member.guild;
     const channel = guild.channels.cache.get(channelId) as TextChannel | undefined;
     if (!channel) {
       this.logger.warn({ channelId, guildId: guild.id }, 'Welcome channel not found');
@@ -51,19 +64,19 @@ export class WelcomeService {
       membercount: guild.memberCount,
     };
 
-    const renderedTitle = this.templateService.render(this.config.message.title, context);
-    const renderedBody = this.templateService.renderLines(this.config.message.body, context);
+    const renderedTitle = this.templateService.render(config.message.title, context);
+    const renderedBody = this.templateService.renderLines(config.message.body, context);
 
     try {
       const builder = new WelcomeImageBuilder(this.imageService);
 
-      const imageTitle = this.templateService.render(this.config.image.title, context);
-      const imageSubtitle = this.templateService.render(this.config.image.subtitle, context);
+      const imageTitle = this.templateService.render(config.image.title, context);
+      const imageSubtitle = this.templateService.render(config.image.subtitle, context);
 
       const imageBuffer = await builder.build({
         username: member.displayName,
         avatarUrl: member.user.displayAvatarURL({ extension: 'png', size: 256 }),
-        backgroundUrl: this.config.backgroundUrl,
+        backgroundUrl: config.backgroundUrl,
         title: imageTitle,
         subtitle: imageSubtitle,
       });
@@ -83,5 +96,23 @@ export class WelcomeService {
       );
       this.metrics.counter('welcome_error_total').increment();
     }
+  }
+
+  private async loadConfig(guildId: string): Promise<WelcomeConfig> {
+    const values = await this.config.getMany<unknown>([...WELCOME_SETTING_KEYS], guildId);
+
+    return {
+      enabled: values['welcome.enabled'] as WelcomeConfig['enabled'],
+      channelId: values['welcome.channelId'] as WelcomeConfig['channelId'],
+      backgroundUrl: values['welcome.backgroundUrl'] as WelcomeConfig['backgroundUrl'],
+      message: {
+        title: values['welcome.message.title'] as WelcomeConfig['message']['title'],
+        body: values['welcome.message.body'] as WelcomeConfig['message']['body'],
+      },
+      image: {
+        title: values['welcome.image.title'] as WelcomeConfig['image']['title'],
+        subtitle: values['welcome.image.subtitle'] as WelcomeConfig['image']['subtitle'],
+      },
+    };
   }
 }

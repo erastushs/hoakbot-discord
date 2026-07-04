@@ -63,6 +63,27 @@ function makeImageService() {
   };
 }
 
+function makeConfigurationService(config: typeof defaultConfig) {
+  return {
+    getMany: vi.fn(async (keys: string[]) => {
+      const values: Record<string, unknown> = {};
+      for (const key of keys) {
+        values[key] = readConfigPath(config, key.replace(/^goodbye\./, ''));
+      }
+      return values;
+    }),
+  };
+}
+
+function readConfigPath(config: typeof defaultConfig, key: string): unknown {
+  return key.split('.').reduce<unknown>((current, segment) => {
+    if (!current || typeof current !== 'object') {
+      return undefined;
+    }
+    return (current as Record<string, unknown>)[segment];
+  }, config);
+}
+
 function makeTemplateService() {
   return {
     render: vi.fn((t: string) => t),
@@ -130,7 +151,7 @@ function createService(
 ) {
   const service = new GoodbyeService(
     client as never,
-    config,
+    makeConfigurationService(config) as never,
     imageService as never,
     templateService as never,
     logger as never,
@@ -285,17 +306,18 @@ describe('GoodbyeService', () => {
       expect(metrics.counter).toHaveBeenCalledWith('goodbye_error_total');
     });
 
-    it('uses runtime config updates after registration', async () => {
+    it('uses latest guild backgroundUrl after registration', async () => {
       const send = vi.fn().mockResolvedValue(undefined);
       const client = makeClient(send);
+      const imageService = makeImageService();
       const config = {
-        enabled: false,
+        enabled: true,
         channelId: 'goodbye-channel',
-        image: { backgroundUrl: '', title: 'GOODBYE', subtitle: 'RUNTIME' },
+        image: { backgroundUrl: 'https://example.com/startup-bg.png', title: 'GOODBYE', subtitle: 'RUNTIME' },
       };
 
-      createService(client, config);
-      config.enabled = true;
+      createService(client, config, imageService);
+      config.image.backgroundUrl = 'https://example.com/dashboard-bg.png';
 
       const member = makeGuildMember();
       member.guild.channels.cache.set('goodbye-channel', { send, isTextBased: () => true } as never);
@@ -303,6 +325,8 @@ describe('GoodbyeService', () => {
       client.emit('guildMemberRemove', member);
 
       await vi.waitFor(() => expect(send).toHaveBeenCalled());
+      expect(imageService.loadAsset).toHaveBeenCalledWith('https://example.com/dashboard-bg.png');
+      expect(imageService.loadAsset).not.toHaveBeenCalledWith('https://example.com/startup-bg.png');
     });
   });
 });

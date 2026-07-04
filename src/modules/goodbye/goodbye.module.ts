@@ -16,7 +16,8 @@ export class GoodbyeModule implements IModule {
   private goodbyeService: GoodbyeService | null = null;
 
   register(container: IContainer): void {
-    const config = container.resolve(TOKENS.ConfigurationService).current();
+    const configurationService = container.resolve(TOKENS.ConfigurationService);
+    const config = configurationService.current();
     const logger = container.resolve(TOKENS.Logger);
     const client = container.resolve(TOKENS.DiscordClient);
     const metrics = container.resolve(TOKENS.MetricsService);
@@ -30,7 +31,7 @@ export class GoodbyeModule implements IModule {
 
     this.goodbyeService = new GoodbyeService(
       client,
-      config.bot.goodbye,
+      configurationService,
       imageService,
       templateService,
       logger,

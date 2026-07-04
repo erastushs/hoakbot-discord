@@ -62,6 +62,10 @@ export class ImageService {
     ctx.restore();
   }
 
+  warn(obj: Record<string, unknown>, msg: string): void {
+    this.logger.warn(obj, msg);
+  }
+
   clearCache(): void {
     this.assetCache.clear();
   }

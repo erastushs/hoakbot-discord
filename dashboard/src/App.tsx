@@ -31,83 +31,178 @@ export function App() {
 
   const loadDashboard = useCallback(async () => {
     console.debug('[dashboard-app] loadDashboard:start', { guild, moduleId });
+    let failingStatement = 'loadDashboard:start';
+    let actualResponseObject: unknown;
+    let expectedResponseObject: unknown;
 
     if (!guild) {
-      console.debug('[dashboard-app] loadDashboard:throw', {
-        error: 'Missing guild id',
-        moduleId,
-      });
-      setState({
+      const nextState: DashboardState = {
         status: 'error',
         manifests: [],
         settings: [],
         values: {},
         error: 'Set VITE_GUILD_ID or open the dashboard with ?guildId=<discord-guild-id>.',
+      };
+      console.debug('[dashboard-app] loadDashboard:missingGuild', {
+        failingStatement: 'resolveGuild()',
+        thrownException: { name: 'MissingGuildError', message: 'Missing guild id' },
+        actualResponseObject: guild,
+        expectedResponseObject: { id: 'discord-guild-id', name: 'display name' },
+        moduleId,
       });
+      logStateUpdate('missing guild', nextState, moduleId);
+      setState(nextState);
       return;
     }
 
-    setState((current) => ({ ...current, status: 'loading', error: undefined }));
+    setState((current) => {
+      const nextState: DashboardState = { ...current, status: 'loading', error: undefined };
+      logStateUpdate('loading', nextState, moduleId);
+      return nextState;
+    });
 
     try {
-      console.debug('[dashboard-app] loadDashboard:requestModulesAndMetadata', {
+      failingStatement = 'await api.getGuildModules(guild.id)';
+      expectedResponseObject = { modules: 'ModuleManifest[]' };
+      console.debug('[dashboard-app] loadDashboard:await:start', {
+        statement: failingStatement,
         guildId: guild.id,
+        expectedResponseObject,
+      });
+      const modulesResponse = await api.getGuildModules(guild.id);
+      actualResponseObject = modulesResponse;
+      console.debug('[dashboard-app] loadDashboard:await:return', {
+        statement: failingStatement,
+        returnedValue: modulesResponse,
+        parsedJson: modulesResponse,
+        objectShape: describeShape(modulesResponse),
+        expectedResponseObject,
+      });
+      assertResponseShape(
+        'api.getGuildModules(guild.id)',
+        modulesResponse,
+        expectedResponseObject,
+        (value): value is { modules: ModuleManifest[] } =>
+          isRecord(value) && Array.isArray(value['modules']),
+      );
+      const { modules } = modulesResponse;
+
+      failingStatement = moduleId
+        ? 'await api.getModuleSettings(moduleId)'
+        : 'await Promise.resolve({ settings: [] })';
+      expectedResponseObject = { settings: 'SettingMetadata[]' };
+      console.debug('[dashboard-app] loadDashboard:await:start', {
+        statement: failingStatement,
         moduleId,
+        expectedResponseObject,
       });
-      const [{ modules }, { settings }] = await Promise.all([
-        api.getGuildModules(guild.id),
-        moduleId ? api.getModuleSettings(moduleId) : Promise.resolve({ settings: [] }),
-      ]);
-      console.debug('[dashboard-app] loadDashboard:modulesAndMetadataLoaded', {
-        moduleCount: modules.length,
-        settingCount: settings.length,
+      const metadataResponse = moduleId ? await api.getModuleSettings(moduleId) : await Promise.resolve({ settings: [] });
+      actualResponseObject = metadataResponse;
+      console.debug('[dashboard-app] loadDashboard:await:return', {
+        statement: failingStatement,
+        returnedValue: metadataResponse,
+        parsedJson: metadataResponse,
+        objectShape: describeShape(metadataResponse),
+        expectedResponseObject,
       });
+      assertResponseShape(
+        'api.getModuleSettings(moduleId)',
+        metadataResponse,
+        expectedResponseObject,
+        (value): value is { settings: SettingMetadata[] } =>
+          isRecord(value) && Array.isArray(value['settings']),
+      );
+      const { settings } = metadataResponse;
+
       const manifest = moduleId ? modules.find((candidate) => candidate.id === moduleId) : undefined;
 
       if (moduleId && !manifest) {
-        console.debug('[dashboard-app] loadDashboard:throw', {
-          error: 'Module not found',
-          moduleId,
-          moduleCount: modules.length,
-        });
-        setState({
+        const nextState: DashboardState = {
           status: 'error',
           manifests: modules,
           settings: [],
           values: {},
           error: `Module "${moduleId}" was not found by the backend.`,
+        };
+        console.debug('[dashboard-app] loadDashboard:moduleNotFound', {
+          failingStatement: 'modules.find((candidate) => candidate.id === moduleId)',
+          thrownException: {
+            name: 'ModuleNotFoundError',
+            message: `Module "${moduleId}" was not found by the backend.`,
+          },
+          actualResponseObject: modulesResponse,
+          expectedResponseObject: {
+            modules: `ModuleManifest[] containing id "${moduleId}"`,
+          },
+          moduleId,
+          objectShape: describeShape(modulesResponse),
         });
+        logStateUpdate('module not found', nextState, moduleId);
+        setState(nextState);
         return;
       }
 
-      console.debug('[dashboard-app] loadDashboard:requestGuildSettings', {
+      failingStatement = moduleId
+        ? 'await api.getGuildSettings(guild.id)'
+        : 'await Promise.resolve(undefined)';
+      expectedResponseObject = moduleId
+        ? { guildId: 'string', settings: 'SettingValue[]' }
+        : undefined;
+      console.debug('[dashboard-app] loadDashboard:await:start', {
+        statement: failingStatement,
         guildId: guild.id,
         moduleId,
+        expectedResponseObject,
       });
-      const valuesResponse = moduleId ? await api.getGuildSettings(guild.id) : undefined;
-      console.debug('[dashboard-app] loadDashboard:guildSettingsLoaded', {
-        settingValueCount: valuesResponse?.settings.length ?? 0,
+      const valuesResponse = moduleId ? await api.getGuildSettings(guild.id) : await Promise.resolve(undefined);
+      actualResponseObject = valuesResponse;
+      console.debug('[dashboard-app] loadDashboard:await:return', {
+        statement: failingStatement,
+        returnedValue: valuesResponse,
+        parsedJson: valuesResponse,
+        objectShape: describeShape(valuesResponse),
+        expectedResponseObject,
       });
-      setState({
+      if (moduleId) {
+        assertResponseShape(
+          'api.getGuildSettings(guild.id)',
+          valuesResponse,
+          expectedResponseObject,
+          (value): value is { guildId: string; settings: { key: string; value: unknown }[] } =>
+            isRecord(value) && typeof value['guildId'] === 'string' && Array.isArray(value['settings']),
+        );
+      }
+
+      const nextState: DashboardState = {
         status: 'ready',
         manifests: modules,
         settings,
         values: Object.fromEntries(valuesResponse?.settings.map((setting) => [setting.key, setting.value]) ?? []),
-      });
+      };
+      logStateUpdate('ready', nextState, moduleId);
+      setState(nextState);
       console.debug('[dashboard-app] loadDashboard:ready', {
         moduleCount: modules.length,
         settingCount: settings.length,
         settingValueCount: valuesResponse?.settings.length ?? 0,
       });
     } catch (error) {
-      console.debug('[dashboard-app] loadDashboard:throw', { error });
-      setState({
+      const nextState: DashboardState = {
         status: 'error',
         manifests: [],
         settings: [],
         values: {},
         error: toErrorMessage(error),
+      };
+      console.error('[dashboard-app] loadDashboard:failed', {
+        failingStatement,
+        thrownException: serializeError(error),
+        actualResponseObject,
+        actualObjectShape: describeShape(actualResponseObject),
+        expectedResponseObject,
       });
+      logStateUpdate('error', nextState, moduleId);
+      setState(nextState);
     }
   }, [api, guild, moduleId]);
 
@@ -216,10 +311,6 @@ function resolveGuild(): GuildSummary | undefined {
 
 function toErrorMessage(error: unknown): string {
   if (error instanceof DashboardAPIError) {
-    if (error.code === 'NETWORK_ERROR') {
-      return 'Backend is offline or unreachable. Start the API backend and retry.';
-    }
-
     return `${error.message} (${error.code})`;
   }
 
@@ -229,4 +320,116 @@ function toErrorMessage(error: unknown): string {
 function getModuleIdFromPath(pathname: string): string | undefined {
   const match = pathname.match(/^\/modules\/(.+)$/);
   return match ? decodeURIComponent(match[1] ?? '') : undefined;
+}
+
+function logStateUpdate(reason: string, nextState: DashboardState, selectedModuleId: string | undefined): void {
+  const selectedModule = selectedModuleId
+    ? nextState.manifests.find((candidate) => candidate.id === selectedModuleId)
+    : undefined;
+
+  console.debug('[dashboard-app] loadDashboard:setState', {
+    reason,
+    status: nextState.status,
+    modules: nextState.manifests,
+    settings: nextState.settings,
+    selectedModule: selectedModule
+      ? {
+          id: selectedModule.id,
+          name: selectedModule.name,
+        }
+      : selectedModuleId,
+  });
+}
+
+function assertResponseShape<T>(
+  statement: string,
+  actual: unknown,
+  expected: unknown,
+  predicate: (value: unknown) => value is T,
+): asserts actual is T {
+  if (predicate(actual)) {
+    return;
+  }
+
+  throw new DashboardShapeError(statement, actual, expected);
+}
+
+class DashboardShapeError extends Error {
+  constructor(
+    readonly statement: string,
+    readonly actualResponseObject: unknown,
+    readonly expectedResponseObject: unknown,
+  ) {
+    super(`Unexpected response shape from ${statement}.`);
+    this.name = 'DashboardShapeError';
+  }
+}
+
+function describeShape(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return {
+      type: 'array',
+      length: value.length,
+      itemShape: value.length > 0 ? describeShape(value[0]) : 'empty',
+    };
+  }
+
+  if (!isRecord(value)) {
+    return {
+      type: value === null ? 'null' : typeof value,
+    };
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, nestedValue]) => [
+      key,
+      Array.isArray(nestedValue)
+        ? {
+            type: 'array',
+            length: nestedValue.length,
+            itemShape: nestedValue.length > 0 ? describeShape(nestedValue[0]) : 'empty',
+          }
+        : isRecord(nestedValue)
+          ? describeShape(nestedValue)
+          : typeof nestedValue,
+    ]),
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function serializeError(error: unknown): unknown {
+  if (error instanceof DashboardShapeError) {
+    return {
+      name: error.name,
+      message: error.message,
+      statement: error.statement,
+      actualResponseObject: error.actualResponseObject,
+      expectedResponseObject: error.expectedResponseObject,
+      stack: error.stack,
+    };
+  }
+
+  if (error instanceof DashboardAPIError) {
+    return {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      status: error.status,
+      details: error.details,
+      stack: error.stack,
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    };
+  }
+
+  return error;
 }

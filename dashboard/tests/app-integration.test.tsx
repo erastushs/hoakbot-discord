@@ -105,7 +105,7 @@ describe('App backend integration', () => {
     });
   });
 
-  it('shows an offline backend error state', async () => {
+  it('shows the exact fetch exception for a network failure', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {
@@ -116,6 +116,6 @@ describe('App backend integration', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('Backend is offline or unreachable. Start the API backend and retry.')).toBeInTheDocument();
+    expect(await screen.findByText('Failed to fetch (NETWORK_ERROR)')).toBeInTheDocument();
   });
 });

@@ -22,7 +22,7 @@ export class ModerationModule implements IModule {
 
   register(container: IContainer): void {
     const registry = container.resolve(TOKENS.CommandRegistry);
-    const config = container.resolve(TOKENS.AppConfig);
+    const config = container.resolve(TOKENS.ConfigurationService).current();
     const logger = container.resolve(TOKENS.Logger);
     const eventBus = container.resolve(TOKENS.EventBus);
     const metrics = container.resolve(TOKENS.MetricsService);

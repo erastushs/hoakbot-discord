@@ -1,4 +1,5 @@
 export { ConfigService } from './config.service.js';
+export { ConfigurationService } from './configuration.service.js';
 export { DatabaseConfigProvider } from './database-config.provider.js';
 export { GuildSettingsRepository } from './guild-settings.repository.js';
 export { JsonConfigProvider } from './json-config.provider.js';

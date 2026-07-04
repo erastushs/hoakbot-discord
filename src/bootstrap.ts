@@ -1,5 +1,6 @@
 import { pino } from 'pino';
 import { ConfigService } from './core/config/config.service.js';
+import { ConfigurationService } from './core/config/configuration.service.js';
 import { DatabaseConfigProvider } from './core/config/database-config.provider.js';
 import { GuildSettingsRepository } from './core/config/guild-settings.repository.js';
 import { JsonConfigProvider } from './core/config/json-config.provider.js';
@@ -89,11 +90,13 @@ try {
     new JsonConfigProvider(),
     settingsRegistry,
   );
+  const configurationService = new ConfigurationService(configProvider, settingsRegistry, eventBus, appConfig);
 
   container.registerSingleton(TOKENS.SettingsRegistry, () => settingsRegistry);
   container.registerSingleton(TOKENS.ManifestRegistry, () => manifestRegistry);
   container.registerSingleton(TOKENS.ModuleRegistry, () => moduleRegistry);
   container.registerSingleton(TOKENS.ConfigProvider, () => configProvider);
+  container.registerSingleton(TOKENS.ConfigurationService, () => configurationService);
 
   const generalModule = new GeneralModule();
   const voiceModule = new VoiceModule();
@@ -124,7 +127,7 @@ try {
   for (const endpoint of createModuleConfigEndpoints({
     manifests: manifestRegistry,
     settings: settingsRegistry,
-    config: configProvider,
+    config: configurationService,
   })) {
     apiRouter.register(endpoint);
   }

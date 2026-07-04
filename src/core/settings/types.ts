@@ -74,4 +74,5 @@ export interface ISettingsRegistry {
   get(key: string): ISettingMetadata | undefined;
   validate(key: string, value: unknown): SettingValidationResult;
   onChange(handler: SettingsChangeHandler): () => void;
+  notifyChange(key: string, value: unknown, guildId: string): void;
 }

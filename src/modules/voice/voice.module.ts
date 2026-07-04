@@ -41,7 +41,7 @@ export class VoiceModule implements IModule {
   private metrics: IMetrics | null = null;
 
   register(container: IContainer): void {
-    const config = container.resolve(TOKENS.AppConfig);
+    const config = container.resolve(TOKENS.ConfigurationService).current();
     const logger = container.resolve(TOKENS.Logger);
     const client = container.resolve(TOKENS.DiscordClient);
     const eventBus = container.resolve(TOKENS.EventBus);
@@ -68,6 +68,25 @@ export class VoiceModule implements IModule {
 
     eventBus.subscribe('voice.memberJoined', (event) => {
       void this.handleMemberJoined(event, logger);
+    });
+
+    eventBus.subscribe('configuration.changed', (event) => {
+      if (event.module !== this.name) return;
+
+      switch (event.key) {
+        case 'voice.defaultSound':
+          this.defaultSound = String(event.newValue);
+          break;
+        case 'voice.volume':
+          if (typeof event.newValue === 'number') this.volume = event.newValue;
+          break;
+        case 'voice.cooldownMs':
+          if (typeof event.newValue === 'number') this.cooldownMs = event.newValue;
+          break;
+        case 'voice.joinDelayMs':
+          if (typeof event.newValue === 'number') this.joinDelayMs = event.newValue;
+          break;
+      }
     });
 
     this.registerVoiceStateHandler(client, eventBus, logger);

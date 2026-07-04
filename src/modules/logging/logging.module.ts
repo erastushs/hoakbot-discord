@@ -20,7 +20,7 @@ export class LoggingModule implements IModule {
   private moderationLogService: ModerationLogService | null = null;
 
   register(container: IContainer): void {
-    const config = container.resolve(TOKENS.AppConfig);
+    const config = container.resolve(TOKENS.ConfigurationService).current();
     const logger = container.resolve(TOKENS.Logger);
     const client = container.resolve(TOKENS.DiscordClient);
     const metrics = container.resolve(TOKENS.MetricsService);

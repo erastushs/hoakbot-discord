@@ -105,9 +105,11 @@ describe('App backend integration', () => {
     await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
 
     const patchCall = fetcher.mock.calls.find(
-      ([url, init]: [string, RequestInit]) => url === '/api/v1/guilds/guild-1/settings' && init?.method === 'PATCH',
+      ([url, init]) => url === '/api/v1/guilds/guild-1/settings' && init?.method === 'PATCH',
     );
-    expect(patchCall).toBeDefined();
+    if (!patchCall) {
+      throw new Error('Expected a PATCH request to /api/v1/guilds/guild-1/settings but none was found');
+    }
     expect(patchCall[0]).toBe('/api/v1/guilds/guild-1/settings');
     expect(patchCall[1]).toEqual({
       method: 'PATCH',

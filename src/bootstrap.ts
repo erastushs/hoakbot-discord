@@ -7,7 +7,8 @@ import { JsonConfigProvider } from './core/config/json-config.provider.js';
 import { createLogger } from './core/logger/logger.service.js';
 import { Container } from './core/container/container.js';
 import { TOKENS } from './core/container/tokens.js';
-import { APIRouter, createAPIHttpServer, createModuleConfigEndpoints, ok } from './core/api/index.js';
+import { APIRouter, createAPIHttpServer, createAuthEndpoints, createModuleConfigEndpoints, ok } from './core/api/index.js';
+import { DiscordOAuthProvider, FetchDiscordAPIClient, OAuthStateService } from './core/auth/index.js';
 import { SettingsRegistry } from './core/settings/settings-registry.js';
 import { ModuleLoader } from './modules/module-loader.js';
 import { ManifestRegistry } from './modules/manifest-registry.js';
@@ -109,12 +110,24 @@ try {
     settingsRegistry,
   );
   const configurationService = new ConfigurationService(configProvider, settingsRegistry, eventBus, appConfig);
+  const discordOAuthConfig = {
+    clientId: appConfig.discord.oauth?.clientId ?? appConfig.discord.clientId,
+    clientSecret: appConfig.discord.oauth?.clientSecret ?? '',
+    redirectUri: appConfig.discord.oauth?.redirectUri ?? '',
+  };
+  const oauthStateService = new OAuthStateService();
+  const discordOAuthProvider = new DiscordOAuthProvider(
+    discordOAuthConfig,
+    oauthStateService,
+    new FetchDiscordAPIClient(discordOAuthConfig),
+  );
 
   container.registerSingleton(TOKENS.SettingsRegistry, () => settingsRegistry);
   container.registerSingleton(TOKENS.ManifestRegistry, () => manifestRegistry);
   container.registerSingleton(TOKENS.ModuleRegistry, () => moduleRegistry);
   container.registerSingleton(TOKENS.ConfigProvider, () => configProvider);
   container.registerSingleton(TOKENS.ConfigurationService, () => configurationService);
+  container.registerSingleton(TOKENS.AuthProvider, () => discordOAuthProvider);
 
   const generalModule = new GeneralModule();
   const voiceModule = new VoiceModule();
@@ -142,6 +155,9 @@ try {
   moduleLoader.registerModule(goodbyeModule);
 
   await moduleLoader.loadAll(container);
+  for (const endpoint of createAuthEndpoints({ authProvider: discordOAuthProvider })) {
+    apiRouter.register(endpoint);
+  }
   for (const endpoint of createModuleConfigEndpoints({
     manifests: manifestRegistry,
     settings: settingsRegistry,

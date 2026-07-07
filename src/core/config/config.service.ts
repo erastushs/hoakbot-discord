@@ -39,6 +39,9 @@ export class ConfigService {
       CLIENT_ID: process.env['CLIENT_ID'],
       DATABASE_URL: process.env['DATABASE_URL'],
       API_PORT: process.env['API_PORT'],
+      DISCORD_CLIENT_ID: process.env['DISCORD_CLIENT_ID'],
+      DISCORD_CLIENT_SECRET: process.env['DISCORD_CLIENT_SECRET'],
+      DISCORD_REDIRECT_URI: process.env['DISCORD_REDIRECT_URI'],
       NODE_ENV: process.env['NODE_ENV'],
       LOG_LEVEL: process.env['LOG_LEVEL'],
       GUILD_ID: process.env['GUILD_ID'],
@@ -74,6 +77,11 @@ export class ConfigService {
       discord: {
         token: env.BOT_TOKEN,
         clientId: env.CLIENT_ID,
+        oauth: {
+          clientId: env.DISCORD_CLIENT_ID ?? env.CLIENT_ID,
+          clientSecret: env.DISCORD_CLIENT_SECRET ?? '',
+          redirectUri: env.DISCORD_REDIRECT_URI ?? '',
+        },
       },
       databaseUrl: env.DATABASE_URL,
       api: {

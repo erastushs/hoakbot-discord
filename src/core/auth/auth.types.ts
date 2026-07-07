@@ -71,6 +71,7 @@ export interface OAuthState {
 export interface AuthSuccessResult {
   readonly ok: true;
   readonly user: AuthenticatedUser;
+  readonly guilds?: readonly GuildIdentity[];
   readonly session?: SessionIdentity;
 }
 

@@ -111,6 +111,11 @@ export interface AppConfig {
   discord: {
     token: string;
     clientId: string;
+    oauth?: {
+      clientId: string;
+      clientSecret: string;
+      redirectUri: string;
+    };
   };
   databaseUrl: string;
   api: {

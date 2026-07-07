@@ -105,6 +105,9 @@ export const envSchema = z.object({
   CLIENT_ID: z.string().min(1, 'CLIENT_ID is required'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   API_PORT: z.coerce.number().int().positive().max(65535).default(3000),
+  DISCORD_CLIENT_ID: z.string().optional(),
+  DISCORD_CLIENT_SECRET: z.string().optional(),
+  DISCORD_REDIRECT_URI: z.string().optional(),
   NODE_ENV: z.enum(['development', 'production']).default('production'),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   GUILD_ID: z.string().optional(),
@@ -118,6 +121,11 @@ export const appConfigSchema = z.object({
   discord: z.object({
     token: z.string(),
     clientId: z.string(),
+    oauth: z.object({
+      clientId: z.string(),
+      clientSecret: z.string(),
+      redirectUri: z.string(),
+    }),
   }),
   databaseUrl: z.string(),
   api: z.object({

@@ -21,17 +21,17 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
   const hotReloadCount = manifests.filter((manifest) => manifest.supportsHotReload).length;
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-10">
       <PageHeader
         description="Monitor guild configuration, review module status, and jump into the most important bot controls from one developer-focused workspace."
         status={<StatusBadge status="online">Operational</StatusBadge>}
         title="Dashboard Home"
       >
         <div className="flex flex-wrap items-center gap-3 text-small text-dashboard-text-secondary">
-          <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-surface px-3 py-1">
+          <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-surface/68 px-3 py-1 shadow-elevation-1 backdrop-blur-xl">
             Guild: <span className="font-medium text-dashboard-text-primary">{guildName}</span>
           </span>
-          <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-surface px-3 py-1">
+          <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-surface/68 px-3 py-1 shadow-elevation-1 backdrop-blur-xl">
             {manifests.length} modules available
           </span>
         </div>
@@ -42,7 +42,7 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
           description="High-level operational signals for this guild workspace."
           title="Overview"
         />
-        <div className="grid auto-rows-fr gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
+        <div className="grid auto-rows-fr gap-5 tablet:grid-cols-2 desktop:grid-cols-4">
           <StatCard description="Loaded from module manifests." label="Modules Enabled" value={manifests.length} />
           <StatCard description="Featured for dashboard access." label="Configured Modules" value={featuredCount} />
           <StatCard description="Dashboard API reachable." label="System Status" value="Healthy" />
@@ -56,12 +56,12 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
           title="Modules"
         />
         {orderedManifests.length > 0 ? (
-          <div className="grid auto-rows-fr gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
+          <div className="grid auto-rows-fr gap-5 tablet:grid-cols-2 desktop:grid-cols-3">
             {orderedManifests.map((manifest) => (
-              <Card className="grid h-full gap-5" key={manifest.id} variant="interactive">
+              <Card className="grid h-full gap-6 p-6" key={manifest.id} variant="interactive">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-dashboard-border-subtle bg-dashboard-bg-muted text-dashboard-text-secondary">
+                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-muted/72 text-dashboard-text-secondary shadow-elevation-1">
                       <Boxes className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
@@ -75,7 +75,7 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
                 </div>
                 <p className="text-small text-dashboard-text-secondary">{manifest.description}</p>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-muted px-2 py-0.5 text-caption font-medium text-dashboard-text-secondary">{manifest.category}</span>
+                  <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-muted/62 px-2.5 py-1 text-caption font-medium text-dashboard-text-secondary">{manifest.category}</span>
                   <Button
                     onClick={() => {
                       window.location.href = `/modules/${encodeURIComponent(manifest.id)}${window.location.search}`;
@@ -98,15 +98,15 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
         )}
       </Section>
 
-      <div className="grid gap-4 desktop:grid-cols-[1fr_360px]">
+      <div className="grid gap-5 desktop:grid-cols-[1fr_360px]">
         <Section className="h-full">
           <SectionHeader
             description="Current selected workspace from the authenticated session."
             title="Guild"
           />
-          <Card className="grid h-full content-start gap-4">
+          <Card className="grid h-full content-start gap-5 p-6">
             <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-xl border border-dashboard-border-subtle bg-dashboard-bg-muted text-dashboard-text-secondary">
+              <span className="grid h-11 w-11 place-items-center rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-muted/72 text-dashboard-text-secondary shadow-elevation-1">
                 <Building2 className="h-5 w-5" />
               </span>
               <div className="min-w-0">
@@ -114,7 +114,7 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
                 <p className="text-small text-dashboard-text-secondary">Selected guild workspace</p>
               </div>
             </div>
-            <div className="grid gap-3 border-t border-dashboard-border-subtle pt-4 tablet:grid-cols-2">
+            <div className="grid gap-3 pt-2 tablet:grid-cols-2">
               <div>
                 <p className="text-caption uppercase tracking-[0.16em] text-dashboard-text-tertiary">Available modules</p>
                 <p className="mt-1 text-body font-semibold text-dashboard-text-primary">{manifests.length}</p>
@@ -129,7 +129,7 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
 
         <Section className="h-full">
           <SectionHeader description="Current frontend-visible health indicators." title="System Health" />
-          <Card className="grid h-full content-start gap-4">
+          <Card className="grid h-full content-start gap-4 p-6">
             <div className="flex items-center justify-between gap-3">
               <span className="text-small text-dashboard-text-secondary">Dashboard API</span>
               <StatusBadge status="online">Online</StatusBadge>

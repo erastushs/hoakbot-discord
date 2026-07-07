@@ -6,7 +6,7 @@ export function GuildSwitcher() {
   const { guilds, currentGuild, setCurrentGuild } = useGuild();
 
   return (
-    <label className="grid gap-2 text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">
+    <label className="grid gap-2 text-caption font-medium uppercase tracking-[0.18em] text-dashboard-text-tertiary">
       <span>Guild</span>
       <span className="relative block">
         {currentGuild?.iconUrl ? (
@@ -18,7 +18,7 @@ export function GuildSwitcher() {
         ) : null}
         <select
           aria-label="Current guild"
-          className={`h-11 w-full appearance-none rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-surface pr-9 text-small font-medium text-dashboard-text-primary transition duration-hover ease-dashboard hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface-elevated focus:border-dashboard-border-strong focus:outline-none focus:ring-2 focus:ring-dashboard-focus-ring/40 ${
+          className={`h-11 w-full appearance-none rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-surface/68 pr-9 text-small font-medium text-dashboard-text-primary shadow-elevation-1 backdrop-blur-xl transition duration-hover ease-dashboard hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface-elevated/80 focus:border-dashboard-border-strong focus:outline-none focus:ring-2 focus:ring-dashboard-focus-ring/35 ${
             currentGuild?.iconUrl ? 'pl-11' : 'px-3'
           }`}
           onChange={(event) => setCurrentGuild(event.target.value)}

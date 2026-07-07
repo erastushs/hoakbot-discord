@@ -13,7 +13,7 @@ export function Switch({ checked = false, className, description, label, onCheck
   return (
     <button
       aria-checked={checked}
-      className={cx('flex w-full items-center justify-between gap-4 rounded-xl border border-dashboard-border-subtle bg-dashboard-bg-app p-4 text-left shadow-elevation-0 transition duration-hover ease-dashboard hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring disabled:cursor-not-allowed disabled:bg-dashboard-bg-muted disabled:opacity-60 disabled:shadow-elevation-0', className)}
+      className={cx('flex w-full items-center justify-between gap-4 rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-surface/58 p-4 text-left shadow-elevation-0 backdrop-blur-xl transition duration-hover ease-dashboard hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface-elevated/74 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring disabled:cursor-not-allowed disabled:bg-dashboard-bg-muted disabled:opacity-60 disabled:shadow-elevation-0', className)}
       onClick={() => onCheckedChange?.(!checked)}
       role="switch"
       type={type}
@@ -27,7 +27,7 @@ export function Switch({ checked = false, className, description, label, onCheck
         aria-hidden
         className={cx(
           'relative h-6 w-11 rounded-full border transition duration-hover',
-          checked ? 'border-dashboard-accent-primary bg-dashboard-accent-primary' : 'border-dashboard-border-strong bg-dashboard-bg-muted',
+          checked ? 'border-dashboard-accent-primary bg-dashboard-accent-primary shadow-elevation-1' : 'border-dashboard-border-strong bg-dashboard-bg-muted/82',
         )}
       >
         <span

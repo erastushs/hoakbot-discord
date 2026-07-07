@@ -9,6 +9,7 @@ import { Container } from './core/container/container.js';
 import { TOKENS } from './core/container/tokens.js';
 import {
   APIRouter,
+  createAuthorizationMiddleware,
   createAPIHttpServer,
   createAuthEndpoints,
   createModuleConfigEndpoints,
@@ -185,6 +186,7 @@ try {
 
   await moduleLoader.loadAll(container);
   apiRouter.use(createSessionAuthMiddleware({ sessionProvider, sessionConfig }));
+  apiRouter.use(createAuthorizationMiddleware({ authorizationProvider }));
   for (const endpoint of createAuthEndpoints({
     authProvider: discordOAuthProvider,
     sessionProvider,

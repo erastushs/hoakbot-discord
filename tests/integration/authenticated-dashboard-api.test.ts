@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { APIRouter, createModuleConfigEndpoints, createSessionAuthMiddleware } from '../../src/core/api/index.js';
-import type { ISessionProvider, SessionConfig } from '../../src/core/auth/index.js';
+import { APIRouter, createAuthorizationMiddleware, createModuleConfigEndpoints, createSessionAuthMiddleware } from '../../src/core/api/index.js';
+import type { IAuthorizationProvider, ISessionProvider, SessionConfig, SessionRecord } from '../../src/core/auth/index.js';
 import type { IConfigProvider } from '../../src/core/config/provider.types.js';
 import { SettingsRegistry } from '../../src/core/settings/settings-registry.js';
 import { createGeneralSettings, generalManifest } from '../../src/modules/general/index.js';
@@ -41,19 +41,41 @@ function appConfig(): Readonly<AppConfig> {
 }
 
 function sessionProvider(valid: boolean): ISessionProvider {
+  const record: SessionRecord = {
+    id: 'valid-session',
+    userId: 'user-1',
+    user: { id: 'user-1', provider: 'discord', username: 'admin' },
+    createdAt: new Date(),
+    expiresAt: new Date(Date.now() + 60_000),
+    metadata: { guilds: [{ id: 'guild-1', name: 'Guild One' }] },
+  };
   return {
     createSession: vi.fn(),
-    getSession: vi.fn(async (id: string) =>
-      valid && id === 'valid-session'
-        ? { id, userId: 'user-1', createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }
-        : undefined,
-    ),
+    getSession: vi.fn(async (id: string) => (valid && id === 'valid-session' ? record : undefined)),
+    getSessionRecord: vi.fn(async (id: string) => (valid && id === 'valid-session' ? record : undefined)),
     refreshSession: vi.fn(),
     destroySession: vi.fn(),
-  } as ISessionProvider;
+  } as ISessionProvider & { getSessionRecord(sessionId: string): Promise<SessionRecord | undefined> };
 }
 
-function createRouter(validSession: boolean): APIRouter {
+function authorizationProvider(allowed: boolean): IAuthorizationProvider {
+  return {
+    canAccessDashboard: vi.fn(),
+    canAccessGuild: vi.fn(),
+    canManageModule: vi.fn(async (_user, guildId) =>
+      allowed
+        ? { allowed: true, source: 'discord:manage-guild', reason: 'allowed', guildId, userId: 'user-1', action: 'module' }
+        : { allowed: false, code: 'authorization.module_denied', reason: 'denied', guildId, userId: 'user-1', action: 'module' },
+    ),
+    canModifyConfiguration: vi.fn(async (_user, request) =>
+      allowed
+        ? { allowed: true, source: 'discord:manage-guild', reason: 'allowed', guildId: request.guildId, userId: 'user-1', action: request.action }
+        : { allowed: false, code: 'authorization.configuration_denied', reason: 'denied', guildId: request.guildId, userId: 'user-1', action: request.action },
+    ),
+  } as IAuthorizationProvider;
+}
+
+function createRouter(validSession: boolean, authorized: boolean): APIRouter {
   const manifests = new ManifestRegistry();
   manifests.register(generalManifest);
   const settings = new SettingsRegistry();
@@ -68,6 +90,7 @@ function createRouter(validSession: boolean): APIRouter {
   };
   const router = new APIRouter();
   router.use(createSessionAuthMiddleware({ sessionProvider: sessionProvider(validSession), sessionConfig }));
+  router.use(createAuthorizationMiddleware({ authorizationProvider: authorizationProvider(authorized) }));
   for (const endpoint of createModuleConfigEndpoints({ manifests, settings, config })) {
     router.register(endpoint);
   }
@@ -76,16 +99,36 @@ function createRouter(validSession: boolean): APIRouter {
 
 describe('authenticated dashboard API integration', () => {
   it('returns 401 for dashboard module endpoints without a valid session', async () => {
-    await expect(createRouter(false).handle({ method: 'GET', path: '/api/v1/modules' })).resolves.toMatchObject({
+    await expect(createRouter(false, false).handle({ method: 'GET', path: '/api/v1/modules' })).resolves.toMatchObject({
       success: false,
       status: 401,
       error: { code: 'AUTH_REQUIRED' },
     });
   });
 
+  it('returns 403 for guild settings endpoints when authenticated but unauthorized', async () => {
+    await expect(
+      createRouter(true, false).handle({
+        method: 'GET',
+        path: '/api/v1/guilds/guild-1/settings',
+        headers: { cookie: 'hoak_session=valid-session' },
+      }),
+    ).resolves.toMatchObject({ success: false, status: 403, error: { code: 'FORBIDDEN' } });
+  });
+
   it('allows dashboard module endpoints with a valid session', async () => {
     await expect(
-      createRouter(true).handle({ method: 'GET', path: '/api/v1/modules', headers: { cookie: 'hoak_session=valid-session' } }),
+      createRouter(true, true).handle({ method: 'GET', path: '/api/v1/modules', headers: { cookie: 'hoak_session=valid-session' } }),
     ).resolves.toMatchObject({ success: true, data: { manifests: [expect.objectContaining({ id: 'general' })] } });
+  });
+
+  it('allows guild settings endpoints when authenticated and authorized', async () => {
+    await expect(
+      createRouter(true, true).handle({
+        method: 'GET',
+        path: '/api/v1/guilds/guild-1/settings',
+        headers: { cookie: 'hoak_session=valid-session' },
+      }),
+    ).resolves.toMatchObject({ success: true, data: { guildId: 'guild-1' } });
   });
 });

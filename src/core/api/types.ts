@@ -1,4 +1,5 @@
 import type { ZodTypeAny } from 'zod';
+import type { SessionRecord } from '../auth/index.js';
 
 export type APIHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export type APIAuthLevel = 'public' | 'authenticated' | 'guild_member' | 'guild_admin' | 'bot_owner';
@@ -36,6 +37,7 @@ export type APIErrorCode =
   | 'AUTH_REQUIRED'
   | 'AUTH_EXPIRED'
   | 'FORBIDDEN'
+  | 'GUILD_NOT_FOUND'
   | 'NOT_FOUND'
   | 'VALIDATION_ERROR'
   | 'RATE_LIMITED'
@@ -57,6 +59,7 @@ export interface APIRequestContext {
   version: 'v1';
   params: Record<string, string>;
   endpoint?: APIEndpoint;
+  session?: SessionRecord;
 }
 
 export type APINext = () => Promise<APIResponse>;

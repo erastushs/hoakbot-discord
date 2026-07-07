@@ -1,4 +1,4 @@
-import type { ISessionProvider, SessionConfig } from '../auth/index.js';
+import type { ISessionProvider, SessionConfig, SessionRecord } from '../auth/index.js';
 import { fail } from './responses.js';
 import type { APIMiddleware } from './types.js';
 
@@ -23,9 +23,17 @@ export function createSessionAuthMiddleware({
       return fail('AUTH_REQUIRED', 'Authentication required');
     }
 
-    const session = await sessionProvider.getSession(sessionId);
+    const recordProvider = sessionProvider as ISessionProvider & {
+      getSessionRecord?(sessionId: string): Promise<SessionRecord | undefined>;
+    };
+    const record = recordProvider.getSessionRecord ? await recordProvider.getSessionRecord(sessionId) : undefined;
+    const session = record ?? (await sessionProvider.getSession(sessionId));
     if (!session) {
       return fail('AUTH_REQUIRED', 'Authentication required');
+    }
+
+    if (record) {
+      context.session = record;
     }
 
     return next();

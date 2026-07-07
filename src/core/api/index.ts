@@ -1,5 +1,6 @@
 export { APIAuthorizationService, UserGuildOwnershipChecker } from './authorization.js';
 export { APIError, apiError, toAPIErrorResponse } from './errors.js';
+export { createAuthorizationMiddleware } from './authorization.middleware.js';
 export { createAuthEndpoints } from './auth.endpoints.js';
 export { MemoryAuthProvider } from './memory-auth.provider.js';
 export { createModuleConfigEndpoints } from './module-config.endpoints.js';
@@ -20,6 +21,7 @@ export type {
   APIAuthorizationRequest,
   GuildOwnershipChecker,
 } from './authorization.js';
+export type { AuthorizationMiddlewareDependencies } from './authorization.middleware.js';
 export type { AuthEndpointDependencies } from './auth.endpoints.js';
 export type { SessionAuthMiddlewareDependencies } from './session-auth.middleware.js';
 export type {

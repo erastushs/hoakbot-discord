@@ -21,7 +21,7 @@ export function DashboardLayout({
         <div className="min-w-0 flex-1 lg:pl-sidebar">
           <TopNavigation breadcrumb={breadcrumb} />
           <main className="min-h-[calc(100vh-var(--header-height))] overflow-y-auto px-4 py-6 tablet:px-6 desktop:px-8">
-            <div className="mx-auto w-full max-w-page">{children}</div>
+            <div className="mx-auto w-full max-w-page motion-safe:animate-[dashboard-page-in_var(--duration-page)_var(--ease-dashboard)]">{children}</div>
           </main>
         </div>
       </div>

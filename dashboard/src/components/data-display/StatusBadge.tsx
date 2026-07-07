@@ -20,6 +20,7 @@ export interface StatusBadgeProps extends Omit<BadgeProps, 'variant'> {
 export function StatusBadge({ children, status, ...props }: StatusBadgeProps) {
   return (
     <Badge variant={variantMap[status]} {...props}>
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
       {children ?? status}
     </Badge>
   );

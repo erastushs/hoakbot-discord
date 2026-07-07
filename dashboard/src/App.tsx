@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { APIClient, DashboardAPIError } from './api/client.js';
 import { AuthGuard } from './auth/AuthGuard.js';
 import { AuthProvider, useAuth } from './auth/AuthContext.js';
+import { Button, Card, Skeleton } from './components/index.js';
 import { GuildProvider } from './guilds/GuildContext.js';
 import { DashboardHome } from './home/DashboardHome.js';
 import { DashboardLayout } from './layout/DashboardLayout.js';
@@ -255,7 +256,7 @@ function DashboardShell({ api }: { api: APIClient }) {
     <AuthGuard>
       <DashboardLayout breadcrumb={breadcrumb} manifests={state.manifests}>
         {state.status === 'loading' ? (
-          <DashboardStateMessage title="Loading dashboard" message="Loading platform data from the backend." />
+          <DashboardLoadingState />
         ) : state.status === 'error' ? (
           <DashboardStateMessage
             actionLabel="Retry"
@@ -273,6 +274,63 @@ function DashboardShell({ api }: { api: APIClient }) {
   );
 }
 
+function DashboardLoadingState() {
+  return (
+    <div aria-busy="true" aria-live="polite" className="grid gap-8" role="status">
+      <header className="mb-6 border-b border-dashboard-border-subtle pb-6">
+        <div className="flex flex-col gap-4 tablet:flex-row tablet:items-start tablet:justify-between">
+          <div className="grid min-w-0 gap-3">
+            <Skeleton className="h-8 w-56" />
+            <Skeleton className="h-4 w-full max-w-2xl" />
+            <Skeleton className="h-4 w-80 max-w-full" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+      </header>
+
+      <section className="grid gap-4">
+        <div className="grid gap-2">
+          <Skeleton className="h-7 w-36" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <div className="grid gap-4 tablet:grid-cols-3">
+          <Card className="grid gap-3">
+            <Skeleton className="h-5 w-5 rounded-full" />
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-6 w-36" />
+          </Card>
+          <Card className="grid gap-3">
+            <Skeleton className="h-5 w-5 rounded-full" />
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="h-6 w-32" />
+          </Card>
+          <Card className="grid gap-3">
+            <Skeleton className="h-5 w-5 rounded-full" />
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-6 w-40" />
+          </Card>
+        </div>
+      </section>
+
+      <section className="grid gap-4">
+        <div className="grid gap-2">
+          <Skeleton className="h-7 w-44" />
+          <Skeleton className="h-4 w-96 max-w-full" />
+        </div>
+        <Card className="grid gap-5">
+          <Skeleton className="h-6 w-40" />
+          <div className="grid gap-4">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </div>
+        </Card>
+      </section>
+      <span className="sr-only">Loading dashboard content</span>
+    </div>
+  );
+}
+
 function DashboardStateMessage({
   actionLabel,
   message,
@@ -285,17 +343,13 @@ function DashboardStateMessage({
   title: string;
 }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <h1 className="text-xl font-semibold text-slate-950">{title}</h1>
-      <p className="mt-2 text-sm text-slate-600">{message}</p>
+    <section className="rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-surface p-6 shadow-elevation-1">
+      <h1 className="text-heading-m text-dashboard-text-primary">{title}</h1>
+      <p className="mt-2 max-w-2xl text-small text-dashboard-text-secondary">{message}</p>
       {actionLabel && onAction ? (
-        <button
-          className="mt-5 rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white"
-          onClick={onAction}
-          type="button"
-        >
+        <Button className="mt-5" onClick={onAction} variant="primary">
           {actionLabel}
-        </button>
+        </Button>
       ) : null}
     </section>
   );

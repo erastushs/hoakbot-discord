@@ -26,13 +26,14 @@ function groupManifests(manifests: ModuleManifest[]): Array<[string, ModuleManif
 
 export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
   const auth = useAuth();
+  const currentPath = window.location.pathname;
   const userName = auth.user?.displayName ?? auth.user?.username ?? 'Authenticated user';
   const userInitial = userName.trim().charAt(0).toUpperCase() || 'H';
 
   return (
     <aside className="fixed inset-y-0 left-0 z-sticky hidden w-sidebar flex-col border-r border-dashboard-border-subtle bg-dashboard-bg-sidebar/95 px-3 py-4 shadow-elevation-2 backdrop-blur desktop:flex">
       <a
-        className="flex h-11 items-center gap-3 rounded-lg px-3 text-small font-semibold text-dashboard-text-primary transition duration-hover hover:bg-dashboard-bg-muted"
+        className="flex h-11 items-center gap-3 rounded-lg px-3 text-small font-semibold text-dashboard-text-primary transition duration-hover ease-dashboard hover:bg-dashboard-bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring"
         href="/"
       >
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-dashboard-accent-muted text-dashboard-accent-primary shadow-elevation-1">
@@ -43,7 +44,7 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
 
       <nav aria-label="Primary" className="mt-6 space-y-6 overflow-y-auto pr-1">
         <SidebarGroup title="Dashboard">
-          <SidebarLink href="/" icon={<Home className="h-4 w-4" />} label="Dashboard" />
+          <SidebarLink active={currentPath === '/'} href="/" icon={<Home className="h-4 w-4" />} label="Dashboard" />
         </SidebarGroup>
 
         <SidebarGroup title="Modules">
@@ -53,6 +54,7 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
                 <SidebarLink
                   href={`/modules/${encodeURIComponent(manifest.id)}`}
                   icon={<Circle className="h-3 w-3" fill={manifest.color} style={{ color: manifest.color }} />}
+                  active={currentPath === `/modules/${encodeURIComponent(manifest.id)}`}
                   key={manifest.id}
                   label={manifest.name}
                 />
@@ -75,7 +77,7 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
       <div className="mt-auto space-y-3 border-t border-dashboard-border-subtle pt-4">
         <GuildSwitcher />
         <button
-          className="flex w-full items-center gap-3 rounded-xl border border-dashboard-border-subtle bg-dashboard-bg-surface p-2 text-left transition duration-hover hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface-elevated"
+          className="flex w-full items-center gap-3 rounded-xl border border-dashboard-border-subtle bg-dashboard-bg-surface p-2 text-left transition duration-hover ease-dashboard hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface-elevated hover:shadow-elevation-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring"
           type="button"
         >
           {auth.user?.avatarUrl ? (
@@ -105,13 +107,18 @@ function SidebarGroup({ children, title }: { children: ReactNode; title: string 
   );
 }
 
-function SidebarLink({ href, icon, label }: { href: string; icon: ReactNode; label: string }) {
+function SidebarLink({ active = false, href, icon, label }: { active?: boolean; href: string; icon: ReactNode; label: string }) {
   return (
     <a
-      className="flex items-center gap-3 rounded-lg px-3 py-2 text-small font-medium text-dashboard-text-secondary transition duration-hover hover:bg-dashboard-bg-muted hover:text-dashboard-text-primary focus-visible:bg-dashboard-bg-muted"
+      aria-current={active ? 'page' : undefined}
+      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-small font-medium transition duration-hover ease-dashboard focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring ${
+        active
+          ? 'bg-dashboard-accent-muted text-dashboard-text-primary shadow-elevation-1'
+          : 'text-dashboard-text-secondary hover:bg-dashboard-bg-muted hover:text-dashboard-text-primary focus-visible:bg-dashboard-bg-muted'
+      }`}
       href={href}
     >
-      <span className="grid h-5 w-5 place-items-center text-dashboard-text-tertiary">{icon}</span>
+      <span className={`grid h-5 w-5 place-items-center transition duration-hover ${active ? 'text-dashboard-accent-hover' : 'text-dashboard-text-tertiary group-hover:text-dashboard-text-primary'}`}>{icon}</span>
       <span className="truncate">{label}</span>
     </a>
   );

@@ -18,7 +18,7 @@ export function GuildSwitcher() {
         ) : null}
         <select
           aria-label="Current guild"
-          className={`h-10 w-full appearance-none rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-surface pr-9 text-small font-medium text-dashboard-text-primary transition duration-hover hover:border-dashboard-border-strong focus:border-dashboard-border-strong ${
+          className={`h-10 w-full appearance-none rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-surface pr-9 text-small font-medium text-dashboard-text-primary transition duration-hover ease-dashboard hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface-elevated focus:border-dashboard-border-strong focus:outline-none focus:ring-2 focus:ring-dashboard-focus-ring/40 ${
             currentGuild?.iconUrl ? 'pl-11' : 'px-3'
           }`}
           onChange={(event) => setCurrentGuild(event.target.value)}

@@ -123,7 +123,9 @@ export interface AppConfig {
   };
   dashboard?: {
     url: string;
+    allowedOrigin: string;
   };
+  trustProxy: boolean;
   session?: {
     durationMs: number;
     cookieName: string;

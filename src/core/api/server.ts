@@ -14,6 +14,13 @@ export interface APIHttpServerOptions {
   port: number;
   router: APIRouter;
   logger: ILogger;
+  cors?: APICorsOptions;
+  trustProxy?: boolean;
+}
+
+export interface APICorsOptions {
+  readonly nodeEnv: string;
+  readonly allowedOrigin: string;
 }
 
 export interface APIHttpServer {
@@ -22,9 +29,9 @@ export interface APIHttpServer {
   stop(): Promise<void>;
 }
 
-export function createAPIHttpServer({ port, router, logger }: APIHttpServerOptions): APIHttpServer {
+export function createAPIHttpServer({ port, router, logger, cors, trustProxy = false }: APIHttpServerOptions): APIHttpServer {
   const server = createServer(async (request, response) => {
-    setCorsHeaders(response);
+    setCorsHeaders(request, response, cors);
     applySecurityHeaders(response);
 
     if (request.method === 'OPTIONS') {
@@ -34,7 +41,7 @@ export function createAPIHttpServer({ port, router, logger }: APIHttpServerOptio
     }
 
     try {
-      const apiRequest = await toAPIRequest(request);
+      const apiRequest = await toAPIRequest(request, trustProxy);
       const apiResponse = await router.handle(apiRequest);
       sendJSON(response, apiResponse);
     } catch (error) {
@@ -57,7 +64,7 @@ export function createAPIHttpServer({ port, router, logger }: APIHttpServerOptio
   };
 }
 
-async function toAPIRequest(request: IncomingMessage): Promise<APIRequest> {
+async function toAPIRequest(request: IncomingMessage, trustProxy: boolean): Promise<APIRequest> {
   const method = request.method ?? 'GET';
   if (!SUPPORTED_METHODS.has(method)) {
     return {
@@ -73,17 +80,17 @@ async function toAPIRequest(request: IncomingMessage): Promise<APIRequest> {
     method: method as APIHttpMethod,
     path: url.pathname,
     headers: toHeaders(request),
-    ip: clientIp(request),
+    ip: clientIp(request, trustProxy),
     query: Object.fromEntries(url.searchParams.entries()),
     body,
   };
 }
 
-function clientIp(request: IncomingMessage): string {
+export function clientIp(request: IncomingMessage, trustProxy: boolean): string {
   const forwardedFor = request.headers['x-forwarded-for'];
   const forwarded = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
   const firstForwarded = forwarded?.split(',')[0]?.trim();
-  return firstForwarded || request.socket.remoteAddress || 'unknown';
+  return trustProxy ? firstForwarded || request.socket.remoteAddress || 'unknown' : request.socket.remoteAddress || 'unknown';
 }
 
 function toHeaders(request: IncomingMessage): Record<string, string | undefined> {
@@ -134,10 +141,42 @@ function sendJSON(response: ServerResponse, apiResponse: APIResponse): void {
   response.end(JSON.stringify(apiResponse));
 }
 
-function setCorsHeaders(response: ServerResponse): void {
-  response.setHeader('Access-Control-Allow-Origin', '*');
+export function resolveAllowedOrigin(requestOrigin: string | undefined, options: APICorsOptions | undefined): string | undefined {
+  if (!options) {
+    return requestOrigin ?? '*';
+  }
+
+  if (options.nodeEnv !== 'production') {
+    if (!requestOrigin) {
+      return options.allowedOrigin;
+    }
+
+    return isLocalhostOrigin(requestOrigin) ? requestOrigin : undefined;
+  }
+
+  return requestOrigin === options.allowedOrigin ? options.allowedOrigin : undefined;
+}
+
+function setCorsHeaders(request: IncomingMessage, response: ServerResponse, options: APICorsOptions | undefined): void {
+  const origin = Array.isArray(request.headers.origin) ? request.headers.origin[0] : request.headers.origin;
+  const allowedOrigin = resolveAllowedOrigin(origin, options);
+  if (allowedOrigin) {
+    response.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    response.setHeader('Vary', 'Origin');
+  }
+
   response.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-CSRF-Token');
+  response.setHeader('Access-Control-Allow-Credentials', 'true');
+}
+
+function isLocalhostOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+    return url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
+  } catch {
+    return false;
+  }
 }
 
 function listen(server: Server, port: number, logger: ILogger): Promise<void> {

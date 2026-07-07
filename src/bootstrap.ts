@@ -33,6 +33,8 @@ import {
   FetchDiscordAPIClient,
   GuildResolver,
   OAuthStateService,
+  SessionCleanupScheduler,
+  SessionCleanupService,
   SessionRepository,
 } from './core/auth/index.js';
 import { SettingsRegistry } from './core/settings/settings-registry.js';
@@ -149,6 +151,11 @@ try {
   const oauthStateService = new OAuthStateService();
   const sessionRepository = new SessionRepository(databaseAdapter);
   const sessionProvider = new DatabaseSessionProvider(sessionRepository, sessionConfig);
+  const sessionCleanupScheduler = new SessionCleanupScheduler(
+    new SessionCleanupService(sessionRepository),
+    logger,
+    { intervalMs: appConfig.session?.cleanupIntervalMs ?? 1000 * 60 * 60 },
+  );
   const csrfService = new CsrfService({ tokenTtlMs: sessionConfig.durationMs });
   const rateLimiter = new RateLimiter();
   const securityAudit = new SecurityAuditService(logger);
@@ -247,10 +254,16 @@ try {
     port: appConfig.api.port,
     router: apiRouter,
     logger,
+    cors: {
+      nodeEnv: appConfig.env.nodeEnv,
+      allowedOrigin: appConfig.dashboard?.allowedOrigin ?? new URL(appConfig.dashboard?.url ?? 'http://localhost:5173').origin,
+    },
+    trustProxy: appConfig.trustProxy,
   });
   await apiServer.start();
+  sessionCleanupScheduler.start();
 
-  const shutdown = registerShutdownHandlers(logger, client, moduleLoader, databaseAdapter, eventBus, apiServer);
+  const shutdown = registerShutdownHandlers(logger, client, moduleLoader, databaseAdapter, eventBus, apiServer, sessionCleanupScheduler);
   registerCrashHanders(logger, shutdown);
 
   logger.info('Logging in to Discord...');
@@ -301,6 +314,7 @@ function registerShutdownHandlers(
   databaseAdapter: SupabaseAdapter,
   eventBus: EventBus,
   apiServer: ReturnType<typeof createAPIHttpServer>,
+  sessionCleanupScheduler: SessionCleanupScheduler,
 ): () => Promise<void> {
   const shutdown = async () => {
     if (shuttingDown) return;
@@ -308,6 +322,8 @@ function registerShutdownHandlers(
 
     logger.info('Shutting down...');
     eventBus.emit('system.shutdown');
+
+    sessionCleanupScheduler.stop();
 
     try {
       client.destroy();

@@ -8,6 +8,7 @@ export { OAuthStateService } from './providers/oauth-state.service.js';
 export { ownerOverrideSource, PermissionResolver } from './providers/permission-resolver.js';
 export { createExpiredSessionCookie, createSessionCookie } from './providers/session-cookie.js';
 export { SessionCleanupService } from './providers/session.cleanup.js';
+export { SessionCleanupScheduler } from './providers/session-cleanup.scheduler.js';
 export { SessionRepository } from './providers/session.repository.js';
 export type { IAuthProvider } from './auth-provider.interface.js';
 export type { IAuthorizationProvider } from './authorization-provider.interface.js';
@@ -30,6 +31,7 @@ export type {
   PermissionDecision,
 } from './providers/authorization.types.js';
 export type { SessionCleanupOptions } from './providers/session.cleanup.js';
+export type { SessionCleanupSchedulerOptions } from './providers/session-cleanup.scheduler.js';
 export type {
   CreateSessionRecordInput,
   RefreshSessionRecordInput,

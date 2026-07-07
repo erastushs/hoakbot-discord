@@ -40,6 +40,8 @@ export class ConfigService {
       DATABASE_URL: process.env['DATABASE_URL'],
       API_PORT: process.env['API_PORT'],
       DASHBOARD_URL: process.env['DASHBOARD_URL'],
+      ALLOWED_ORIGIN: process.env['ALLOWED_ORIGIN'],
+      TRUST_PROXY: process.env['TRUST_PROXY'],
       DISCORD_CLIENT_ID: process.env['DISCORD_CLIENT_ID'],
       DISCORD_CLIENT_SECRET: process.env['DISCORD_CLIENT_SECRET'],
       DISCORD_REDIRECT_URI: process.env['DISCORD_REDIRECT_URI'],
@@ -52,7 +54,19 @@ export class ConfigService {
       OWNER_IDS: process.env['OWNER_IDS'],
     };
 
-    return envSchema.parse(raw);
+    const parsed = envSchema.parse(raw);
+    if (parsed.NODE_ENV === 'production') {
+      const missing = [
+        parsed.DISCORD_CLIENT_SECRET ? undefined : 'DISCORD_CLIENT_SECRET',
+        parsed.DISCORD_REDIRECT_URI ? undefined : 'DISCORD_REDIRECT_URI',
+      ].filter((value): value is string => Boolean(value));
+
+      if (missing.length > 0) {
+        throw new Error(`Missing required production OAuth environment variable(s): ${missing.join(', ')}`);
+      }
+    }
+
+    return parsed;
   }
 
   private readJsonFile(filename: string): Record<string, unknown> {
@@ -93,7 +107,9 @@ export class ConfigService {
       },
       dashboard: {
         url: env.DASHBOARD_URL,
+        allowedOrigin: env.ALLOWED_ORIGIN ?? new URL(env.DASHBOARD_URL).origin,
       },
+      trustProxy: env.TRUST_PROXY,
       session: {
         durationMs: env.SESSION_DURATION,
         cookieName: env.COOKIE_NAME,

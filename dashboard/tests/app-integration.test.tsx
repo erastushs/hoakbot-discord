@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -118,8 +118,7 @@ describe('App backend integration', () => {
     const title = await screen.findByRole('textbox', { name: /Title/ });
     expect(title).toHaveValue('Backend title');
 
-    await user.clear(title);
-    await user.type(title, 'Saved title');
+    fireEvent.change(title, { target: { value: 'Saved title' } });
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());

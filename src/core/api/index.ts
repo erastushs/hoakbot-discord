@@ -5,6 +5,7 @@ export { MemoryAuthProvider } from './memory-auth.provider.js';
 export { createModuleConfigEndpoints } from './module-config.endpoints.js';
 export { OpenAPIMetadataRegistry } from './openapi.js';
 export { APIRouter } from './router.js';
+export { createSessionAuthMiddleware, readCookie } from './session-auth.middleware.js';
 export { createAPIHttpServer } from './server.js';
 export { fail, noContent, ok, paginated } from './responses.js';
 export { validateRequest, validateSchema, validationMiddleware } from './validation.js';
@@ -20,6 +21,7 @@ export type {
   GuildOwnershipChecker,
 } from './authorization.js';
 export type { AuthEndpointDependencies } from './auth.endpoints.js';
+export type { SessionAuthMiddlewareDependencies } from './session-auth.middleware.js';
 export type {
   AuthProvider,
   GuildMembership,

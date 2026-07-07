@@ -7,11 +7,21 @@ import { JsonConfigProvider } from './core/config/json-config.provider.js';
 import { createLogger } from './core/logger/logger.service.js';
 import { Container } from './core/container/container.js';
 import { TOKENS } from './core/container/tokens.js';
-import { APIRouter, createAPIHttpServer, createAuthEndpoints, createModuleConfigEndpoints, ok } from './core/api/index.js';
 import {
+  APIRouter,
+  createAPIHttpServer,
+  createAuthEndpoints,
+  createModuleConfigEndpoints,
+  createSessionAuthMiddleware,
+  ok,
+} from './core/api/index.js';
+import {
+  AuthorizationProvider,
+  ClientGuildDataSource,
   DatabaseSessionProvider,
   DiscordOAuthProvider,
   FetchDiscordAPIClient,
+  GuildResolver,
   OAuthStateService,
   SessionRepository,
 } from './core/auth/index.js';
@@ -129,6 +139,10 @@ try {
   const oauthStateService = new OAuthStateService();
   const sessionRepository = new SessionRepository(databaseAdapter);
   const sessionProvider = new DatabaseSessionProvider(sessionRepository, sessionConfig);
+  const authorizationProvider = new AuthorizationProvider(
+    { ownerIds: appConfig.ownerIds },
+    new GuildResolver(new ClientGuildDataSource(client)),
+  );
   const discordOAuthProvider = new DiscordOAuthProvider(
     discordOAuthConfig,
     oauthStateService,
@@ -142,6 +156,7 @@ try {
   container.registerSingleton(TOKENS.ConfigurationService, () => configurationService);
   container.registerSingleton(TOKENS.AuthProvider, () => discordOAuthProvider);
   container.registerSingleton(TOKENS.SessionProvider, () => sessionProvider);
+  container.registerSingleton(TOKENS.AuthorizationProvider, () => authorizationProvider);
 
   const generalModule = new GeneralModule();
   const voiceModule = new VoiceModule();
@@ -169,7 +184,13 @@ try {
   moduleLoader.registerModule(goodbyeModule);
 
   await moduleLoader.loadAll(container);
-  for (const endpoint of createAuthEndpoints({ authProvider: discordOAuthProvider, sessionProvider, sessionConfig })) {
+  apiRouter.use(createSessionAuthMiddleware({ sessionProvider, sessionConfig }));
+  for (const endpoint of createAuthEndpoints({
+    authProvider: discordOAuthProvider,
+    sessionProvider,
+    sessionConfig,
+    authorizationProvider,
+  })) {
     apiRouter.register(endpoint);
   }
   for (const endpoint of createModuleConfigEndpoints({

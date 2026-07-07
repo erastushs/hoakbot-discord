@@ -56,6 +56,7 @@ export interface APIRequestContext {
   startedAt: number;
   version: 'v1';
   params: Record<string, string>;
+  endpoint?: APIEndpoint;
 }
 
 export type APINext = () => Promise<APIResponse>;

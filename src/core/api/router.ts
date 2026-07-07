@@ -48,6 +48,7 @@ export class APIRouter {
         startedAt: Date.now(),
         version: 'v1',
         params: match.params,
+        endpoint: match.endpoint,
       };
 
       const requestWithParams = validateRequest(match.endpoint, { ...request, params: match.params });

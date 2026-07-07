@@ -1,4 +1,5 @@
 export { AuthorizationProvider } from './providers/authorization.provider.js';
+export { ClientGuildDataSource } from './providers/client-guild.data-source.js';
 export { FetchDiscordAPIClient } from './providers/discord-api.client.js';
 export { DatabaseSessionProvider } from './providers/database-session.provider.js';
 export { DiscordOAuthProvider } from './providers/discord-oauth.provider.js';

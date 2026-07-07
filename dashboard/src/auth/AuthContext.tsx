@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { APIClient } from '../api/client.js';
+import { APIClient, DashboardAPIError } from '../api/client.js';
 import type { DashboardUser, GuildSummary } from '../contracts.js';
 
 export interface AuthState {
@@ -55,6 +55,14 @@ export function AuthProvider({
       setSelectedGuildId((current) => current ?? response.selectedGuild?.id ?? response.guilds[0]?.id);
       setStatus('authenticated');
     } catch (caught) {
+      if (caught instanceof DashboardAPIError && (caught.status === 401 || caught.code === 'AUTH_REQUIRED')) {
+        setUser(undefined);
+        setGuilds([]);
+        setSelectedGuildId(undefined);
+        setStatus('unauthenticated');
+        return;
+      }
+
       setUser(undefined);
       setGuilds([]);
       setSelectedGuildId(undefined);

@@ -154,7 +154,9 @@ describe('App backend integration', () => {
   it('shows login page when there is no authenticated session', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => jsonResponse({ success: true, data: { authenticationState: 'anonymous', guilds: [] } })),
+      vi.fn(async () =>
+        jsonResponse({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Authentication required' } }, false, 401),
+      ),
     );
 
     render(<App />);

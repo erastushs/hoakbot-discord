@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { GuildIdentity, IAuthProvider, ISessionProvider, SessionConfig, SessionRecord } from '../auth/index.js';
+import type { GuildIdentity, IAuthProvider, IAuthorizationProvider, ISessionProvider, SessionConfig, SessionRecord } from '../auth/index.js';
 import { createExpiredSessionCookie, createSessionCookie } from '../auth/index.js';
 import { ok } from './responses.js';
 import type { APIEndpoint } from './types.js';
@@ -20,6 +20,7 @@ export interface AuthEndpointDependencies {
   readonly authProvider: IAuthProvider;
   readonly sessionProvider?: ISessionProvider & { getSessionRecord?(sessionId: string): Promise<SessionRecord | undefined> };
   readonly sessionConfig?: SessionConfig;
+  readonly authorizationProvider?: IAuthorizationProvider;
 }
 
 export interface MeResponse {
@@ -38,7 +39,12 @@ export interface LogoutResponse {
   readonly authenticationState: 'anonymous';
 }
 
-export function createAuthEndpoints({ authProvider, sessionProvider, sessionConfig }: AuthEndpointDependencies): APIEndpoint[] {
+export function createAuthEndpoints({
+  authProvider,
+  sessionProvider,
+  sessionConfig,
+  authorizationProvider,
+}: AuthEndpointDependencies): APIEndpoint[] {
   return [
     {
       module: 'platform',
@@ -96,7 +102,8 @@ export function createAuthEndpoints({ authProvider, sessionProvider, sessionConf
       path: '/me',
       auth: 'public',
       metadata: { operationId: 'getCurrentDashboardSession', tags: ['auth'] },
-      handler: async (request) => ok<MeResponse>(await resolveMe(request.headers?.['cookie'], sessionProvider, sessionConfig)),
+      handler: async (request) =>
+        ok<MeResponse>(await resolveMe(request.headers?.['cookie'], sessionProvider, sessionConfig, authorizationProvider)),
     },
     {
       module: 'platform',
@@ -127,6 +134,7 @@ async function resolveMe(
   cookieHeader: string | undefined,
   sessionProvider: AuthEndpointDependencies['sessionProvider'],
   sessionConfig: SessionConfig | undefined,
+  authorizationProvider: IAuthorizationProvider | undefined,
 ): Promise<MeResponse> {
   const sessionId = readSessionCookie(cookieHeader, sessionConfig?.cookieName);
   if (!sessionId || !sessionProvider) {
@@ -141,7 +149,7 @@ async function resolveMe(
     return { authenticationState: 'invalid', guilds: [] };
   }
 
-  const guilds = readGuilds(record.metadata?.['guilds']);
+  const guilds = await filterAuthorizedGuilds(record, authorizationProvider);
   return {
     authenticationState: 'authenticated',
     user: {
@@ -153,6 +161,27 @@ async function resolveMe(
     guilds,
     selectedGuild: guilds[0],
   };
+}
+
+async function filterAuthorizedGuilds(
+  record: SessionRecord,
+  authorizationProvider: IAuthorizationProvider | undefined,
+): Promise<readonly GuildIdentity[]> {
+  const guilds = readGuilds(record.metadata?.['guilds']);
+  if (!authorizationProvider) {
+    return guilds;
+  }
+
+  const user = { ...record.user, guilds };
+  const authorized: GuildIdentity[] = [];
+  for (const guild of guilds) {
+    const result = await authorizationProvider.canAccessGuild(user, guild.id);
+    if (result.allowed) {
+      authorized.push(guild);
+    }
+  }
+
+  return authorized;
 }
 
 function readSessionCookie(cookieHeader: string | undefined, cookieName: string | undefined): string | undefined {

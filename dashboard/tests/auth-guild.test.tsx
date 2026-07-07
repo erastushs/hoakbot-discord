@@ -66,9 +66,9 @@ describe('authentication and guild context', () => {
 
   it('shows unauthenticated login state', async () => {
     const fetcher = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({ success: true, data: { authenticationState: 'anonymous', guilds: [] } }),
+      ok: false,
+      status: 401,
+      json: async () => ({ success: false, error: { code: 'AUTH_REQUIRED', message: 'Authentication required' } }),
     })) as unknown as typeof fetch;
 
     render(

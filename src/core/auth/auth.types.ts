@@ -44,6 +44,7 @@ export interface AuthenticatedUser {
   readonly username?: string;
   readonly displayName?: string;
   readonly avatarUrl?: string;
+  readonly guilds?: readonly GuildIdentity[];
 }
 
 export interface GuildIdentity {

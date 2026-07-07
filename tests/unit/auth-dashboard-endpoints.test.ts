@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createAuthEndpoints } from '../../src/core/api/auth.endpoints.js';
 import { APIRouter } from '../../src/core/api/router.js';
-import type { IAuthProvider, ISessionProvider, SessionConfig, SessionRecord } from '../../src/core/auth/index.js';
+import type { IAuthProvider, IAuthorizationProvider, ISessionProvider, SessionConfig, SessionRecord } from '../../src/core/auth/index.js';
 
 const sessionConfig: SessionConfig = {
   cookieName: 'hoak_session',
@@ -32,9 +32,27 @@ function sessionProvider(record?: SessionRecord) {
   } as unknown as ISessionProvider & { getSessionRecord(sessionId: string): Promise<SessionRecord | undefined> };
 }
 
-function router(provider = sessionProvider()) {
+function authorizationProvider(allowedGuildIds: string[]): IAuthorizationProvider {
+  return {
+    canAccessDashboard: vi.fn(),
+    canAccessGuild: vi.fn(async (_user, guildId) =>
+      allowedGuildIds.includes(guildId)
+        ? { allowed: true, source: 'discord:manage-guild', reason: 'test', userId: 'user-1', guildId, action: 'guild' }
+        : { allowed: false, code: 'authorization.guild_denied', reason: 'denied', userId: 'user-1', guildId, action: 'guild' },
+    ),
+    canManageModule: vi.fn(),
+    canModifyConfiguration: vi.fn(),
+  } as IAuthorizationProvider;
+}
+
+function router(provider = sessionProvider(), authz?: IAuthorizationProvider) {
   const api = new APIRouter();
-  for (const endpoint of createAuthEndpoints({ authProvider: authProvider(), sessionProvider: provider, sessionConfig })) {
+  for (const endpoint of createAuthEndpoints({
+    authProvider: authProvider(),
+    sessionProvider: provider,
+    sessionConfig,
+    authorizationProvider: authz,
+  })) {
     api.register(endpoint);
   }
   return { api, provider };
@@ -74,6 +92,38 @@ describe('dashboard auth endpoints', () => {
         user: { id: 'user-1', username: 'admin', displayName: 'Admin', avatarUrl: 'avatar.png' },
         guilds: [{ id: 'guild-1', name: 'Guild One', iconUrl: 'guild.png' }],
         selectedGuild: { id: 'guild-1', name: 'Guild One', iconUrl: 'guild.png' },
+      },
+    });
+  });
+
+  it('returns only authorized guilds and falls back to the first authorized guild', async () => {
+    const record: SessionRecord = {
+      id: 'session-1',
+      userId: 'user-1',
+      user: { id: 'user-1', provider: 'discord', username: 'admin' },
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 60_000),
+      metadata: {
+        guilds: [
+          { id: 'unauthorized', name: 'Unauthorized' },
+          { id: 'authorized-1', name: 'Authorized One' },
+          { id: 'authorized-2', name: 'Authorized Two' },
+        ],
+      },
+    };
+    const { api } = router(sessionProvider(record), authorizationProvider(['authorized-1', 'authorized-2']));
+
+    await expect(
+      api.handle({ method: 'GET', path: '/api/v1/me', headers: { cookie: 'hoak_session=session-1' } }),
+    ).resolves.toMatchObject({
+      success: true,
+      data: {
+        authenticationState: 'authenticated',
+        guilds: [
+          { id: 'authorized-1', name: 'Authorized One' },
+          { id: 'authorized-2', name: 'Authorized Two' },
+        ],
+        selectedGuild: { id: 'authorized-1', name: 'Authorized One' },
       },
     });
   });

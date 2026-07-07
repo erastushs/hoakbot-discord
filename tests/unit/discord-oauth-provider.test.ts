@@ -83,6 +83,7 @@ describe('DiscordOAuthProvider', () => {
           name: 'Hoak Family',
           iconUrl: 'https://cdn.discordapp.com/icons/guild-1/guild-icon.png',
           owner: true,
+          rawPermissions: '0',
         },
       ]);
     }

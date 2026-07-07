@@ -25,7 +25,8 @@ export type AuthorizationFailureCode =
   | 'authorization.guild_denied'
   | 'authorization.module_denied'
   | 'authorization.configuration_denied'
-  | 'authorization.permission_unavailable';
+  | 'authorization.permission_unavailable'
+  | 'authorization.resolution_failed';
 
 export type PermissionSource =
   | 'discord:guild-owner'
@@ -35,7 +36,7 @@ export type PermissionSource =
   | 'system'
   | 'unknown';
 
-export type ConfigurationAction = 'read' | 'write';
+export type ConfigurationAction = 'read' | 'write' | 'delete' | 'module_access';
 
 export interface AuthenticatedUser {
   readonly id: string;
@@ -51,6 +52,7 @@ export interface GuildIdentity {
   readonly iconUrl?: string;
   readonly owner?: boolean;
   readonly permissionSources?: readonly PermissionSource[];
+  readonly rawPermissions?: string;
 }
 
 export interface SessionIdentity {
@@ -86,12 +88,20 @@ export type AuthResult = AuthSuccessResult | AuthFailureResult;
 export interface AuthorizationSuccessResult {
   readonly allowed: true;
   readonly source: PermissionSource;
+  readonly reason: string;
+  readonly userId?: string;
+  readonly guildId?: string;
+  readonly action?: ConfigurationAction | 'dashboard' | 'guild' | 'module';
 }
 
 export interface AuthorizationFailureResult {
   readonly allowed: false;
   readonly code: AuthorizationFailureCode;
   readonly reason: string;
+  readonly source?: PermissionSource;
+  readonly userId?: string;
+  readonly guildId?: string;
+  readonly action?: ConfigurationAction | 'dashboard' | 'guild' | 'module';
   readonly required?: readonly PermissionSource[];
 }
 

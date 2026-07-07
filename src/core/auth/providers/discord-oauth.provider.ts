@@ -119,5 +119,6 @@ function mapGuild(guild: DiscordGuildResponse): GuildIdentity {
     name: guild.name,
     iconUrl: guild.icon ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png` : undefined,
     owner: guild.owner,
+    rawPermissions: guild.permissions,
   };
 }

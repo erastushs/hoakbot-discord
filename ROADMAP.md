@@ -702,7 +702,7 @@ No architecture changes needed. Economy, Tickets, AI, Reaction Roles, Leveling, 
 # Hoak Bot v3.1 Roadmap - Dashboard Authentication, Authorization, Security, and Production Deployment
 
 **Version:** 3.1  
-**Status:** Phases 1-7 Complete; Production Deployment and Validation Upcoming  
+**Status:** COMPLETE  
 **Production Baseline:** v3.1 security-hardened dashboard/API  
 **Primary Domain:** `https://dashboard.hoakfamily.web.id`  
 **Scope:** Dashboard access control, protected dashboard APIs, security hardening, production readiness, production deployment  
@@ -714,7 +714,21 @@ No architecture changes needed. Economy, Tickets, AI, Reaction Roles, Leveling, 
 
 Version 3.1 makes the existing dashboard safe for production use.
 
-Current implementation status: dashboard OAuth, server-side sessions, authorization, API protection, security hardening, and production-readiness fixes are complete in the codebase. Production deployment and production validation remain upcoming.
+Current implementation status: dashboard OAuth, server-side sessions, authorization, API protection, security hardening, production-readiness fixes, production deployment, and production validation are complete.
+
+### v3.1 Completion Summary
+
+- Discord OAuth Authentication
+- Session Management
+- Authorization
+- Dashboard Authentication
+- Protected API
+- CSRF Protection
+- Security Headers
+- Rate Limiting
+- Security Audit Logging
+- Production Deployment
+- Production Validation
 
 By the end of v3.1, a user can securely access `https://dashboard.hoakfamily.web.id` using Discord OAuth, and only authorized users can manage guild settings.
 
@@ -733,8 +747,8 @@ The v3.0 platform is treated as stable production infrastructure. Version 3.1 is
 - Dashboard integration with real authentication state.
 - Security hardening for OAuth, cookies, sessions, CSRF, redirects, rate limits, and audit logging. **Complete.**
 - Production readiness fixes for session cleanup scheduling, production OAuth validation, production CORS, and trusted proxy client IP handling. **Complete.**
-- Production deployment for `dashboard.hoakfamily.web.id`. **Upcoming.**
-- Production validation, rollback, and manual QA checklists. **Upcoming.**
+- Production deployment for `dashboard.hoakfamily.web.id`. **Complete.**
+- Production validation, rollback, and manual QA checklists. **Complete.**
 
 ### Explicitly Excluded
 
@@ -1178,7 +1192,7 @@ Authorization must recognize these authority sources:
 
 ## Phase 8: Production Deployment
 
-**Current Status:** UPCOMING
+**Current Status:** COMPLETE
 
 **Goal:** Deploy the secured dashboard to `https://dashboard.hoakfamily.web.id` behind HTTPS and a production reverse proxy.
 
@@ -1229,7 +1243,7 @@ Authorization must recognize these authority sources:
 
 ## Phase 9: Production Validation
 
-**Current Status:** UPCOMING
+**Current Status:** COMPLETE
 
 **Goal:** Validate the complete production deployment before declaring v3.1 complete.
 
@@ -1361,10 +1375,293 @@ Authorization must recognize these authority sources:
 | 5. Dashboard Integration | **COMPLETE** | Dashboard uses real login, logout, session bootstrap, authenticated states, and guild selector flows. |
 | 6. API Protection | **COMPLETE** | Dashboard API endpoints are protected by authentication and authorization middleware with standard envelopes. |
 | 7. Security Hardening | **COMPLETE** | CSRF, security headers, rate limiting, audit logging, production CORS, trusted proxy handling, and readiness fixes are implemented. |
-| 8. Production Deployment | UPCOMING | `dashboard.hoakfamily.web.id` deployment behind HTTPS and Nginx remains to be performed. |
-| 9. Production Validation | UPCOMING | QA, security, deployment, and rollback validation remain to be performed against production. |
+| 8. Production Deployment | **COMPLETE** | `dashboard.hoakfamily.web.id` is deployed behind HTTPS and Nginx. |
+| 9. Production Validation | **COMPLETE** | QA, security, deployment, and rollback validation are complete against production. |
 
-**Implementation progress:** 7 of 9 v3.1 phases complete.  
-**Remaining scope:** Production deployment and production validation.
+**Implementation progress:** 9 of 9 v3.1 phases complete.  
+**Remaining scope:** None.
 
-> v3.1 implementation through Phase 7 is complete. Phase 8 and Phase 9 remain upcoming deployment and validation work.
+> v3.1.0 Authentication, Authorization, Security, and Production Dashboard is complete.
+
+---
+
+# Hoak Bot v3.2.0
+## Dashboard Redesign
+
+**Version:** 3.2.0  
+**Status:** NEXT  
+**Current:** v3.1.0 COMPLETE  
+**Next:** v3.2.0 Dashboard Redesign  
+**Scope:** Dashboard UI/UX redesign only  
+**Release Type:** Frontend dashboard release  
+**Backend Impact:** No backend architecture changes
+
+---
+
+## v3.2 Objective
+
+Version 3.2.0 redesigns the entire dashboard UI/UX with a Discord Developer Portal inspired experience while preserving the existing backend architecture.
+
+This is not a backend release. Authentication, authorization, REST APIs, database structure, voice runtime, and Discord bot runtime behavior remain stable from v3.1.0.
+
+---
+
+## Project Goals
+
+- Professional developer dashboard
+- Better navigation
+- Better scalability
+- Modern component architecture
+- Consistent design system
+- Better UX
+- Better accessibility
+- Mobile responsive
+- Future-proof module expansion
+
+---
+
+## Non-Goals
+
+- Backend authentication changes
+- OAuth changes
+- Authorization changes
+- Database redesign
+- REST API redesign
+- Voice runtime changes
+- Discord bot runtime changes
+
+---
+
+## v3.2 Architecture Principles
+
+- Component-first architecture
+- Design-token driven
+- Accessibility first
+- Mobile-first responsive layout
+- Shared reusable UI components
+- Consistent spacing
+- Consistent typography
+- Consistent interaction patterns
+- No duplicated components
+
+---
+
+## v3.2 Dependency Graph
+
+```
+Phase 1: Design System Foundation
+    |
+    v
+Phase 2: Application Layout
+    |
+    v
+Phase 3: Core Components
+    |
+    v
+Phase 4: Dashboard Home
+    |
+    v
+Phase 5: Module Pages
+    |
+    v
+Phase 6: UX Improvements
+    |
+    v
+Phase 7: Accessibility
+    |
+    v
+Phase 8: Responsive Design
+    |
+    v
+Phase 9: Polish
+```
+
+**Dependency order:** Phase 1 -> Phase 2 -> Phase 3 -> Phase 4 -> Phase 5 -> Phase 6 -> Phase 7 -> Phase 8 -> Phase 9
+
+**Arrow = depends on.** Each phase depends on the phase above it and must not require backend architecture changes.
+
+---
+
+## Phase 1: Design System Foundation
+
+**Goal:** Establish the visual and interaction foundation before rebuilding dashboard screens.
+
+### Deliverables
+
+- Design Tokens
+- Theme
+- Typography
+- Color System
+- Spacing
+- Icons
+- Motion
+- Elevation
+- Component Library
+
+---
+
+## Phase 2: Application Layout
+
+**Goal:** Create the primary dashboard shell for scalable navigation and workspace context.
+
+### Deliverables
+
+- Sidebar
+- Header
+- Breadcrumb
+- Workspace Selector
+- User Menu
+- Responsive Navigation
+
+---
+
+## Phase 3: Core Components
+
+**Goal:** Build reusable UI primitives used consistently across every dashboard page.
+
+### Deliverables
+
+- Button
+- Input
+- Select
+- Card
+- Badge
+- Table
+- Modal
+- Drawer
+- Tabs
+- Toast
+- Skeleton
+- Empty State
+- Loading
+
+---
+
+## Phase 4: Dashboard Home
+
+**Goal:** Redesign the dashboard landing experience around overview, activity, and fast action flows.
+
+### Deliverables
+
+- Home
+- Overview
+- Quick Actions
+- Statistics
+- Activity Feed
+- Search
+- Recent Changes
+
+---
+
+## Phase 5: Module Pages
+
+**Goal:** Convert every module into a dedicated settings page while preserving existing backend contracts.
+
+### Module Page Examples
+
+- General
+- Voice
+- Welcome
+- Goodbye
+- Logging
+- Moderation
+- Future Modules
+
+### Page Structure
+
+Each page should include these sections where applicable:
+
+- Overview
+- Configuration
+- Permissions
+- Logs
+- Status
+
+---
+
+## Phase 6: UX Improvements
+
+**Goal:** Improve daily administrator workflows and reduce friction across configuration tasks.
+
+### Deliverables
+
+- Command Palette (Ctrl+K)
+- Better Forms
+- Unsaved Changes Protection
+- Better Error Handling
+- Better Loading
+- Better Notifications
+
+---
+
+## Phase 7: Accessibility
+
+**Goal:** Make the redesigned dashboard accessible by default across navigation, forms, overlays, and status feedback.
+
+### Deliverables
+
+- WCAG AA
+- Keyboard Navigation
+- Screen Reader
+- Focus Management
+- Contrast Validation
+
+---
+
+## Phase 8: Responsive Design
+
+**Goal:** Ensure the redesigned dashboard works across mobile, tablet, and desktop layouts.
+
+### Deliverables
+
+- Mobile
+- Tablet
+- Desktop
+- Collapsible Sidebar
+- Responsive Tables
+- Responsive Forms
+
+---
+
+## Phase 9: Polish
+
+**Goal:** Complete the final interaction, state, and consistency pass before release.
+
+### Deliverables
+
+- Animation
+- Micro-interactions
+- Empty States
+- Error States
+- Final UI consistency pass
+
+---
+
+## v3.2 Risks
+
+- Scope creep
+- Inconsistent components
+- Accessibility regressions
+- Responsive regressions
+- State management complexity
+- Module migration complexity
+
+---
+
+## v3.2 Success Criteria
+
+- Consistent UI across all pages
+- Reusable component system
+- Responsive on all supported devices
+- Accessible navigation
+- Modern developer experience
+- Zero backend regressions
+
+---
+
+## v3.2 Project Status
+
+| Release | Status | Summary |
+|---------|--------|---------|
+| v3.1.0 | **COMPLETE** | Authentication, Authorization, Security, and Production Dashboard are complete. |
+| v3.2.0 | **NEXT** | Dashboard Redesign is the next major release. |

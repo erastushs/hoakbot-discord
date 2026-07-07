@@ -59,9 +59,11 @@ export class CleanCommand extends BaseCommand {
         'Clean command executed',
       );
 
-      setTimeout(() => {
-        msg.delete().catch(() => {});
-      }, 5000);
+      if (typeof msg.delete === 'function') {
+        setTimeout(() => {
+          msg.delete().catch(() => {});
+        }, 5000);
+      }
     } catch (err) {
       ctx.logger.error({ error: err, channelId: ctx.channel.id }, 'Failed to clean messages');
       await ctx.reply(Errors.failedClean());

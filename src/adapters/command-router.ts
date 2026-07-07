@@ -34,7 +34,7 @@ export class CommandRouter {
     }
 
     const ctx = this.createSlashContext(interaction);
-    await this.executeCommand(command, ctx, interaction.commandName);
+    await this.executeCommand(command, ctx, interaction.commandName, interaction);
   }
 
   async handlePrefix(message: Message): Promise<void> {
@@ -55,7 +55,12 @@ export class CommandRouter {
     await this.executeCommand(command, ctx, commandName);
   }
 
-  private async executeCommand(command: ICommand, ctx: CommandContext, _commandName: string): Promise<void> {
+  private async executeCommand(
+    command: ICommand,
+    ctx: CommandContext,
+    _commandName: string,
+    interaction?: ChatInputCommandInteraction,
+  ): Promise<void> {
     const start = performance.now();
 
     const permissionResult = await this.permissionMiddleware.check(command, ctx);
@@ -114,6 +119,22 @@ export class CommandRouter {
         guildId: ctx.guild?.id ?? '',
         error: err instanceof Error ? err : new Error(String(err)),
       });
+
+      if (interaction) {
+        try {
+          const response = { content: 'Command failed. Please try again later.' };
+          if (interaction.deferred || interaction.replied) {
+            await interaction.editReply(response);
+          } else {
+            await interaction.reply({ ...response, ephemeral: true });
+          }
+        } catch (responseErr) {
+          this.logger.warn(
+            { command: command.name, error: responseErr },
+            'Failed to send command failure response',
+          );
+        }
+      }
     }
   }
 

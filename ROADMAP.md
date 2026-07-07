@@ -1404,6 +1404,28 @@ Version 3.2.0 redesigns the entire dashboard UI/UX with a Discord Developer Port
 
 This is not a backend release. Authentication, authorization, REST APIs, database structure, voice runtime, and Discord bot runtime behavior remain stable from v3.1.0.
 
+The redesign direction is design inspiration only. Hoak Bot must not copy Discord branding, logos, assets, CSS, proprietary content, or implementation details. The goal is to achieve a similarly professional developer dashboard experience while keeping Hoak Bot's own identity.
+
+---
+
+## Dashboard Design Direction
+
+The v3.2 dashboard redesign is inspired by the Discord Developer Portal. The dashboard should provide a similar professional developer experience without attempting to replicate Discord branding or implementation.
+
+Design focus:
+
+- Clean spacing
+- Subtle elevation
+- Modern cards
+- Developer-focused layout
+- Polished navigation
+- Clean typography
+- Minimal visual noise
+- Dark-first interface
+- Responsive workspace
+
+The goal is inspiration, not replication. Hoak Bot must retain its own product identity, visual language, naming, content, icons, and assets.
+
 ---
 
 ## Project Goals
@@ -1434,21 +1456,181 @@ This is not a backend release. Authentication, authorization, REST APIs, databas
 
 ## v3.2 Architecture Principles
 
-- Component-first architecture
-- Design-token driven
-- Accessibility first
-- Mobile-first responsive layout
-- Shared reusable UI components
-- Consistent spacing
-- Consistent typography
-- Consistent interaction patterns
-- No duplicated components
+### P0 — Backend Stability
+
+v3.2 is a frontend-only release. Existing REST APIs, authentication, authorization, sessions, security behavior, and backend contracts remain unchanged and are considered stable. The frontend adapts to the backend, never the opposite.
+
+### P1 — Component-First Architecture
+
+Dashboard pages are composed from shared reusable components. Page-specific UI should be assembled from the component library instead of creating one-off controls.
+
+### P2 — Design-Token Driven
+
+Colors, typography, spacing, radius, shadows, motion, breakpoints, and layering are defined as design tokens and consumed consistently across the dashboard.
+
+### P3 — Accessibility First
+
+Accessibility requirements are part of the design and implementation baseline, not a final cleanup pass.
+
+### P4 — Mobile-First Responsive Layout
+
+Layouts must work from mobile to desktop with predictable navigation, readable content, and responsive controls.
+
+### P5 — Shared Reusable UI Components
+
+Every page must reuse shared components. No duplicated components are allowed.
+
+### P6 — Consistent Interaction Patterns
+
+Spacing, typography, focus states, hover states, disabled states, loading states, empty states, and error states must behave consistently across the dashboard.
+
+### P7 — No Hardcoded Module Layouts
+
+Module pages share one layout template and adapt to module metadata and available backend data without introducing hardcoded page structures per module.
+
+---
+
+## Design System
+
+The v3.2 design system is the foundation for the redesign. It should produce a dark-first, professional, developer-focused dashboard that feels polished, scalable, and accessible.
+
+### Design Tokens
+
+- Colors
+- Typography
+- Font Scale
+- Spacing
+- Radius
+- Shadows
+- Elevation
+- Borders
+- Motion
+- Animation Duration
+- Icon Size
+- Z-index
+- Breakpoints
+
+### Color Philosophy
+
+The dashboard should use a dark-first color system with restrained contrast, clear semantic colors, and purposeful accents. Colors should communicate hierarchy, state, and action without visual noise.
+
+### Spacing Philosophy
+
+Spacing should follow a consistent scale. Layouts should feel structured and breathable, with predictable page gutters, card padding, section spacing, and form spacing.
+
+### Interaction Philosophy
+
+Interactions should be immediate, predictable, and lightweight. Hover, active, focus, loading, success, warning, and error states should be visible and consistent without excessive animation.
+
+### Responsive Philosophy
+
+The interface should preserve the same information architecture across mobile, tablet, and desktop while adapting navigation, tables, forms, and page density to the available viewport.
+
+### Dark-First Design
+
+The primary dashboard experience is dark-first. Any future light theme must be token-driven and must not require component rewrites.
+
+### Accessibility-First Design
+
+Every token and component must support accessible contrast, keyboard interaction, screen reader semantics, visible focus, and reduced motion preferences.
+
+---
+
+## Component Inventory
+
+Every dashboard page must reuse the shared component inventory. No duplicated components are allowed.
+
+- Button
+- IconButton
+- Avatar
+- Badge
+- Tag
+- Card
+- Dropdown
+- Context Menu
+- Popover
+- Tooltip
+- Dialog
+- Drawer
+- Toast
+- Alert
+- Tabs
+- Accordion
+- Table
+- Virtual Table
+- Pagination
+- Search Box
+- Breadcrumb
+- Checkbox
+- Radio
+- Switch
+- Input
+- Textarea
+- Select
+- MultiSelect
+- Skeleton
+- Spinner
+- Progress
+- Code Block
+- Copy Button
+- Status Badge
+- Empty State
+- Error State
+- Stat Card
+- Section Header
+
+---
+
+## UX Principles
+
+- No unnecessary modal dialogs
+- Minimal clicks
+- Keyboard shortcuts
+- Command Palette
+- Instant feedback
+- Optimistic updates
+- Autosave indicators
+- Loading skeletons
+- Clear empty states
+- Consistent animations
+
+---
+
+## Performance Goals
+
+- Route splitting
+- Lazy loading
+- Code splitting
+- Bundle optimization
+- Virtualized tables
+- Image optimization
+- Caching
+- React optimization
+
+---
+
+## Implementation Rules
+
+- No backend API changes.
+- No REST endpoint changes.
+- No OAuth changes.
+- No authorization changes.
+- No database changes.
+- No dashboard logic rewrites unless required by UI.
+- No duplicated UI components.
+- No hardcoded module layouts.
+- Every page must use shared components.
+- Existing backend contracts are stable inputs to the frontend.
+- Dashboard code must not copy Discord branding, logos, assets, CSS, proprietary content, or implementation details.
 
 ---
 
 ## v3.2 Dependency Graph
 
 ```
+Phase 0: Research & UX Planning
+    |
+    v
 Phase 1: Design System Foundation
     |
     v
@@ -1476,9 +1658,37 @@ Phase 8: Responsive Design
 Phase 9: Polish
 ```
 
-**Dependency order:** Phase 1 -> Phase 2 -> Phase 3 -> Phase 4 -> Phase 5 -> Phase 6 -> Phase 7 -> Phase 8 -> Phase 9
+**Dependency order:** Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4 -> Phase 5 -> Phase 6 -> Phase 7 -> Phase 8 -> Phase 9
 
 **Arrow = depends on.** Each phase depends on the phase above it and must not require backend architecture changes.
+
+---
+
+## Phase 0 — Research & UX Planning
+
+**Goal:** Define the redesign direction, information architecture, user flows, and success criteria before implementation begins.
+
+### Deliverables
+
+- UX research
+- Information architecture
+- Navigation map
+- User flow
+- Wireframes
+- Component inventory
+- Dashboard page hierarchy
+- Existing pain point analysis
+- Visual inspiration references
+- Success definition
+
+### Completion Criteria
+
+- Dashboard page hierarchy is documented.
+- Navigation model is approved before layout implementation.
+- Wireframes exist for the dashboard shell, dashboard home, and module page template.
+- Component inventory is mapped to planned pages.
+- Existing dashboard pain points are documented and addressed by the redesign plan.
+- Visual inspiration references are documented as inspiration only, not source material to copy.
 
 ---
 
@@ -1498,20 +1708,42 @@ Phase 9: Polish
 - Elevation
 - Component Library
 
+### Completion Criteria
+
+- Design tokens are defined for all required token categories.
+- Dark-first visual language is established.
+- Accessibility requirements are reflected in colors, typography, focus states, and motion.
+- Component library foundation is ready before page-level work begins.
+
 ---
 
 ## Phase 2: Application Layout
 
-**Goal:** Create the primary dashboard shell for scalable navigation and workspace context.
+**Goal:** Create the primary dashboard shell for scalable navigation and workspace context, inspired by the Discord Developer Portal application structure without copying Discord assets or branding.
 
 ### Deliverables
 
-- Sidebar
-- Header
-- Breadcrumb
+- Permanent sidebar
 - Workspace Selector
+- Guild Selector
+- Sticky top navigation
+- Breadcrumbs
+- Quick search
 - User Menu
 - Responsive Navigation
+- Scrollable content area
+- Module navigation
+- Consistent page width
+- Consistent spacing
+
+### Application Shell Requirements
+
+- Navigation remains visible and predictable on desktop.
+- Workspace and guild context are always clear.
+- Top navigation stays accessible during page scrolling where appropriate.
+- Content area scroll behavior is consistent across pages.
+- Module navigation scales as new modules are added.
+- Page width and spacing are consistent across dashboard home, module pages, and settings flows.
 
 ---
 
@@ -1522,18 +1754,39 @@ Phase 9: Polish
 ### Deliverables
 
 - Button
+- IconButton
+- Avatar
 - Input
+- Textarea
 - Select
+- MultiSelect
 - Card
 - Badge
+- Tag
 - Table
+- Virtual Table
 - Modal
+- Dialog
 - Drawer
 - Tabs
+- Accordion
+- Dropdown
+- Context Menu
+- Popover
+- Tooltip
 - Toast
+- Alert
 - Skeleton
+- Spinner
+- Progress
+- Code Block
+- Copy Button
+- Status Badge
 - Empty State
+- Error State
 - Loading
+- Stat Card
+- Section Header
 
 ---
 
@@ -1545,17 +1798,26 @@ Phase 9: Polish
 
 - Home
 - Overview
+- Overview cards
+- Guild summary
+- Module status
 - Quick Actions
 - Statistics
 - Activity Feed
+- Recent activity
+- Configuration health
 - Search
+- Pinned modules
 - Recent Changes
+- System information
 
 ---
 
 ## Phase 5: Module Pages
 
 **Goal:** Convert every module into a dedicated settings page while preserving existing backend contracts.
+
+Every module page shares one layout template. The template adapts to the module's available metadata and backend data without hardcoded module layouts.
 
 ### Module Page Examples
 
@@ -1572,10 +1834,12 @@ Phase 9: Polish
 Each page should include these sections where applicable:
 
 - Overview
+- Status
 - Configuration
 - Permissions
 - Logs
-- Status
+- Audit History
+- Danger Zone
 
 ---
 
@@ -1586,11 +1850,19 @@ Each page should include these sections where applicable:
 ### Deliverables
 
 - Command Palette (Ctrl+K)
+- Keyboard shortcuts
+- Minimal-click workflows
+- Instant feedback
+- Optimistic updates
+- Autosave indicators
 - Better Forms
 - Unsaved Changes Protection
 - Better Error Handling
 - Better Loading
 - Better Notifications
+- Loading skeletons
+- Clear empty states
+- Consistent animations
 
 ---
 
@@ -1602,9 +1874,14 @@ Each page should include these sections where applicable:
 
 - WCAG AA
 - Keyboard Navigation
+- Visible focus
 - Screen Reader
+- Screen reader support
 - Focus Management
 - Contrast Validation
+- Reduced motion support
+- Color contrast validation
+- ARIA support
 
 ---
 
@@ -1656,6 +1933,33 @@ Each page should include these sections where applicable:
 - Accessible navigation
 - Modern developer experience
 - Zero backend regressions
+
+---
+
+## v3.2 Success Metrics
+
+- Lighthouse Performance >= 95
+- Lighthouse Accessibility >= 95
+- Lighthouse Best Practices >= 95
+- Lighthouse SEO >= 90
+- CLS < 0.1
+- LCP < 2.5 seconds
+- No duplicated components
+- Fully responsive
+- Zero backend regressions
+
+---
+
+## Future Scope
+
+The following items are outside v3.2 and may be considered for v3.3 or later releases:
+
+- Theme customization
+- User preferences
+- Notification center
+- Dashboard analytics
+- Plugin marketplace
+- Multi-user collaboration
 
 ---
 

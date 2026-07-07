@@ -91,21 +91,21 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
       <Section>
         <SectionHeader description={`${manifest.name} controls are rendered from existing module metadata and current settings values.`} title="Overview" />
         <div className="grid gap-5 tablet:grid-cols-3">
-          <Card className="grid gap-3 p-6">
+          <Card className="grid gap-3 p-5">
             <Bot className="h-5 w-5 text-dashboard-text-secondary" />
             <div>
               <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Module</p>
               <p className="mt-1 text-heading-m text-dashboard-text-primary">{moduleSummary}</p>
             </div>
           </Card>
-          <Card className="grid gap-3 p-6">
+          <Card className="grid gap-3 p-5">
             <ShieldCheck className="h-5 w-5 text-dashboard-success" />
             <div>
               <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Configuration</p>
               <p className="mt-1 text-heading-m text-dashboard-text-primary">{configuredCount} settings</p>
             </div>
           </Card>
-          <Card className="grid gap-3 p-6">
+          <Card className="grid gap-3 p-5">
             <AlertTriangle className="h-5 w-5 text-dashboard-warning" />
             <div>
               <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Runtime</p>
@@ -132,9 +132,9 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
               }
 
               return (
-                <Card className="grid gap-6 p-6" key={group.key}>
+                <Card className="grid gap-5 p-5" key={group.key}>
                   <SectionHeader description={group.description} title={group.label} />
-                    <div className="grid gap-5">
+                  <div className="grid gap-5">
                     {groupSettings.map((setting) => (
                       <ModuleSettingControl
                         key={setting.key}
@@ -174,7 +174,7 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
       <div className="grid gap-5 desktop:grid-cols-[1fr_360px]">
         <Section>
           <SectionHeader description="Current frontend-visible module state." title="Status" />
-          <Card className="grid gap-4 p-6">
+          <Card className="grid gap-3 p-5">
             <div className="flex items-center justify-between gap-3">
               <span className="text-small text-dashboard-text-secondary">Module metadata</span>
               <StatusBadge status="enabled">Loaded</StatusBadge>
@@ -196,7 +196,7 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
 
         <Section>
           <SectionHeader description="Existing authorization protects reads and writes for this module." title="Access" />
-          <Card className="grid gap-4 p-6">
+          <Card className="grid gap-4 p-5">
             <div className="flex items-start gap-3">
               <ShieldCheck className="mt-0.5 h-5 w-5 text-dashboard-success" />
               <div>

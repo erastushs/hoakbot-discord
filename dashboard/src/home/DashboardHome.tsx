@@ -58,10 +58,10 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
         {orderedManifests.length > 0 ? (
           <div className="grid auto-rows-fr gap-5 tablet:grid-cols-2 desktop:grid-cols-3">
             {orderedManifests.map((manifest) => (
-              <Card className="grid h-full gap-6 p-6" key={manifest.id} variant="interactive">
+              <Card className="grid h-full gap-5 p-5" key={manifest.id} variant="interactive">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-muted/72 text-dashboard-text-secondary shadow-elevation-1">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-muted/62 text-dashboard-text-secondary shadow-elevation-0">
                       <Boxes className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
@@ -104,9 +104,9 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
             description="Current selected workspace from the authenticated session."
             title="Guild"
           />
-          <Card className="grid h-full content-start gap-5 p-6">
+          <Card className="grid h-full content-start gap-4 p-5">
             <div className="flex items-center gap-3">
-              <span className="grid h-11 w-11 place-items-center rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-muted/72 text-dashboard-text-secondary shadow-elevation-1">
+              <span className="grid h-10 w-10 place-items-center rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-muted/62 text-dashboard-text-secondary shadow-elevation-0">
                 <Building2 className="h-5 w-5" />
               </span>
               <div className="min-w-0">
@@ -129,7 +129,7 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
 
         <Section className="h-full">
           <SectionHeader description="Current frontend-visible health indicators." title="System Health" />
-          <Card className="grid h-full content-start gap-4 p-6">
+          <Card className="grid h-full content-start gap-3 p-5">
             <div className="flex items-center justify-between gap-3">
               <span className="text-small text-dashboard-text-secondary">Dashboard API</span>
               <StatusBadge status="online">Online</StatusBadge>

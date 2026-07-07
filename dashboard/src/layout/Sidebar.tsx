@@ -63,9 +63,6 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
           </nav>
         </SidebarGroup>
 
-        <SidebarGroup title="Administration">
-          <SidebarMeta label="Auth, CSRF, and API protection are active." />
-        </SidebarGroup>
       </nav>
 
       <div className="mt-auto space-y-3 border-t border-white/8 pt-4">
@@ -113,11 +110,5 @@ function SidebarLink({ active = false, href, icon, label }: { active?: boolean; 
       <span className={`grid h-4.5 w-4.5 place-items-center transition duration-hover ${active ? 'text-dashboard-accent-hover' : 'text-dashboard-text-tertiary group-hover:text-dashboard-text-primary'}`}>{icon}</span>
       <span className="truncate">{label}</span>
     </a>
-  );
-}
-
-function SidebarMeta({ label }: { label: string }) {
-  return (
-    <p className="rounded-xl border border-dashboard-border-subtle bg-dashboard-bg-surface/38 px-2.5 py-2 text-caption leading-5 text-dashboard-text-tertiary">{label}</p>
   );
 }

@@ -34,14 +34,14 @@ export function AuthGuard({ children }: { children: ReactNode }) {
 function AuthStatePanel({ title, message, action }: { title: string; message: string; action?: ReactNode }) {
   return (
     <main className="dashboard-auth-background grid min-h-screen place-items-center px-6 py-10 text-dashboard-text-primary">
-      <section className="w-full max-w-md rounded-[1.75rem] border border-white/10 bg-dashboard-bg-surface/72 p-8 text-center shadow-elevation-3 backdrop-blur-2xl tablet:p-10">
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-surface-elevated text-dashboard-text-primary shadow-elevation-1">
+      <section className="w-full max-w-sm rounded-[1.5rem] border border-white/10 bg-dashboard-bg-surface/72 p-7 text-center shadow-elevation-2 backdrop-blur-2xl tablet:p-8">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-surface-elevated/90 text-dashboard-text-primary shadow-elevation-1">
           <Boxes className="h-6 w-6" />
         </div>
-        <p className="mt-7 text-caption font-semibold uppercase tracking-[0.24em] text-dashboard-text-tertiary">Hoak Dashboard</p>
+        <p className="mt-6 text-caption font-semibold uppercase tracking-[0.22em] text-dashboard-text-tertiary">Hoak Dashboard</p>
         <h1 className="mt-3 text-heading-l text-dashboard-text-primary">{title}</h1>
         <p className="mx-auto mt-3 max-w-xs text-small leading-6 text-dashboard-text-secondary">{message}</p>
-        {action ? <div className="mt-8">{action}</div> : null}
+        {action ? <div className="mt-7">{action}</div> : null}
       </section>
     </main>
   );

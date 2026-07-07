@@ -11,7 +11,7 @@ export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, 't
 
 export function EmptyState({ action, className, description, title, ...props }: EmptyStateProps) {
   return (
-    <div className={cx('grid justify-items-center gap-3 rounded-lg border border-dashed border-dashboard-border-subtle bg-dashboard-bg-surface p-8 text-center', className)} {...props}>
+    <div className={cx('grid justify-items-center gap-3 rounded-2xl border border-dashed border-dashboard-border-subtle bg-dashboard-bg-surface/58 p-8 text-center shadow-elevation-1 backdrop-blur-xl', className)} {...props}>
       <p className="text-heading-m text-dashboard-text-primary">{title}</p>
       {description ? <p className="max-w-md text-small text-dashboard-text-secondary">{description}</p> : null}
       {typeof action === 'string' ? <Button variant="secondary">{action}</Button> : action}

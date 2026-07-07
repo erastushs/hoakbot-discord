@@ -6,7 +6,7 @@ export function Skeleton({ className, ...props }: HTMLAttributes<HTMLDivElement>
   return (
     <div
       aria-hidden="true"
-      className={cx('relative overflow-hidden rounded-md bg-dashboard-bg-muted shadow-elevation-0 motion-safe:animate-pulse', className)}
+        className={cx('relative overflow-hidden rounded-xl bg-dashboard-bg-muted/58 shadow-elevation-0 motion-safe:animate-pulse', className)}
       {...props}
     />
   );

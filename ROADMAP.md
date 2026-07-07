@@ -696,3 +696,646 @@ No architecture changes needed. Economy, Tickets, AI, Reaction Roles, Leveling, 
 **Total estimated effort:** ~8-10 weeks
 
 > **This roadmap is a living document.** ADRs are the source of truth for architectural decisions. This roadmap is the guide for project planning.
+
+---
+
+# Hoak Bot v3.1 Roadmap - Dashboard Authentication, Authorization, Security, and Production Deployment
+
+**Version:** 3.1  
+**Status:** Roadmap Planned  
+**Production Baseline:** v3.0.3 Production Freeze  
+**Primary Domain:** `https://dashboard.hoakfamily.web.id`  
+**Scope:** Dashboard access control, protected dashboard APIs, security hardening, production deployment  
+**Non-Goal:** New dashboard features unrelated to secure access and production readiness
+
+---
+
+## v3.1 Objective
+
+Version 3.1 makes the existing dashboard safe for production use.
+
+By the end of v3.1, a user can securely access `https://dashboard.hoakfamily.web.id` using Discord OAuth, and only authorized users can manage guild settings.
+
+The v3.0 platform is treated as stable production infrastructure. Version 3.1 is forward-only: every phase builds on completed work, every phase is independently shippable, and no phase depends on a later phase.
+
+---
+
+## v3.1 Scope Boundary
+
+### Included
+
+- Dashboard authentication using Discord OAuth.
+- Dashboard authorization for dashboard, guild, module, and configuration access.
+- Server-side session management.
+- Protected dashboard API endpoints.
+- Dashboard integration with real authentication state.
+- Security hardening for OAuth, cookies, sessions, CSRF, redirects, rate limits, and audit logging.
+- Production deployment for `dashboard.hoakfamily.web.id`.
+- Production validation, rollback, and manual QA checklists.
+
+### Explicitly Excluded
+
+- Live configuration push.
+- WebSocket.
+- Plugin marketplace.
+- Dashboard analytics.
+- Multi-user collaboration.
+- Theme customization.
+- Mobile support as a dedicated feature track.
+- Notifications.
+
+These exclusions are future-release concerns and must not be introduced into the v3.1 implementation plan.
+
+---
+
+## v3.1 Architecture Principles
+
+### P1 - Production Stability First
+
+The production bot remains stable. Authentication and authorization work must be isolated from unrelated bot behavior and must avoid broad rewrites of existing v3.0 systems.
+
+### P2 - Server-Side Trust Boundary
+
+The API server is the source of truth for authentication, authorization, session validation, permission checks, and audit decisions. The dashboard UI may hide or disable controls, but API middleware must enforce every rule.
+
+### P3 - Forward-Only Milestones
+
+Each phase must be shippable without depending on a future phase. Later phases may harden, extend, or integrate prior contracts, but may not require redesigning earlier contracts.
+
+### P4 - Secure by Default
+
+Cookie flags, session expiration, OAuth state validation, redirect validation, CSRF protection, and rate limiting are planned as first-class deliverables, not post-release cleanup.
+
+### P5 - Least Privilege Authorization
+
+Users receive only the permissions they can prove through Discord guild ownership, Discord guild permissions, or explicit owner override. Configuration writes require stronger authorization than dashboard visibility.
+
+### P6 - Auditable Administration
+
+Security-relevant events and configuration mutations must be attributable to a Discord user, guild, session, IP/user-agent context when available, and timestamp.
+
+---
+
+## v3.1 Dependency Graph
+
+```
+Phase 1: Authentication Foundation
+    |
+    v
+Phase 2: Discord OAuth Provider
+    |
+    v
+Phase 3: Session Management
+    |
+    +------------------------------+
+    v                              v
+Phase 4: Authorization          Phase 5: Dashboard Integration
+    |                              |
+    +--------------+---------------+
+                   v
+Phase 6: API Protection
+    |
+    v
+Phase 7: Security Hardening
+    |
+    v
+Phase 8: Production Deployment
+    |
+    v
+Phase 9: Production Validation
+```
+
+**Key dependencies:**
+
+- Phase 2 depends on Phase 1 because Discord OAuth must implement stable authentication provider contracts.
+- Phase 3 depends on Phase 2 because sessions are created from validated OAuth identities.
+- Phase 4 depends on Phase 3 because authorization decisions require an authenticated session identity.
+- Phase 5 depends on Phase 3 because the dashboard can integrate login, logout, and profile once session APIs exist.
+- Phase 6 depends on Phases 4 and 5 because every dashboard API must enforce server-side permissions and support real UI flows.
+- Phase 7 depends on Phase 6 because hardening applies to the completed auth and API surface.
+- Phase 8 depends on Phase 7 because deployment must expose the hardened surface, not an incomplete auth stack.
+- Phase 9 depends on Phase 8 because validation must run against the deployed production topology.
+
+**Arrow = depends on.** No phase depends on a phase below it.
+
+---
+
+## Phase 1: Authentication Foundation
+
+**Goal:** Define the stable authentication contracts needed by the API server and dashboard without committing to Discord-specific implementation details.
+
+**Depends on:** v3.0.3 production baseline  
+**Shippable Value:** The codebase has a clear auth boundary and can safely accept one or more auth providers later.  
+**Risk:** Low-Medium
+
+### Deliverables
+
+- Authentication identity contract for a logged-in dashboard user.
+- Authentication provider contract for login URL generation, callback handling, token exchange, and identity resolution.
+- Session abstraction contract for create, read, rotate, revoke, and expire operations.
+- Request auth context contract used by middleware and API handlers.
+- Auth error taxonomy for unauthenticated, expired session, invalid OAuth state, forbidden, and insufficient guild permission cases.
+- Configuration contract for dashboard auth settings such as public dashboard URL, OAuth callback URL, allowed redirect paths, and session cookie settings.
+
+### Dependencies
+
+- Existing REST API platform.
+- Existing dashboard platform.
+- Existing configuration service and environment configuration loading.
+
+### Completion Criteria
+
+- Auth interfaces and contracts are documented and ready for implementation.
+- Contracts distinguish authentication from authorization.
+- No Discord guild permission logic is embedded in the foundation layer.
+- No dashboard UI behavior depends on unimplemented provider details.
+- Existing production bot behavior remains unchanged.
+
+### Validation Steps
+
+- Review the contract boundaries before implementation starts.
+- Verify every later phase can depend on these contracts without requiring contract rewrites.
+- Confirm configuration names and required environment variables are known before Phase 2.
+
+---
+
+## Phase 2: Discord OAuth Provider
+
+**Goal:** Implement Discord OAuth as the first authentication provider using the Phase 1 provider contract.
+
+**Depends on:** Phase 1  
+**Shippable Value:** Users can authenticate with Discord and the server can obtain a trustworthy Discord identity.  
+**Risk:** Medium
+
+### Deliverables
+
+- Discord OAuth login route that generates a Discord authorization URL.
+- Discord OAuth callback route.
+- Authorization code token exchange.
+- Discord user identity fetch.
+- OAuth state generation, storage, validation, and single-use consumption.
+- OAuth error handling for denied consent, invalid code, expired state, token exchange failure, and identity fetch failure.
+- Redirect validation that permits only approved dashboard paths after login.
+- Minimal authenticated identity payload containing Discord user ID, username/display name, avatar metadata, and provider name.
+
+### Dependencies
+
+- Discord application OAuth client ID and client secret.
+- Registered callback URL for `https://dashboard.hoakfamily.web.id`.
+- Dashboard public origin configuration.
+
+### Completion Criteria
+
+- Login redirects to Discord with correct scopes.
+- Callback rejects missing, expired, reused, or mismatched OAuth state.
+- Callback exchanges a valid code for tokens and resolves the Discord user identity.
+- Server never exposes OAuth client secret or provider tokens to the dashboard client.
+- Login flow has deterministic behavior for success and failure redirects.
+
+### Validation Steps
+
+- Manually test successful Discord login in a non-production environment.
+- Manually test denied consent.
+- Manually test tampered `state`.
+- Manually test invalid callback code.
+- Verify redirect attempts to external domains are rejected.
+
+---
+
+## Phase 3: Session Management
+
+**Goal:** Persist authenticated dashboard access using secure server-side sessions.
+
+**Depends on:** Phase 2  
+**Shippable Value:** Authenticated users can stay logged in securely without exposing provider tokens to the browser.  
+**Risk:** Medium
+
+### Deliverables
+
+- Server-side session storage.
+- Opaque session ID cookie.
+- Session creation after successful Discord OAuth callback.
+- Session lookup middleware that populates request auth context.
+- Session expiration policy with absolute lifetime and idle timeout.
+- Logout endpoint that revokes the server-side session and clears the cookie.
+- Session rotation after login to prevent session fixation.
+- Session cleanup strategy for expired sessions.
+- Current session endpoint for dashboard bootstrapping.
+
+### Dependencies
+
+- Existing database infrastructure or another approved server-side storage mechanism.
+- Cookie configuration values for domain, path, secure flag, HTTP-only flag, SameSite mode, and max age.
+
+### Completion Criteria
+
+- Sessions are stored server-side, not as self-contained client-side authorization tokens.
+- Browser receives only an opaque session identifier.
+- Logout invalidates the server-side session.
+- Expired sessions are rejected consistently by middleware.
+- Session rotation occurs after successful authentication.
+- Session cookies are HTTP-only and ready for secure production flags.
+
+### Validation Steps
+
+- Login creates exactly one valid server-side session.
+- Refreshing the dashboard preserves authentication while the session is valid.
+- Logout prevents reuse of the old session cookie.
+- Expired sessions return an unauthenticated response.
+- Manually verify session cookie attributes in browser developer tools.
+
+---
+
+## Phase 4: Authorization
+
+**Goal:** Determine whether an authenticated Discord user may access the dashboard, a guild, a module, or a configuration action.
+
+**Depends on:** Phase 3  
+**Shippable Value:** The server can distinguish authenticated users from authorized administrators before exposing or mutating guild settings.  
+**Risk:** High
+
+### Authorization Model
+
+Authorization must support these access levels:
+
+- Dashboard access.
+- Guild access.
+- Module visibility.
+- Configuration read.
+- Configuration write.
+- Administrative/security-sensitive operations.
+
+Authorization must recognize these authority sources:
+
+- Discord guild owner.
+- Discord administrator permission.
+- Discord manage guild permission.
+- `OWNER_IDS` override for trusted bot owners/operators.
+
+### Deliverables
+
+- Authorization service contract and implementation.
+- Guild membership and permission resolution strategy.
+- Discord guild list integration for the authenticated user.
+- Bot guild intersection check so users only manage guilds where the bot is present.
+- Owner override check using configured `OWNER_IDS`.
+- Permission decision result that includes allowed/denied, reason code, guild ID, user ID, and required capability.
+- Authorization helpers for dashboard, guild, module, and configuration scopes.
+- Clear default-deny behavior for missing guilds, missing permissions, Discord API failures, and unknown modules/settings.
+
+### Dependencies
+
+- Authenticated Discord user identity from Phase 3.
+- Existing module registry and settings metadata.
+- Existing bot guild state.
+- Discord permission data from OAuth scopes and/or Discord API calls.
+
+### Completion Criteria
+
+- Unauthenticated users receive no authorization decisions beyond unauthenticated.
+- Authenticated but unauthorized users cannot view or modify guild settings.
+- Guild owners are authorized for their guilds.
+- Users with Administrator are authorized for their guilds.
+- Users with Manage Guild are authorized according to the chosen read/write policy.
+- Configured `OWNER_IDS` users can access supported dashboard administration paths even when Discord guild permission data is insufficient.
+- All authorization failures are explicit and auditable.
+
+### Validation Steps
+
+- Test a guild owner.
+- Test a guild administrator who is not owner.
+- Test a user with Manage Guild but not Administrator.
+- Test a regular guild member.
+- Test a user who shares no guild with the bot.
+- Test a configured owner override user.
+- Test Discord API failure behavior and confirm default-deny.
+
+---
+
+## Phase 5: Dashboard Integration
+
+**Goal:** Replace placeholder dashboard authentication with real session-aware Discord login, logout, profile, and guild selection flows.
+
+**Depends on:** Phase 3  
+**Shippable Value:** Users can access the existing dashboard through a real login flow and see only the guilds available to their session.  
+**Risk:** Medium
+
+### Deliverables
+
+- Login page wired to the Discord OAuth login route.
+- Auth callback handling path or loading state as required by the existing dashboard routing model.
+- Session bootstrap on dashboard load.
+- Logout action wired to the server logout endpoint.
+- User profile display using Discord identity.
+- Guild selector populated from authorized guild data.
+- Authenticated and unauthenticated dashboard route guards.
+- Permission-aware empty states for no authorized guilds and insufficient permissions.
+- Removal of placeholder auth assumptions from dashboard behavior.
+
+### Dependencies
+
+- Session current-user endpoint from Phase 3.
+- Guild authorization data from Phase 4 for final guild selector behavior.
+- Existing dashboard UI shell and API client.
+
+### Completion Criteria
+
+- Anonymous users see the login entry point instead of the dashboard management UI.
+- Logged-in users see their Discord profile identity.
+- Logged-in users can log out and are returned to an unauthenticated state.
+- Guild selector shows only guilds the API says the user may access.
+- Dashboard does not rely on client-side-only permission decisions.
+- Existing dashboard settings UI remains metadata-driven.
+
+### Validation Steps
+
+- Load dashboard while logged out.
+- Complete login and confirm dashboard session bootstrap.
+- Refresh the dashboard and confirm session persistence.
+- Log out and confirm protected dashboard pages are inaccessible.
+- Confirm a user with no authorized guilds receives a clear safe state.
+
+---
+
+## Phase 6: API Protection
+
+**Goal:** Protect every dashboard API endpoint with authentication middleware, authorization middleware, and session validation.
+
+**Depends on:** Phases 4 and 5  
+**Shippable Value:** Dashboard API access is secure even if the dashboard client is bypassed.  
+**Risk:** High
+
+### Deliverables
+
+- Authentication middleware for all dashboard API routes.
+- Authorization middleware for guild-scoped routes.
+- Module authorization checks for module-scoped routes.
+- Configuration read/write authorization checks for settings routes.
+- Session validation on every protected request.
+- Public route allowlist for login, callback, logout behavior where applicable, health checks, and static assets.
+- Standard unauthenticated and forbidden API responses.
+- Audit context propagation from session to configuration writes.
+- Endpoint inventory documenting required auth level for each dashboard API endpoint.
+
+### Dependencies
+
+- Existing production API endpoints.
+- Authorization service from Phase 4.
+- Session middleware from Phase 3.
+- Dashboard integration from Phase 5.
+
+### Completion Criteria
+
+- Every dashboard API endpoint is classified as public, authenticated, guild-authorized, module-authorized, or configuration-authorized.
+- No settings read endpoint can be accessed without a valid session.
+- No settings write endpoint can be accessed without configuration write authorization.
+- Unauthorized direct API calls fail even when crafted outside the dashboard UI.
+- Protected API responses do not leak guild settings or module metadata to unauthorized users.
+- Audit context is available for all configuration mutations.
+
+### Validation Steps
+
+- Attempt every dashboard API endpoint while logged out.
+- Attempt every guild settings endpoint as an unauthorized user.
+- Attempt every guild settings endpoint as an authorized user.
+- Attempt module/configuration access for an unknown guild ID.
+- Confirm all protected endpoint failures use the expected 401 or 403 response shape.
+
+---
+
+## Phase 7: Security Hardening
+
+**Goal:** Harden the completed authentication, session, authorization, and API surface before production deployment.
+
+**Depends on:** Phase 6  
+**Shippable Value:** The dashboard auth system is resilient against common web and OAuth attack paths.  
+**Risk:** High
+
+### Deliverables
+
+- CSRF protection for state-changing dashboard API requests.
+- Secure cookie flags: `HttpOnly`, `Secure`, appropriate `SameSite`, scoped `Path`, explicit expiration, and production domain policy.
+- Secure-cookie enforcement for production HTTPS.
+- OAuth state entropy, expiration, single-use enforcement, and replay rejection.
+- Redirect validation using a strict allowlist of internal dashboard paths.
+- Session fixation prevention through session rotation after authentication and privilege changes.
+- Rate limiting for login, callback, logout, session, and protected API routes.
+- Audit logging for login success, login failure, logout, authorization denial, session expiration, and configuration writes.
+- Security response headers plan including CSP, frame protection, content type protection, referrer policy, and permissions policy.
+- Sensitive data handling rules for logs, errors, and dashboard responses.
+
+### Dependencies
+
+- Complete API protection inventory from Phase 6.
+- Existing logging and audit capabilities.
+- Production domain and HTTPS assumptions for cookie behavior.
+
+### Completion Criteria
+
+- State-changing requests require valid CSRF protection.
+- Session cookies are not readable by JavaScript.
+- Production sessions require HTTPS.
+- OAuth state replay is rejected.
+- External redirect attempts are rejected.
+- Login and API abuse are rate limited without blocking normal admin usage.
+- Audit logs include enough context to investigate access and configuration changes.
+- Error responses do not expose secrets, tokens, stack traces, or internal provider details.
+
+### Validation Steps
+
+- Attempt CSRF-style state-changing requests without the required token/header.
+- Inspect production-mode cookie attributes.
+- Replay a previously consumed OAuth state.
+- Attempt open redirect payloads on login and callback flows.
+- Trigger rate limits intentionally in a non-production environment.
+- Review audit log entries for security events.
+
+---
+
+## Phase 8: Production Deployment
+
+**Goal:** Deploy the secured dashboard to `https://dashboard.hoakfamily.web.id` behind HTTPS and a production reverse proxy.
+
+**Depends on:** Phase 7  
+**Shippable Value:** Authorized users can use the secured dashboard at the production domain.  
+**Risk:** Medium-High
+
+### Deliverables
+
+- DNS configuration for `dashboard.hoakfamily.web.id`.
+- Nginx reverse proxy configuration for dashboard static assets and API routing.
+- HTTPS certificate provisioning and renewal plan.
+- Reverse proxy forwarding headers for protocol, host, and client IP.
+- Production environment variable checklist for OAuth, session, cookie, dashboard origin, API origin, and owner override configuration.
+- CSP policy for dashboard production assets and API connections.
+- Compression configuration for static assets and API responses where safe.
+- Static asset caching policy with immutable caching for fingerprinted assets and no-cache behavior for HTML entry points.
+- API caching policy that prevents caching authenticated settings responses.
+- Deployment rollback plan to return to the previous stable production state.
+
+### Dependencies
+
+- Hardened auth/API stack from Phase 7.
+- VPS or production host access.
+- Domain and certificate management access.
+- Discord OAuth application configuration access.
+
+### Completion Criteria
+
+- `https://dashboard.hoakfamily.web.id` serves the dashboard over HTTPS.
+- HTTP redirects to HTTPS.
+- Nginx forwards API requests to the correct internal service.
+- OAuth callback URL exactly matches Discord application settings.
+- Secure cookies work correctly behind the reverse proxy.
+- CSP does not break dashboard bootstrapping or OAuth flow.
+- Authenticated API responses are not cached by browsers or shared proxies.
+
+### Validation Steps
+
+- Open the production dashboard domain over HTTPS.
+- Confirm HTTP-to-HTTPS redirect.
+- Complete Discord login against the production callback URL.
+- Verify session cookie creation and persistence behind Nginx.
+- Verify logout clears the production session.
+- Inspect response headers for CSP, caching, compression, and security headers.
+
+---
+
+## Phase 9: Production Validation
+
+**Goal:** Validate the complete production deployment before declaring v3.1 complete.
+
+**Depends on:** Phase 8  
+**Shippable Value:** The team has repeatable evidence that production authentication, authorization, security, and rollback behavior are ready.  
+**Risk:** Medium
+
+### Deliverables
+
+- Manual QA checklist.
+- Security checklist.
+- Deployment checklist.
+- Rollback checklist.
+- Production smoke test record.
+- Known limitations and follow-up list limited to v3.1 scope.
+
+### Manual QA Checklist
+
+- Logged-out user sees login page.
+- Discord login succeeds.
+- Discord login cancellation returns a safe error state.
+- Logged-in user sees profile identity.
+- Authorized guilds appear in the guild selector.
+- Unauthorized guilds do not appear in the guild selector.
+- Authorized user can read guild settings.
+- Authorized user can update guild settings.
+- Unauthorized user cannot read or update guild settings.
+- Logout ends the session.
+
+### Security Checklist
+
+- OAuth state is required and single-use.
+- Redirects are restricted to approved dashboard paths.
+- Session cookie is HTTP-only.
+- Session cookie is secure in production.
+- SameSite policy is explicitly set.
+- Session expiration is enforced.
+- CSRF protection blocks invalid state-changing requests.
+- Rate limiting is active on auth and protected API routes.
+- Audit logs record login, logout, denied authorization, and configuration writes.
+- API errors do not expose secrets or stack traces.
+
+### Deployment Checklist
+
+- DNS resolves to the production host.
+- HTTPS certificate is valid and renewable.
+- Nginx reverse proxy routes dashboard and API traffic correctly.
+- Required environment variables are present.
+- Discord OAuth callback URL matches production.
+- CSP and security headers are active.
+- Static assets use safe caching.
+- Authenticated API responses are not cached.
+
+### Rollback Checklist
+
+- Previous production build or service configuration is available.
+- Nginx can be reverted to the previous known-good route/configuration.
+- New auth/session database changes are backward-safe or isolated.
+- Discord OAuth settings can be reverted if needed.
+- Rollback preserves production bot operation.
+- Rollback completion is verified with bot health and dashboard access checks.
+
+### Completion Criteria
+
+- All manual QA checklist items pass.
+- All security checklist items pass or have an explicitly accepted production risk.
+- Deployment checklist is complete.
+- Rollback checklist is executable and tested at least once in staging or rehearsed step-by-step.
+- No unrelated features are included in v3.1 completion scope.
+
+---
+
+## v3.1 Major Design Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Authentication provider | Discord OAuth | Matches the user identity and guild permission source used by the bot ecosystem. |
+| Session model | Server-side sessions with opaque cookie IDs | Keeps provider tokens and authorization state out of the browser and allows immediate revocation. |
+| Authorization enforcement | API middleware and authorization service | Dashboard UI cannot be trusted as an enforcement boundary. |
+| Default authorization behavior | Default deny | Missing data, unknown guilds, Discord failures, and unknown modules/settings must fail closed. |
+| Owner override | `OWNER_IDS` | Allows trusted operators to recover/administer the dashboard when Discord guild permission data is insufficient. |
+| Guild eligibility | User guilds intersected with bot guilds | Users can only manage guilds where the bot is present and where they have sufficient authority. |
+| OAuth state | Server-generated, expiring, single-use state | Prevents CSRF and replay attacks in the OAuth callback flow. |
+| Redirect policy | Internal allowlist only | Prevents open redirect vulnerabilities during login and callback handling. |
+| Cookie policy | HTTP-only, secure in production, explicit SameSite | Reduces XSS token theft risk and limits cross-site request behavior. |
+| Deployment topology | Nginx reverse proxy with HTTPS | Provides a stable production entry point, TLS termination, compression, caching, and security headers. |
+
+---
+
+## v3.1 Assumptions
+
+- The dashboard already exists and remains the v3.1 UI foundation.
+- The REST API platform already exists and remains the v3.1 API foundation.
+- v3.0.3 is production-frozen and should not receive unrelated architectural rewrites during v3.1.
+- Supabase PostgreSQL or an equivalent existing server-side data store is available for session and OAuth state persistence if needed.
+- Discord OAuth application credentials can be created or updated for `dashboard.hoakfamily.web.id`.
+- The bot can determine which guilds it is currently in.
+- Discord guild permission information can be obtained from OAuth scopes and/or Discord API calls during authorization checks.
+- `OWNER_IDS` is already an accepted operator trust mechanism or can be configured as one without changing unrelated permission systems.
+- Production deployment uses a VPS or host where Nginx, HTTPS certificates, environment variables, and process management can be configured.
+
+---
+
+## v3.1 Risks Before Implementation
+
+| # | Risk | Likelihood | Impact | Mitigation |
+|---|------|------------|--------|------------|
+| 1 | Discord OAuth scopes may not provide enough guild permission detail for every authorization decision. | Medium | High | Define the exact scopes and fallback Discord API calls during Phase 4; fail closed on missing data. |
+| 2 | Session storage schema or cleanup strategy may affect production database operations. | Medium | Medium | Keep session tables isolated from configuration tables and define TTL cleanup before deployment. |
+| 3 | Secure cookies may fail behind Nginx if proxy headers or trust proxy settings are wrong. | Medium | High | Validate forwarded protocol/host headers and production cookie behavior in Phase 8. |
+| 4 | OAuth callback URL mismatch can block production login. | Medium | High | Treat Discord application settings as part of the deployment checklist and validate before release. |
+| 5 | Authorization bugs could expose guild settings to the wrong user. | Medium | High | Enforce authorization in middleware, default deny, and validate every endpoint class in Phase 6. |
+| 6 | CSRF protection could break legitimate dashboard writes if client and server contracts are unclear. | Medium | Medium | Define the CSRF transport contract during Phase 7 and validate all state-changing endpoints. |
+| 7 | CSP may block dashboard assets or OAuth-related flows. | Medium | Medium | Start with a strict but tested CSP in staging and verify production headers before completion. |
+| 8 | Rate limiting could lock out legitimate administrators during login troubleshooting. | Low-Medium | Medium | Use route-specific limits and document safe operational reset procedures. |
+| 9 | Audit logs may accidentally record sensitive OAuth/session data. | Low-Medium | High | Define sensitive data redaction rules before audit logging is enabled. |
+| 10 | Production rollback may be complicated if auth changes are mixed with unrelated feature work. | Medium | High | Keep v3.1 scope limited to auth, authorization, security, and deployment only. |
+
+---
+
+## v3.1 Project Status
+
+| Phase | Status | Primary Outcome |
+|-------|--------|-----------------|
+| 1. Authentication Foundation | PLANNED | Auth contracts and session abstractions are ready. |
+| 2. Discord OAuth Provider | PLANNED | Users can authenticate with Discord. |
+| 3. Session Management | PLANNED | Server-side sessions protect dashboard access. |
+| 4. Authorization | PLANNED | User access is evaluated for dashboard, guild, module, and configuration scopes. |
+| 5. Dashboard Integration | PLANNED | Dashboard uses real login, logout, profile, and guild selector flows. |
+| 6. API Protection | PLANNED | Every dashboard API endpoint is protected by auth and authorization middleware. |
+| 7. Security Hardening | PLANNED | CSRF, cookies, redirects, state, rate limits, and audit logging are hardened. |
+| 8. Production Deployment | PLANNED | `dashboard.hoakfamily.web.id` is deployed behind HTTPS and Nginx. |
+| 9. Production Validation | PLANNED | QA, security, deployment, and rollback checklists are complete. |
+
+**Total estimated effort:** To be estimated during implementation planning after Phase 1 contracts are approved.
+
+> v3.1 is roadmap-planned only. No implementation should begin until the v3.1 scope boundary, dependency graph, and phase completion criteria are accepted.

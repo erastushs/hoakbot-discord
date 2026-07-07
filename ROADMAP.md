@@ -685,13 +685,13 @@ No architecture changes needed. Economy, Tickets, AI, Reaction Roles, Leveling, 
 | Milestone | Status | Target | ADRs |
 |-----------|--------|--------|------|
 | 1. Architecture Foundation | **COMPLETE** | Day 1-3 | ADR-001 → ADR-010 ✓ |
-| 2. Core Configuration | PENDING | Day 4-10 | — |
-| 3. Database Configuration | PENDING | Day 11-15 | — |
-| 4. Plugin System v2 | PENDING | Day 16-20 | — |
-| 5. Permission & Events | PENDING | Day 21-24 | — |
-| 6. API Layer | PENDING | Day 25-29 | — |
-| 7. Dashboard Frontend | PENDING | Day 30-36 | — |
-| 8. Live Config & Polish | PENDING | Day 37-40 | — |
+| 2. Core Configuration | **COMPLETE** | Day 4-10 | Settings registry, module metadata, config providers, and live runtime configuration are implemented. |
+| 3. Database Configuration | **COMPLETE** | Day 11-15 | PostgreSQL-backed guild settings, migrations, and JSON fallback are implemented. |
+| 4. Plugin System v2 | **COMPLETE** | Day 16-20 | Module registry, module loader, manifests, feature flags, and lifecycle loading are implemented. |
+| 5. Permission & Events | **PARTIAL / SUPERSEDED BY v3.1 AUTHORIZATION** | Day 21-24 | Runtime event/config flows exist; database permission override and config audit table items remain future work. |
+| 6. API Layer | **COMPLETE** | Day 25-29 | Embedded API, standard envelopes, validation, dashboard module/settings endpoints, health endpoint, and protected settings APIs are implemented. |
+| 7. Dashboard Frontend | **COMPLETE** | Day 30-36 | React dashboard, auth integration, guild switching, metadata-driven settings pages, and API client are implemented. |
+| 8. Live Config & Polish | **PARTIAL** | Day 37-40 | REST-based live configuration is implemented; WebSocket push, audit history UI, and deprecated-code cleanup remain future work. |
 
 **Total estimated effort:** ~8-10 weeks
 
@@ -702,10 +702,10 @@ No architecture changes needed. Economy, Tickets, AI, Reaction Roles, Leveling, 
 # Hoak Bot v3.1 Roadmap - Dashboard Authentication, Authorization, Security, and Production Deployment
 
 **Version:** 3.1  
-**Status:** Roadmap Planned  
-**Production Baseline:** v3.0.3 Production Freeze  
+**Status:** Phases 1-7 Complete; Production Deployment and Validation Upcoming  
+**Production Baseline:** v3.1 security-hardened dashboard/API  
 **Primary Domain:** `https://dashboard.hoakfamily.web.id`  
-**Scope:** Dashboard access control, protected dashboard APIs, security hardening, production deployment  
+**Scope:** Dashboard access control, protected dashboard APIs, security hardening, production readiness, production deployment  
 **Non-Goal:** New dashboard features unrelated to secure access and production readiness
 
 ---
@@ -713,6 +713,8 @@ No architecture changes needed. Economy, Tickets, AI, Reaction Roles, Leveling, 
 ## v3.1 Objective
 
 Version 3.1 makes the existing dashboard safe for production use.
+
+Current implementation status: dashboard OAuth, server-side sessions, authorization, API protection, security hardening, and production-readiness fixes are complete in the codebase. Production deployment and production validation remain upcoming.
 
 By the end of v3.1, a user can securely access `https://dashboard.hoakfamily.web.id` using Discord OAuth, and only authorized users can manage guild settings.
 
@@ -729,9 +731,10 @@ The v3.0 platform is treated as stable production infrastructure. Version 3.1 is
 - Server-side session management.
 - Protected dashboard API endpoints.
 - Dashboard integration with real authentication state.
-- Security hardening for OAuth, cookies, sessions, CSRF, redirects, rate limits, and audit logging.
-- Production deployment for `dashboard.hoakfamily.web.id`.
-- Production validation, rollback, and manual QA checklists.
+- Security hardening for OAuth, cookies, sessions, CSRF, redirects, rate limits, and audit logging. **Complete.**
+- Production readiness fixes for session cleanup scheduling, production OAuth validation, production CORS, and trusted proxy client IP handling. **Complete.**
+- Production deployment for `dashboard.hoakfamily.web.id`. **Upcoming.**
+- Production validation, rollback, and manual QA checklists. **Upcoming.**
 
 ### Explicitly Excluded
 
@@ -822,6 +825,9 @@ Phase 9: Production Validation
 
 ## Phase 1: Authentication Foundation
 
+**Current Status:** COMPLETE  
+**Completion Summary:** Authentication, session, user identity, request context, and auth error contracts are implemented and used by the dashboard API stack.
+
 **Goal:** Define the stable authentication contracts needed by the API server and dashboard without committing to Discord-specific implementation details.
 
 **Depends on:** v3.0.3 production baseline  
@@ -860,6 +866,9 @@ Phase 9: Production Validation
 ---
 
 ## Phase 2: Discord OAuth Provider
+
+**Current Status:** COMPLETE  
+**Completion Summary:** Discord OAuth login and callback routes are implemented with random expiring state, single-use replay protection, user/guild identity resolution, and production validation for required OAuth environment variables.
 
 **Goal:** Implement Discord OAuth as the first authentication provider using the Phase 1 provider contract.
 
@@ -904,6 +913,9 @@ Phase 9: Production Validation
 
 ## Phase 3: Session Management
 
+**Current Status:** COMPLETE  
+**Completion Summary:** Server-side PostgreSQL sessions, opaque HttpOnly cookies, expiration, revocation, logout invalidation, current-session bootstrap, CSRF metadata integration, and scheduled cleanup are implemented.
+
 **Goal:** Persist authenticated dashboard access using secure server-side sessions.
 
 **Depends on:** Phase 2  
@@ -947,6 +959,9 @@ Phase 9: Production Validation
 ---
 
 ## Phase 4: Authorization
+
+**Current Status:** COMPLETE  
+**Completion Summary:** Server-side authorization supports guild owner, Administrator, Manage Guild, configured owner override, bot/user guild intersection, guild filtering, default-deny behavior, and IDOR protection for guild-scoped APIs.
 
 **Goal:** Determine whether an authenticated Discord user may access the dashboard, a guild, a module, or a configuration action.
 
@@ -1014,6 +1029,9 @@ Authorization must recognize these authority sources:
 
 ## Phase 5: Dashboard Integration
 
+**Current Status:** COMPLETE  
+**Completion Summary:** The dashboard uses real Discord OAuth login, server-side session bootstrap, logout, authenticated/unauthenticated states, authorized guild filtering, guild switching, and the protected API client.
+
 **Goal:** Replace placeholder dashboard authentication with real session-aware Discord login, logout, profile, and guild selection flows.
 
 **Depends on:** Phase 3  
@@ -1058,6 +1076,9 @@ Authorization must recognize these authority sources:
 ---
 
 ## Phase 6: API Protection
+
+**Current Status:** COMPLETE  
+**Completion Summary:** Dashboard API routes are protected with session authentication, guild authorization, standard API envelopes, request validation, guild-scoped permission checks, and direct-call protection for settings APIs.
 
 **Goal:** Protect every dashboard API endpoint with authentication middleware, authorization middleware, and session validation.
 
@@ -1104,6 +1125,9 @@ Authorization must recognize these authority sources:
 ---
 
 ## Phase 7: Security Hardening
+
+**Current Status:** COMPLETE  
+**Completion Summary:** CSRF protection, security headers, route-driven rate limiting, structured security audit logging, production CORS, trusted-proxy IP handling, and production-readiness fixes are implemented.
 
 **Goal:** Harden the completed authentication, session, authorization, and API surface before production deployment.
 
@@ -1154,6 +1178,8 @@ Authorization must recognize these authority sources:
 
 ## Phase 8: Production Deployment
 
+**Current Status:** UPCOMING
+
 **Goal:** Deploy the secured dashboard to `https://dashboard.hoakfamily.web.id` behind HTTPS and a production reverse proxy.
 
 **Depends on:** Phase 7  
@@ -1202,6 +1228,8 @@ Authorization must recognize these authority sources:
 ---
 
 ## Phase 9: Production Validation
+
+**Current Status:** UPCOMING
 
 **Goal:** Validate the complete production deployment before declaring v3.1 complete.
 
@@ -1326,16 +1354,17 @@ Authorization must recognize these authority sources:
 
 | Phase | Status | Primary Outcome |
 |-------|--------|-----------------|
-| 1. Authentication Foundation | PLANNED | Auth contracts and session abstractions are ready. |
-| 2. Discord OAuth Provider | PLANNED | Users can authenticate with Discord. |
-| 3. Session Management | PLANNED | Server-side sessions protect dashboard access. |
-| 4. Authorization | PLANNED | User access is evaluated for dashboard, guild, module, and configuration scopes. |
-| 5. Dashboard Integration | PLANNED | Dashboard uses real login, logout, profile, and guild selector flows. |
-| 6. API Protection | PLANNED | Every dashboard API endpoint is protected by auth and authorization middleware. |
-| 7. Security Hardening | PLANNED | CSRF, cookies, redirects, state, rate limits, and audit logging are hardened. |
-| 8. Production Deployment | PLANNED | `dashboard.hoakfamily.web.id` is deployed behind HTTPS and Nginx. |
-| 9. Production Validation | PLANNED | QA, security, deployment, and rollback checklists are complete. |
+| 1. Authentication Foundation | **COMPLETE** | Auth contracts, request context, identity types, and session abstractions are implemented. |
+| 2. Discord OAuth Provider | **COMPLETE** | Users can authenticate with Discord through OAuth login/callback with state validation and replay protection. |
+| 3. Session Management | **COMPLETE** | Server-side PostgreSQL sessions, secure cookies, logout revocation, expiration, and cleanup scheduling protect dashboard access. |
+| 4. Authorization | **COMPLETE** | User access is evaluated for dashboard, guild, module, and configuration scopes with owner override and guild filtering. |
+| 5. Dashboard Integration | **COMPLETE** | Dashboard uses real login, logout, session bootstrap, authenticated states, and guild selector flows. |
+| 6. API Protection | **COMPLETE** | Dashboard API endpoints are protected by authentication and authorization middleware with standard envelopes. |
+| 7. Security Hardening | **COMPLETE** | CSRF, security headers, rate limiting, audit logging, production CORS, trusted proxy handling, and readiness fixes are implemented. |
+| 8. Production Deployment | UPCOMING | `dashboard.hoakfamily.web.id` deployment behind HTTPS and Nginx remains to be performed. |
+| 9. Production Validation | UPCOMING | QA, security, deployment, and rollback validation remain to be performed against production. |
 
-**Total estimated effort:** To be estimated during implementation planning after Phase 1 contracts are approved.
+**Implementation progress:** 7 of 9 v3.1 phases complete.  
+**Remaining scope:** Production deployment and production validation.
 
-> v3.1 is roadmap-planned only. No implementation should begin until the v3.1 scope boundary, dependency graph, and phase completion criteria are accepted.
+> v3.1 implementation through Phase 7 is complete. Phase 8 and Phase 9 remain upcoming deployment and validation work.

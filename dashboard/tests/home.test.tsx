@@ -9,7 +9,6 @@ describe('DashboardHome', () => {
     render(<DashboardHome manifests={manifests} />);
 
     expect(screen.getByRole('heading', { name: 'Dashboard Home' })).toBeInTheDocument();
-    expect(screen.getByText('Operational')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Modules' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Guild' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'System' })).toBeInTheDocument();

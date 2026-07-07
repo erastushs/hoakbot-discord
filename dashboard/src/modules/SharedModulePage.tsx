@@ -1,4 +1,4 @@
-import { AlertTriangle, Bot, ShieldCheck } from 'lucide-react';
+import { Bot, ShieldCheck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Button, Card, EmptyState, Input, Section, SectionHeader, Select, StatusBadge, Switch, Textarea } from '../components/index.js';
@@ -72,17 +72,13 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
           </Button>
         }
         description={manifest.description}
-        status={<StatusBadge status={manifest.supportsHotReload ? 'enabled' : 'pending'}>{manifest.supportsHotReload ? 'Live updates' : 'Restart required'}</StatusBadge>}
         title={manifest.name}
       >
         <div className="flex flex-wrap items-center gap-3 text-small text-dashboard-text-secondary">
-          <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-surface/68 px-3 py-1 shadow-elevation-1 backdrop-blur-xl">
+          <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-surface/48 px-3 py-1 backdrop-blur-xl">
             {configuredCount} settings
           </span>
-          <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-surface/68 px-3 py-1 shadow-elevation-1 backdrop-blur-xl">
-            {restartCount} restart-sensitive
-          </span>
-          <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-surface/68 px-3 py-1 shadow-elevation-1 backdrop-blur-xl">
+          <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-surface/48 px-3 py-1 backdrop-blur-xl">
             v{manifest.version}
           </span>
         </div>
@@ -99,18 +95,15 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
             </div>
           </Card>
           <Card className="grid gap-3 p-5">
-            <ShieldCheck className="h-5 w-5 text-dashboard-success" />
+            <ShieldCheck className="h-5 w-5 text-dashboard-text-secondary" />
             <div>
               <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Configuration</p>
               <p className="mt-1 text-heading-m text-dashboard-text-primary">{configuredCount} settings</p>
             </div>
           </Card>
           <Card className="grid gap-3 p-5">
-            <AlertTriangle className="h-5 w-5 text-dashboard-warning" />
-            <div>
-              <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Runtime</p>
-              <p className="mt-1 text-heading-m text-dashboard-text-primary">{manifest.supportsHotReload ? 'Live updates' : 'Restart aware'}</p>
-            </div>
+            <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Runtime</p>
+            <p className="text-heading-m text-dashboard-text-primary">{manifest.supportsHotReload ? 'Live updates' : 'Restart aware'}</p>
           </Card>
         </div>
       </Section>
@@ -156,8 +149,8 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  {saveStatus === 'saved' ? <StatusBadge status="enabled">Saved</StatusBadge> : null}
-                  {saveStatus === 'error' ? <StatusBadge status="error">Save failed</StatusBadge> : null}
+                  {saveStatus === 'saved' ? <span className="text-small font-medium text-dashboard-success">Saved</span> : null}
+                  {saveStatus === 'error' ? <span className="text-small font-medium text-dashboard-danger">Save failed</span> : null}
                   {error ? <span className="text-small text-dashboard-danger" role="alert">{error}</span> : null}
                   <Button disabled={!onSave || dirtyKeys.size === 0 || saveStatus === 'saving'} isLoading={saveStatus === 'saving'} onClick={() => void save()} variant="primary">
                     {saveStatus === 'saving' ? 'Saving' : 'Save changes'}
@@ -181,7 +174,7 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-small text-dashboard-text-secondary">Hot reload</span>
-              <StatusBadge status={manifest.supportsHotReload ? 'enabled' : 'pending'}>{manifest.supportsHotReload ? 'Supported' : 'Restart'}</StatusBadge>
+              <span className="text-small font-medium text-dashboard-text-primary">{manifest.supportsHotReload ? 'Supported' : 'Restart'}</span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-small text-dashboard-text-secondary">Configured settings</span>

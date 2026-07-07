@@ -1,6 +1,6 @@
 import { Boxes, Building2 } from 'lucide-react';
 
-import { Button, Card, EmptyState, Section, SectionHeader, StatusBadge } from '../components/index.js';
+import { Button, Card, EmptyState, Section, SectionHeader } from '../components/index.js';
 import type { ModuleManifest } from '../contracts.js';
 import { useOptionalAuth } from '../auth/AuthContext.js';
 import { PageHeader } from '../layout/PageHeader.js';
@@ -23,15 +23,11 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
     <div className="grid gap-10">
       <PageHeader
         description="Monitor guild configuration, review module status, and jump into the most important bot controls from one developer-focused workspace."
-        status={<StatusBadge status="online">Operational</StatusBadge>}
         title="Dashboard Home"
       >
         <div className="flex flex-wrap items-center gap-3 text-small text-dashboard-text-secondary">
-          <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-surface/68 px-3 py-1 shadow-elevation-1 backdrop-blur-xl">
+          <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-surface/48 px-3 py-1 backdrop-blur-xl">
             Guild: <span className="font-medium text-dashboard-text-primary">{guildName}</span>
-          </span>
-          <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-surface/68 px-3 py-1 shadow-elevation-1 backdrop-blur-xl">
-            {manifests.length} modules available
           </span>
         </div>
       </PageHeader>
@@ -55,13 +51,13 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
                       <p className="text-caption text-dashboard-text-tertiary">v{manifest.version}</p>
                     </div>
                   </div>
-                  <StatusBadge status={manifest.supportsHotReload ? 'enabled' : 'pending'}>
-                    {manifest.supportsHotReload ? 'Hot reload' : 'Restart'}
-                  </StatusBadge>
+                  <span className="shrink-0 text-caption text-dashboard-text-tertiary">
+                    {manifest.supportsHotReload ? 'Live updates' : 'Restart required'}
+                  </span>
                 </div>
                 <p className="text-small text-dashboard-text-secondary">{manifest.description}</p>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="rounded-full border border-dashboard-border-subtle bg-dashboard-bg-muted/62 px-2.5 py-1 text-caption font-medium text-dashboard-text-secondary">{manifest.category}</span>
+                  <span className="text-caption font-medium text-dashboard-text-tertiary">{manifest.category}</span>
                   <Button
                     onClick={() => {
                       window.location.href = `/modules/${encodeURIComponent(manifest.id)}${window.location.search}`;
@@ -77,7 +73,6 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
           </div>
         ) : (
           <EmptyState
-            action="Refresh modules"
             description="No module metadata is available for this guild yet."
             title="No modules available"
           />
@@ -114,29 +109,24 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
         </Section>
 
         <Section className="h-full">
-          <SectionHeader description="Current frontend-visible platform state." title="System" />
+          <SectionHeader description="Frontend-visible platform state from current dashboard data." title="System" />
           <Card className="grid h-full content-start gap-3 p-5">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-small text-dashboard-text-secondary">Dashboard API</span>
-              <StatusBadge status="online">Online</StatusBadge>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-small text-dashboard-text-secondary">Authentication</span>
-              <StatusBadge status="enabled">Protected</StatusBadge>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-small text-dashboard-text-secondary">Module metadata</span>
-              <StatusBadge status={manifests.length > 0 ? 'enabled' : 'unknown'}>
-                {manifests.length > 0 ? 'Loaded' : 'Empty'}
-              </StatusBadge>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-small text-dashboard-text-secondary">Configuration mode</span>
-              <StatusBadge status="enabled">Metadata driven</StatusBadge>
-            </div>
+            <SystemRow label="Dashboard API" value="Online" />
+            <SystemRow label="Authentication" value="Protected" />
+            <SystemRow label="Module metadata" value={manifests.length > 0 ? 'Loaded' : 'Empty'} />
+            <SystemRow label="Configuration" value="Metadata driven" />
           </Card>
         </Section>
       </div>
+    </div>
+  );
+}
+
+function SystemRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-small text-dashboard-text-secondary">{label}</span>
+      <span className="text-small font-medium text-dashboard-text-primary">{value}</span>
     </div>
   );
 }

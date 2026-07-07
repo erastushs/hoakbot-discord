@@ -140,10 +140,8 @@ try {
   const oauthStateService = new OAuthStateService();
   const sessionRepository = new SessionRepository(databaseAdapter);
   const sessionProvider = new DatabaseSessionProvider(sessionRepository, sessionConfig);
-  const authorizationProvider = new AuthorizationProvider(
-    { ownerIds: appConfig.ownerIds },
-    new GuildResolver(new ClientGuildDataSource(client)),
-  );
+  const guildResolver = new GuildResolver(new ClientGuildDataSource(client));
+  const authorizationProvider = new AuthorizationProvider({ ownerIds: appConfig.ownerIds }, guildResolver);
   const discordOAuthProvider = new DiscordOAuthProvider(
     discordOAuthConfig,
     oauthStateService,
@@ -192,6 +190,7 @@ try {
     sessionProvider,
     sessionConfig,
     authorizationProvider,
+    guildResolver,
     dashboardUrl: appConfig.dashboard?.url ?? 'http://localhost:5173',
   })) {
     apiRouter.register(endpoint);

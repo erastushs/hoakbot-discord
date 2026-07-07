@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createAuthEndpoints } from '../../src/core/api/auth.endpoints.js';
 import { APIRouter } from '../../src/core/api/router.js';
-import type { IAuthProvider, IAuthorizationProvider, ISessionProvider, SessionConfig, SessionRecord } from '../../src/core/auth/index.js';
+import type { GuildResolver, IAuthProvider, IAuthorizationProvider, ISessionProvider, SessionConfig, SessionRecord } from '../../src/core/auth/index.js';
 
 const sessionConfig: SessionConfig = {
   cookieName: 'hoak_session',
@@ -50,6 +50,7 @@ function router(
   authz?: IAuthorizationProvider,
   auth = authProvider(),
   dashboardUrl?: string,
+  resolver?: GuildResolver,
 ) {
   const api = new APIRouter();
   for (const endpoint of createAuthEndpoints({
@@ -57,11 +58,25 @@ function router(
     sessionProvider: provider,
     sessionConfig,
     authorizationProvider: authz,
+    guildResolver: resolver,
     dashboardUrl,
   })) {
     api.register(endpoint);
   }
   return { api, provider };
+}
+
+function guildResolver(botGuildIds: string[]): GuildResolver {
+  return {
+    resolveGuild: vi.fn(async (_user, guildId: string) => ({
+      guildId,
+      botGuild: botGuildIds.includes(guildId) ? { id: guildId } : undefined,
+      userGuild: { id: guildId },
+      inBotGuild: botGuildIds.includes(guildId),
+      inUserGuild: true,
+    })),
+    resolveAccessibleGuilds: vi.fn(),
+  } as unknown as GuildResolver;
 }
 
 describe('dashboard auth endpoints', () => {
@@ -117,7 +132,13 @@ describe('dashboard auth endpoints', () => {
         ],
       },
     };
-    const { api } = router(sessionProvider(record), authorizationProvider(['authorized-1', 'authorized-2']));
+    const { api } = router(
+      sessionProvider(record),
+      authorizationProvider(['authorized-1', 'authorized-2']),
+      authProvider(),
+      undefined,
+      guildResolver(['authorized-1']),
+    );
 
     await expect(
       api.handle({ method: 'GET', path: '/api/v1/me', headers: { cookie: 'hoak_session=session-1' } }),
@@ -127,9 +148,37 @@ describe('dashboard auth endpoints', () => {
         authenticationState: 'authenticated',
         guilds: [
           { id: 'authorized-1', name: 'Authorized One' },
-          { id: 'authorized-2', name: 'Authorized Two' },
         ],
         selectedGuild: { id: 'authorized-1', name: 'Authorized One' },
+        guildEligibility: [
+          {
+            guildId: 'unauthorized',
+            inOAuthGuildList: true,
+            botInGuild: false,
+            authorizationProviderCalled: true,
+            authorizationResult: { allowed: false, reason: 'denied' },
+            returned: false,
+            reason: 'rejected: bot is not in guild',
+          },
+          {
+            guildId: 'authorized-1',
+            inOAuthGuildList: true,
+            botInGuild: true,
+            authorizationProviderCalled: true,
+            authorizationResult: { allowed: true, reason: 'test' },
+            returned: true,
+            reason: 'returned: test',
+          },
+          {
+            guildId: 'authorized-2',
+            inOAuthGuildList: true,
+            botInGuild: false,
+            authorizationProviderCalled: true,
+            authorizationResult: { allowed: true, reason: 'test' },
+            returned: false,
+            reason: 'rejected: bot is not in guild',
+          },
+        ],
       },
     });
   });

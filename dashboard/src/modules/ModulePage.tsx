@@ -2,6 +2,7 @@ import { Boxes } from 'lucide-react';
 
 import type { ModuleManifest, SettingMetadata } from '../contracts.js';
 import { SettingsRenderer } from '../settings/SettingsRenderer.js';
+import { GeneralModulePage } from './GeneralModulePage.js';
 
 export interface ModulePageProps {
   manifest: ModuleManifest;
@@ -11,6 +12,10 @@ export interface ModulePageProps {
 }
 
 export function ModulePage({ manifest, onSave, settings, values }: ModulePageProps) {
+  if (isGeneralModule(manifest)) {
+    return <GeneralModulePage manifest={manifest} onSave={onSave} settings={settings} values={values} />;
+  }
+
   const groups = [...(manifest.dashboard?.settings.groups ?? [])].sort(
     (a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER),
   );
@@ -48,4 +53,8 @@ export function ModulePage({ manifest, onSave, settings, values }: ModulePagePro
       })}
     </section>
   );
+}
+
+function isGeneralModule(manifest: ModuleManifest): boolean {
+  return manifest.id === 'general' || manifest.name.toLowerCase() === 'general';
 }

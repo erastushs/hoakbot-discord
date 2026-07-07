@@ -119,7 +119,8 @@ describe('App backend integration', () => {
     expect(title).toHaveValue('Backend title');
 
     fireEvent.change(title, { target: { value: 'Saved title' } });
-    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    const saveButtons = screen.getAllByRole('button', { name: 'Save changes' });
+    await user.click(saveButtons.at(-1)!);
 
     await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
 

@@ -27,7 +27,7 @@ const generalManifest: ModuleManifest = {
 };
 
 describe('ModulePage', () => {
-  it('renders the redesigned General module template for the General module only', () => {
+  it('renders the redesigned shared module template for General', () => {
     render(
       <ModulePage
         manifest={generalManifest}
@@ -46,7 +46,7 @@ describe('ModulePage', () => {
     expect(screen.getByRole('spinbutton', { name: /Count/ })).toHaveValue(3);
   });
 
-  it('keeps non-General modules on the existing generic renderer', () => {
+  it('renders non-General modules with the shared module template', () => {
     const manifest = manifests[0]!;
 
     render(
@@ -59,8 +59,11 @@ describe('ModulePage', () => {
 
     expect(screen.getByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'General' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Overview' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Danger Zone' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Configuration' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Permissions' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Status' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Danger Zone' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('Updated title');
   });
 });

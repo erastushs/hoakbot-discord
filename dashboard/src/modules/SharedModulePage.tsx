@@ -1,18 +1,18 @@
 import { AlertTriangle, Bot, Lock, ShieldCheck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { Alert, Button, Card, EmptyState, Input, Section, SectionHeader, Select, Skeleton, StatusBadge, Switch } from '../components/index.js';
+import { Alert, Button, Card, EmptyState, Input, Section, SectionHeader, Select, Skeleton, StatusBadge, Switch, Textarea } from '../components/index.js';
 import type { ModuleManifest, SettingMetadata } from '../contracts.js';
 import { PageHeader } from '../layout/PageHeader.js';
 
-interface GeneralModulePageProps {
+export interface SharedModulePageProps {
   manifest: ModuleManifest;
   onSave?(values: Record<string, unknown>): Promise<void>;
   settings: SettingMetadata[];
   values?: Record<string, unknown>;
 }
 
-export function GeneralModulePage({ manifest, onSave, settings, values: initialValues }: GeneralModulePageProps) {
+export function SharedModulePage({ manifest, onSave, settings, values: initialValues }: SharedModulePageProps) {
   const groups = useMemo(
     () => [...(manifest.dashboard?.settings.groups ?? [])].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)),
     [manifest.dashboard?.settings.groups],
@@ -32,7 +32,7 @@ export function GeneralModulePage({ manifest, onSave, settings, values: initialV
     setDirtyKeys(new Set());
     setSaveStatus('idle');
     setError(undefined);
-  }, [defaultValues, settingsFingerprint]);
+  }, [settingsFingerprint]);
 
   async function save() {
     if (!onSave || dirtyKeys.size === 0) {
@@ -60,7 +60,9 @@ export function GeneralModulePage({ manifest, onSave, settings, values: initialV
   }
 
   const configuredCount = settings.length;
+  const permissionCount = manifest.permissions?.length ?? 0;
   const restartCount = settings.filter((setting) => setting.restartRequired).length;
+  const moduleSummary = moduleSummaryLabel(manifest);
 
   return (
     <div className="grid gap-8">
@@ -88,13 +90,13 @@ export function GeneralModulePage({ manifest, onSave, settings, values: initialV
       </PageHeader>
 
       <Section>
-        <SectionHeader description="General controls define command behavior and bot presentation across this guild." title="Overview" />
+        <SectionHeader description={`${manifest.name} controls are rendered from existing module metadata and current settings values.`} title="Overview" />
         <div className="grid gap-4 tablet:grid-cols-3">
           <Card className="grid gap-3">
             <Bot className="h-5 w-5 text-dashboard-accent-primary" />
             <div>
               <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Module</p>
-              <p className="mt-1 text-heading-m text-dashboard-text-primary">Core utility</p>
+              <p className="mt-1 text-heading-m text-dashboard-text-primary">{moduleSummary}</p>
             </div>
           </Card>
           <Card className="grid gap-3">
@@ -108,7 +110,7 @@ export function GeneralModulePage({ manifest, onSave, settings, values: initialV
             <AlertTriangle className="h-5 w-5 text-dashboard-warning" />
             <div>
               <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Runtime</p>
-              <p className="mt-1 text-heading-m text-dashboard-text-primary">Restart aware</p>
+              <p className="mt-1 text-heading-m text-dashboard-text-primary">{manifest.supportsHotReload ? 'Live updates' : 'Restart aware'}</p>
             </div>
           </Card>
         </div>
@@ -140,7 +142,7 @@ export function GeneralModulePage({ manifest, onSave, settings, values: initialV
                   <SectionHeader description={group.description} title={group.label} />
                   <div className="grid gap-4">
                     {groupSettings.map((setting) => (
-                      <GeneralSettingControl
+                      <ModuleSettingControl
                         key={setting.key}
                         onChange={(value) => updateValue(setting.key, value)}
                         setting={setting}
@@ -161,7 +163,7 @@ export function GeneralModulePage({ manifest, onSave, settings, values: initialV
             </div>
           </div>
         ) : (
-          <EmptyState description="No General settings are available from the current backend metadata." title="No settings available" />
+          <EmptyState description={`No ${manifest.name} settings are available from the current backend metadata.`} title="No settings available" />
         )}
       </Section>
 
@@ -169,7 +171,11 @@ export function GeneralModulePage({ manifest, onSave, settings, values: initialV
         <Section>
           <SectionHeader description="Permission controls are not exposed by the current backend contract." title="Permissions" />
           <Alert
-            description="This placeholder preserves the module template without inventing new authorization behavior."
+            description={
+              permissionCount > 0
+                ? `${manifest.name} declares ${permissionCount} permission requirement${permissionCount === 1 ? '' : 's'}, but dashboard permission editing is unavailable.`
+                : 'This placeholder preserves the module template without inventing new authorization behavior.'
+            }
             title="Permission management is unavailable for this module."
             variant="info"
           />
@@ -195,14 +201,14 @@ export function GeneralModulePage({ manifest, onSave, settings, values: initialV
       </div>
 
       <Section>
-        <SectionHeader description="Reserved for destructive General module operations if the backend exposes them later." title="Danger Zone" />
+        <SectionHeader description={`Reserved for destructive ${manifest.name} module operations if the backend exposes them later.`} title="Danger Zone" />
         <Card variant="danger">
           <div className="flex flex-col gap-3 tablet:flex-row tablet:items-center tablet:justify-between">
             <div className="flex items-start gap-3">
               <Lock className="mt-1 h-5 w-5 text-dashboard-danger" />
               <div>
                 <h3 className="text-small font-semibold text-dashboard-text-primary">No destructive actions available</h3>
-                <p className="mt-1 text-small text-dashboard-text-secondary">General settings currently expose configuration only. No backend destructive action exists.</p>
+                <p className="mt-1 text-small text-dashboard-text-secondary">{manifest.name} settings currently expose configuration only. No backend destructive action exists.</p>
               </div>
             </div>
             <Button disabled variant="danger">Unavailable</Button>
@@ -213,7 +219,7 @@ export function GeneralModulePage({ manifest, onSave, settings, values: initialV
   );
 }
 
-function GeneralSettingControl({
+function ModuleSettingControl({
   onChange,
   setting,
   value,
@@ -223,14 +229,7 @@ function GeneralSettingControl({
   value: unknown;
 }) {
   if (setting.type === 'boolean') {
-    return (
-      <Switch
-        checked={Boolean(value)}
-        description={setting.description}
-        label={setting.label}
-        onCheckedChange={onChange}
-      />
-    );
+    return <Switch checked={Boolean(value)} description={setting.description} label={setting.label} onCheckedChange={onChange} />;
   }
 
   if (setting.type === 'select' && setting.options) {
@@ -245,6 +244,20 @@ function GeneralSettingControl({
     );
   }
 
+  if (setting.type === 'text' || setting.type === 'template' || setting.type === 'json') {
+    return (
+      <Textarea
+        description={setting.description}
+        label={setting.label}
+        maxLength={setting.maxLength}
+        minLength={setting.minLength}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={setting.placeholder}
+        value={typeof value === 'string' ? value : ''}
+      />
+    );
+  }
+
   return (
     <Input
       description={setting.description}
@@ -252,10 +265,38 @@ function GeneralSettingControl({
       max={setting.max}
       min={setting.min}
       onChange={(event) => onChange(setting.type === 'number' ? Number(event.target.value) : event.target.value)}
-      placeholder={setting.placeholder}
+      placeholder={setting.placeholder ?? defaultPlaceholder(setting.type)}
       step={setting.step}
       type={setting.type === 'number' ? 'number' : 'text'}
       value={typeof value === 'number' || typeof value === 'string' ? value : ''}
     />
   );
+}
+
+function moduleSummaryLabel(manifest: ModuleManifest): string {
+  if (manifest.id === 'general') {
+    return 'Core utility';
+  }
+
+  return `${titleCase(manifest.category)} module`;
+}
+
+function titleCase(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function defaultPlaceholder(type: SettingMetadata['type']): string | undefined {
+  if (type === 'channel') {
+    return 'Discord channel ID';
+  }
+
+  if (type === 'role') {
+    return 'Discord role ID';
+  }
+
+  if (type === 'user') {
+    return 'Discord user ID';
+  }
+
+  return undefined;
 }

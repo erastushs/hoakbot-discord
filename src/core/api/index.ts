@@ -11,6 +11,8 @@ export { OpenAPIMetadataRegistry } from './openapi.js';
 export { createRateLimitMiddleware, dashboardRateLimitRules, rateLimitHeaders } from './rate-limit.middleware.js';
 export { RateLimiter } from './rate-limiter.service.js';
 export { APIRouter } from './router.js';
+export { contextFromRequest, SecurityAuditService } from './security-audit.service.js';
+export { createSecurityAuditMiddleware } from './security-audit.middleware.js';
 export { applySecurityHeaders, createSecurityHeadersMiddleware, securityHeaders, withSecurityHeaders } from './security-headers.middleware.js';
 export { createSessionAuthMiddleware, readCookie } from './session-auth.middleware.js';
 export { createAPIHttpServer } from './server.js';
@@ -57,6 +59,8 @@ export type { ModuleConfigEndpointDependencies } from './module-config.endpoints
 export type { OpenAPIEndpointMetadata } from './openapi.js';
 export type { RateLimitMiddlewareDependencies, RateLimitRouteRule } from './rate-limit.middleware.js';
 export type { RateLimiterOptions, RateLimitResult, RateLimitRule } from './rate-limiter.service.js';
+export type { SecurityAuditConfigChange, SecurityAuditContext, SecurityAuditEventName, SecurityAuditServiceOptions } from './security-audit.service.js';
+export type { SecurityAuditMiddlewareDependencies } from './security-audit.middleware.js';
 export type { APIHttpServer, APIHttpServerOptions } from './server.js';
 export type {
   APIAuthLevel,

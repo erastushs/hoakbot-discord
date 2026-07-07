@@ -16,12 +16,14 @@ import {
   createCsrfMiddleware,
   createModuleConfigEndpoints,
   createRateLimitMiddleware,
+  createSecurityAuditMiddleware,
   createSecurityHeadersMiddleware,
   createSessionAuthMiddleware,
   CsrfService,
   dashboardRateLimitRules,
   ok,
   RateLimiter,
+  SecurityAuditService,
 } from './core/api/index.js';
 import {
   AuthorizationProvider,
@@ -149,6 +151,7 @@ try {
   const sessionProvider = new DatabaseSessionProvider(sessionRepository, sessionConfig);
   const csrfService = new CsrfService({ tokenTtlMs: sessionConfig.durationMs });
   const rateLimiter = new RateLimiter();
+  const securityAudit = new SecurityAuditService(logger);
   const guildResolver = new GuildResolver(new ClientGuildDataSource(client));
   const authorizationProvider = new AuthorizationProvider({ ownerIds: appConfig.ownerIds }, guildResolver);
   const discordOAuthProvider = new DiscordOAuthProvider(
@@ -193,6 +196,7 @@ try {
 
   await moduleLoader.loadAll(container);
   apiRouter.use(createSecurityHeadersMiddleware());
+  apiRouter.use(createSecurityAuditMiddleware({ audit: securityAudit }));
   apiRouter.use(createRateLimitMiddleware({ limiter: rateLimiter, rules: dashboardRateLimitRules, logger }));
   apiRouter.use(createSessionAuthMiddleware({ sessionProvider, sessionConfig }));
   apiRouter.use(createAuthorizationMiddleware({ authorizationProvider }));
@@ -205,6 +209,7 @@ try {
     guildResolver,
     dashboardUrl: appConfig.dashboard?.url ?? 'http://localhost:5173',
     csrfService,
+    audit: securityAudit,
   })) {
     apiRouter.register(endpoint);
   }
@@ -215,6 +220,7 @@ try {
     manifests: manifestRegistry,
     settings: settingsRegistry,
     config: configurationService,
+    audit: securityAudit,
   })) {
     apiRouter.register(endpoint);
   }

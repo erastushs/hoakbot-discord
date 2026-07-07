@@ -61,6 +61,7 @@ export interface APIRequestContext {
   version: 'v1';
   params: Record<string, string>;
   endpoint?: APIEndpoint;
+  request?: APIRequest;
   session?: SessionRecord;
 }
 

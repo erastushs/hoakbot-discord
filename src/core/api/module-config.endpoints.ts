@@ -4,6 +4,7 @@ import type { IConfigProvider } from '../config/provider.types.js';
 import type { ISettingMetadata, ISettingsRegistry } from '../settings/types.js';
 import type { ManifestRegistry } from '../../modules/manifest-registry.js';
 import { ok, fail } from './responses.js';
+import type { SecurityAuditService } from './security-audit.service.js';
 import type {
   GetManifestsResponse,
   GetMetadataResponse,
@@ -24,12 +25,14 @@ export interface ModuleConfigEndpointDependencies {
   manifests: ManifestRegistry;
   settings: ISettingsRegistry;
   config: IConfigProvider;
+  audit?: SecurityAuditService;
 }
 
 export function createModuleConfigEndpoints({
   manifests,
   settings,
   config,
+  audit,
 }: ModuleConfigEndpointDependencies): APIEndpoint[] {
   return [
     {
@@ -109,7 +112,7 @@ export function createModuleConfigEndpoints({
       params: getSettingsParamsSchema,
       body: patchSettingsBodySchema,
       metadata: { operationId: 'patchGuildSettings', tags: ['guilds', 'settings'] },
-      handler: async (request) => {
+      handler: async (request, context) => {
         const guildId = request.params?.guildId ?? '';
         const body = request.body as { settings: Record<string, unknown> };
         const entries = Object.entries(body.settings);
@@ -123,7 +126,21 @@ export function createModuleConfigEndpoints({
           }
         }
 
+        const oldValues = await config.getMany(entries.map(([key]) => key), guildId);
         await config.setMany(entries.map(([key, value]) => ({ key, value })), guildId);
+
+        for (const [key, value] of entries) {
+          const metadata = settings.get(key);
+          audit?.recordConfigurationChange({
+            guildId,
+            module: moduleIdFromSettingKey(key),
+            key,
+            oldValue: oldValues[key],
+            newValue: value,
+            userId: context.session?.userId,
+            metadata,
+          }, request);
+        }
 
         return ok<PatchSettingsResponse>({
           guildId,
@@ -132,6 +149,10 @@ export function createModuleConfigEndpoints({
       },
     },
   ];
+}
+
+function moduleIdFromSettingKey(key: string): string {
+  return key.split('.')[0] || 'unknown';
 }
 
 function toSettingValue(setting: ISettingMetadata, value: unknown): SettingValueContract {

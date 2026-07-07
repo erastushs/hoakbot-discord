@@ -13,6 +13,7 @@ import type {
 import { createExpiredSessionCookie, createSessionCookie } from '../auth/index.js';
 import type { CsrfService } from './csrf.service.js';
 import { ok } from './responses.js';
+import { contextFromRequest, type SecurityAuditService } from './security-audit.service.js';
 import type { APIEndpoint } from './types.js';
 
 const loginQuerySchema = z.object({
@@ -34,6 +35,7 @@ export interface AuthEndpointDependencies {
   readonly guildResolver?: GuildResolver;
   readonly dashboardUrl?: string;
   readonly csrfService?: CsrfService;
+  readonly audit?: SecurityAuditService;
 }
 
 export interface GuildEligibilityDiagnostics {
@@ -71,6 +73,7 @@ export function createAuthEndpoints({
   guildResolver,
   dashboardUrl,
   csrfService,
+  audit,
 }: AuthEndpointDependencies): APIEndpoint[] {
   return [
     {
@@ -106,11 +109,19 @@ export function createAuthEndpoints({
         });
 
         if (!result.ok || !sessionProvider || !sessionConfig) {
+          audit?.record('failed_login', contextFromRequest(request, {
+            result: 'failure',
+            reason: result.ok ? 'session_unavailable' : result.code,
+          }));
           return ok(result);
         }
 
         const sessionMetadata = csrfService?.attachToMetadata({ guilds: result.guilds ?? [] }) ?? { guilds: result.guilds ?? [] };
         const session = await sessionProvider.createSession(result.user, sessionMetadata);
+        audit?.record('successful_login', contextFromRequest(request, {
+          userId: result.user.id,
+          result: 'success',
+        }));
         return {
           ...ok({ ...result, session }, dashboardUrl ? 303 : 200),
           headers: {
@@ -144,9 +155,11 @@ export function createAuthEndpoints({
       metadata: { operationId: 'logoutDashboardSession', tags: ['auth'] },
       handler: async (request) => {
         const sessionId = readSessionCookie(request.headers?.['cookie'], sessionConfig?.cookieName);
+        let userId: string | undefined;
         if (sessionId && sessionProvider) {
           if (csrfService && sessionProvider.getSessionRecord && 'updateSessionMetadata' in sessionProvider) {
             const record = await sessionProvider.getSessionRecord(sessionId);
+            userId = record?.userId;
             const updateSessionMetadata = sessionProvider.updateSessionMetadata;
             if (record && typeof updateSessionMetadata === 'function') {
               await updateSessionMetadata.call(sessionProvider, sessionId, csrfService.invalidateMetadata(record.metadata));
@@ -155,6 +168,11 @@ export function createAuthEndpoints({
 
           await sessionProvider.destroySession(sessionId);
         }
+
+        audit?.record('logout', contextFromRequest(request, {
+          userId,
+          result: 'success',
+        }));
 
         return {
           ...ok<LogoutResponse>({ authenticationState: 'anonymous' }),

@@ -1428,6 +1428,42 @@ The goal is inspiration, not replication. Hoak Bot must retain its own product i
 
 ---
 
+## Design References
+
+These references define the intended design direction and interaction quality. They are inspiration only. No branding, logos, artwork, proprietary assets, CSS, implementation details, or code may be copied.
+
+### Discord Developer Portal
+
+- Navigation
+- Layout hierarchy
+- Workspace switching
+- Sidebar behavior
+- Settings organization
+
+### GitHub
+
+- Settings pages
+- Repository-style layouts
+- Clear page headers
+- Practical form density
+
+### Linear
+
+- Spacing
+- Typography
+- Cards
+- Animations
+- Low-noise interface polish
+
+### VS Code
+
+- Command palette
+- Search UX
+- Keyboard-first workflows
+- Fast navigation patterns
+
+---
+
 ## Project Goals
 
 - Professional developer dashboard
@@ -1451,6 +1487,30 @@ The goal is inspiration, not replication. Hoak Bot must retain its own product i
 - REST API redesign
 - Voice runtime changes
 - Discord bot runtime changes
+
+---
+
+## Backend Freeze
+
+No backend work is allowed during v3.2. The following systems must not change:
+
+- Authentication
+- Authorization
+- OAuth
+- REST API
+- Database
+- Sessions
+- Permissions
+- Discord Runtime
+- Voice Runtime
+- Module Architecture
+- Security
+- Rate Limiting
+- CSRF
+- Security Headers
+- Audit Logging
+
+The v3.2 dashboard must consume existing backend contracts as-is. If the frontend encounters a backend limitation, the frontend design adapts to the available contract rather than changing backend behavior.
 
 ---
 
@@ -1536,6 +1596,23 @@ Every token and component must support accessible contrast, keyboard interaction
 
 ---
 
+## Design System Stack
+
+The v3.2 UI stack should use the existing dashboard foundation where already present and standardize implementation around shared components.
+
+- React
+- Tailwind CSS
+- Radix UI
+- Lucide Icons
+- React Hook Form
+- Zod
+- Motion
+- TanStack Table
+
+All page UI must be built from shared components. No duplicated components are allowed.
+
+---
+
 ## Component Inventory
 
 Every dashboard page must reuse the shared component inventory. No duplicated components are allowed.
@@ -1581,6 +1658,182 @@ Every dashboard page must reuse the shared component inventory. No duplicated co
 
 ---
 
+## Complete Page Inventory
+
+Every planned dashboard route must map to the shared layout and component system.
+
+### Authentication
+
+- Login
+- Logout
+- Unauthorized
+- Session Expired
+
+### Application
+
+- Dashboard Home
+- Guild Overview
+- Guild Settings
+- Module List
+
+### Modules
+
+- General
+- Voice
+- Welcome
+- Goodbye
+- Logging
+- Moderation
+
+### Administration
+
+- Audit Log
+- Activity
+- Profile
+- System Status
+
+### Errors
+
+- 404
+- 403
+- 500
+
+---
+
+## Layout Hierarchy
+
+The dashboard layout follows a consistent hierarchy from application shell to individual controls:
+
+```
+Workspace
+  -> Sidebar
+  -> Top Navigation
+  -> Page Header
+  -> Section
+  -> Card
+  -> Form
+  -> Control
+```
+
+Spacing hierarchy:
+
+- Workspace spacing defines the outer dashboard frame and responsive gutters.
+- Sidebar spacing defines navigation density and grouping.
+- Top navigation spacing keeps search, breadcrumbs, and user actions aligned.
+- Page header spacing separates page identity from page content.
+- Section spacing separates major content groups.
+- Card spacing defines internal content rhythm.
+- Form spacing keeps labels, descriptions, controls, validation, and actions predictable.
+- Control spacing keeps buttons, inputs, toggles, and inline actions visually consistent.
+
+---
+
+## Component Mapping
+
+Shared components must be mapped to pages before implementation begins. This prevents duplicated UI and ensures all pages use the same design system primitives.
+
+### Dashboard Home
+
+- StatCard
+- ActivityCard
+- QuickActionCard
+- StatusBadge
+- SearchBox
+- EmptyState
+- Skeleton
+
+### Guild Overview
+
+- PageHeader
+- StatCard
+- Card
+- Badge
+- Table
+- ActivityCard
+
+### Guild Settings
+
+- SectionHeader
+- SettingsCard
+- Form
+- Input
+- Select
+- Switch
+- Button
+- Alert
+
+### Module List
+
+- Card
+- Badge
+- StatusBadge
+- SearchBox
+- EmptyState
+- Skeleton
+
+### Module Page
+
+- SectionHeader
+- SettingsCard
+- Tabs
+- Badge
+- StatusBadge
+- Switch
+- Input
+- Select
+- Button
+- Table
+- EmptyState
+- ErrorState
+
+### Settings
+
+- Form
+- Input
+- Textarea
+- Select
+- MultiSelect
+- Switch
+- Checkbox
+- Radio
+- Button
+- Toast
+
+### Audit Log
+
+- Table
+- Virtual Table
+- Pagination
+- SearchBox
+- Badge
+- StatusBadge
+- EmptyState
+- Skeleton
+
+### Profile
+
+- Avatar
+- Card
+- SectionHeader
+- Button
+- Alert
+
+### System Status
+
+- StatCard
+- StatusBadge
+- Progress
+- Table
+- Alert
+
+### Error Pages
+
+- ErrorState
+- Button
+- Card
+
+---
+
 ## UX Principles
 
 - No unnecessary modal dialogs
@@ -1596,6 +1849,49 @@ Every dashboard page must reuse the shared component inventory. No duplicated co
 
 ---
 
+## Motion Guidelines
+
+Motion should be subtle, fast, and consistent. Animations communicate state changes and hierarchy but must not slow down dashboard workflows.
+
+Recommended durations:
+
+- Hover: 150ms
+- Dropdown: 180ms
+- Dialog: 220ms
+- Sidebar: 250ms
+- Page Transition: 250ms
+
+Motion rules:
+
+- Use consistent easing across related interactions.
+- Avoid decorative motion that does not communicate state.
+- Respect reduced motion preferences.
+- Keep transitions short enough for frequent administrative workflows.
+- Use the same motion patterns for matching components across pages.
+
+---
+
+## Visual Rules
+
+Visual quality checklist:
+
+- Consistent spacing
+- Consistent typography
+- Consistent shadows
+- Consistent border radius
+- No oversized cards
+- No inconsistent button sizes
+- No random colors
+- No mixed icon styles
+- Consistent empty states
+- Consistent loading states
+- Consistent error states
+- Consistent focus states
+- Consistent form layout
+- Consistent table density
+
+---
+
 ## Performance Goals
 
 - Route splitting
@@ -1606,6 +1902,13 @@ Every dashboard page must reuse the shared component inventory. No duplicated co
 - Image optimization
 - Caching
 - React optimization
+- Lighthouse Performance >= 95
+- Lighthouse Accessibility >= 95
+- Lighthouse Best Practices >= 95
+- CLS < 0.1
+- LCP < 2.5 seconds
+- Memoization where appropriate
+- Optimized Bundle Size
 
 ---
 
@@ -1629,6 +1932,9 @@ Every dashboard page must reuse the shared component inventory. No duplicated co
 
 ```
 Phase 0: Research & UX Planning
+    |
+    v
+Phase 0.5: High Fidelity Design
     |
     v
 Phase 1: Design System Foundation
@@ -1658,7 +1964,7 @@ Phase 8: Responsive Design
 Phase 9: Polish
 ```
 
-**Dependency order:** Phase 0 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4 -> Phase 5 -> Phase 6 -> Phase 7 -> Phase 8 -> Phase 9
+**Dependency order:** Phase 0 -> Phase 0.5 -> Phase 1 -> Phase 2 -> Phase 3 -> Phase 4 -> Phase 5 -> Phase 6 -> Phase 7 -> Phase 8 -> Phase 9
 
 **Arrow = depends on.** Each phase depends on the phase above it and must not require backend architecture changes.
 
@@ -1689,6 +1995,40 @@ Phase 9: Polish
 - Component inventory is mapped to planned pages.
 - Existing dashboard pain points are documented and addressed by the redesign plan.
 - Visual inspiration references are documented as inspiration only, not source material to copy.
+
+---
+
+## Phase 0.5: High Fidelity Design
+
+**Goal:** Finalize high-fidelity visual decisions before implementation begins.
+
+**Implementation Restriction:** No React code should be written during this phase.
+
+**Approval Requirement:** Approval is REQUIRED before implementation begins.
+
+### Deliverables
+
+- Desktop mockups
+- Tablet mockups
+- Mobile mockups
+- Sidebar
+- Dashboard Home
+- Module Page
+- Settings Page
+- Dialogs
+- Forms
+- Tables
+- Empty States
+- Loading States
+
+### Completion Criteria
+
+- Desktop, tablet, and mobile mockups are complete.
+- Core dashboard shell states are represented.
+- Dashboard Home and Module Page designs are approved.
+- Dialog, form, table, empty, and loading states are approved.
+- Visual rules, motion guidelines, and component inventory are reflected in the mockups.
+- Implementation can begin without unresolved visual decisions.
 
 ---
 
@@ -1947,6 +2287,29 @@ Each page should include these sections where applicable:
 - No duplicated components
 - Fully responsive
 - Zero backend regressions
+
+---
+
+## Final Acceptance Criteria
+
+v3.2 cannot be marked COMPLETE until every item below is satisfied:
+
+- ✓ Responsive
+- ✓ Accessible
+- ✓ Mobile tested
+- ✓ Desktop tested
+- ✓ Tablet tested
+- ✓ No duplicated components
+- ✓ Backend unchanged
+- ✓ All pages redesigned
+- ✓ Design system fully used
+- ✓ Production deployed
+- ✓ Authentication unchanged
+- ✓ Authorization unchanged
+- ✓ REST API unchanged
+- ✓ Database unchanged
+- ✓ Security behavior unchanged
+- ✓ Discord Developer Portal inspired direction achieved without copying Discord branding, assets, CSS, proprietary content, or implementation
 
 ---
 

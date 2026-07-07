@@ -14,7 +14,16 @@ export { MemoryCacheProvider } from './cache/memory-cache.provider.js';
 export { PermissionRegistry } from './permissions/permission-registry.js';
 export { PermissionServiceV3 } from './permissions/permission-service.js';
 export { SettingsRegistry } from './settings/settings-registry.js';
-export { DiscordOAuthProvider, FetchDiscordAPIClient, OAuthStateService } from './auth/index.js';
+export {
+  DatabaseSessionProvider,
+  DiscordOAuthProvider,
+  FetchDiscordAPIClient,
+  OAuthStateService,
+  SessionCleanupService,
+  SessionRepository,
+  createExpiredSessionCookie,
+  createSessionCookie,
+} from './auth/index.js';
 export type {
   AnonymousAuthContext,
   AuthCallbackRequest,
@@ -34,6 +43,8 @@ export type {
   AuthorizationSuccessResult,
   ConfigurationAction,
   ConfigurationPermissionRequest,
+  CreateSessionRecordInput,
+  DatabaseSessionProviderOptions,
   DiscordAPIClient,
   DiscordGuildResponse,
   DiscordOAuthConfig,
@@ -48,7 +59,12 @@ export type {
   LoginStart,
   OAuthState,
   PermissionSource,
+  RefreshSessionRecordInput,
+  SessionCleanupOptions,
+  SessionConfig,
+  SessionCookieOptions,
   SessionIdentity,
+  SessionRecord,
 } from './auth/index.js';
 export type {
   APIAuthLevel,

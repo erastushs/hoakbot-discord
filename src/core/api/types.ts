@@ -14,6 +14,7 @@ export interface APISuccessResponse<T = unknown> {
   data: T;
   meta?: APIPaginationMeta;
   status?: number;
+  headers?: Record<string, string>;
 }
 
 export interface APIErrorBody {
@@ -26,6 +27,7 @@ export interface APIErrorResponse {
   success: false;
   error: APIErrorBody;
   status: number;
+  headers?: Record<string, string>;
 }
 
 export type APIResponse<T = unknown> = APISuccessResponse<T> | APIErrorResponse;

@@ -42,6 +42,9 @@ export class ConfigService {
       DISCORD_CLIENT_ID: process.env['DISCORD_CLIENT_ID'],
       DISCORD_CLIENT_SECRET: process.env['DISCORD_CLIENT_SECRET'],
       DISCORD_REDIRECT_URI: process.env['DISCORD_REDIRECT_URI'],
+      SESSION_DURATION: process.env['SESSION_DURATION'],
+      COOKIE_NAME: process.env['COOKIE_NAME'],
+      SESSION_CLEANUP_INTERVAL: process.env['SESSION_CLEANUP_INTERVAL'],
       NODE_ENV: process.env['NODE_ENV'],
       LOG_LEVEL: process.env['LOG_LEVEL'],
       GUILD_ID: process.env['GUILD_ID'],
@@ -86,6 +89,11 @@ export class ConfigService {
       databaseUrl: env.DATABASE_URL,
       api: {
         port: env.API_PORT,
+      },
+      session: {
+        durationMs: env.SESSION_DURATION,
+        cookieName: env.COOKIE_NAME,
+        cleanupIntervalMs: env.SESSION_CLEANUP_INTERVAL,
       },
       env: {
         nodeEnv: env.NODE_ENV,

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import type { IAuthProvider } from '../auth/index.js';
+import type { IAuthProvider, ISessionProvider, SessionConfig } from '../auth/index.js';
+import { createSessionCookie } from '../auth/index.js';
 import { ok } from './responses.js';
 import type { APIEndpoint } from './types.js';
 
@@ -17,9 +18,11 @@ const callbackQuerySchema = z.object({
 
 export interface AuthEndpointDependencies {
   readonly authProvider: IAuthProvider;
+  readonly sessionProvider?: ISessionProvider;
+  readonly sessionConfig?: SessionConfig;
 }
 
-export function createAuthEndpoints({ authProvider }: AuthEndpointDependencies): APIEndpoint[] {
+export function createAuthEndpoints({ authProvider, sessionProvider, sessionConfig }: AuthEndpointDependencies): APIEndpoint[] {
   return [
     {
       module: 'platform',
@@ -42,14 +45,29 @@ export function createAuthEndpoints({ authProvider }: AuthEndpointDependencies):
       metadata: { operationId: 'handleDiscordOAuthCallback', tags: ['auth'] },
       handler: async (request) => {
         const query = request.query as z.infer<typeof callbackQuerySchema>;
-        return ok(
-          await authProvider.handleCallback({
-            code: query.code,
-            state: query.state,
-            error: query.error,
-            errorDescription: query.error_description,
-          }),
-        );
+        const result = await authProvider.handleCallback({
+          code: query.code,
+          state: query.state,
+          error: query.error,
+          errorDescription: query.error_description,
+        });
+
+        if (!result.ok || !sessionProvider || !sessionConfig) {
+          return ok(result);
+        }
+
+        const session = await sessionProvider.createSession(result.user);
+        return {
+          ...ok({ ...result, session }),
+          headers: {
+            'Set-Cookie': createSessionCookie({
+              name: sessionConfig.cookieName,
+              value: session.id,
+              expiresAt: session.expiresAt,
+              secure: sessionConfig.secureCookies,
+            }),
+          },
+        };
       },
     },
   ];

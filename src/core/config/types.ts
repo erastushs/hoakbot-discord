@@ -121,6 +121,11 @@ export interface AppConfig {
   api: {
     port: number;
   };
+  session?: {
+    durationMs: number;
+    cookieName: string;
+    cleanupIntervalMs: number;
+  };
   env: {
     nodeEnv: string;
     logLevel: string;

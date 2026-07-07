@@ -108,6 +108,9 @@ export const envSchema = z.object({
   DISCORD_CLIENT_ID: z.string().optional(),
   DISCORD_CLIENT_SECRET: z.string().optional(),
   DISCORD_REDIRECT_URI: z.string().optional(),
+  SESSION_DURATION: z.coerce.number().int().positive().default(1000 * 60 * 60 * 8),
+  COOKIE_NAME: z.string().min(1).default('hoak_session'),
+  SESSION_CLEANUP_INTERVAL: z.coerce.number().int().positive().default(1000 * 60 * 60),
   NODE_ENV: z.enum(['development', 'production']).default('production'),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   GUILD_ID: z.string().optional(),
@@ -130,6 +133,11 @@ export const appConfigSchema = z.object({
   databaseUrl: z.string(),
   api: z.object({
     port: z.number().int().positive().max(65535),
+  }),
+  session: z.object({
+    durationMs: z.number().int().positive(),
+    cookieName: z.string().min(1),
+    cleanupIntervalMs: z.number().int().positive(),
   }),
   env: z.object({
     nodeEnv: z.string(),

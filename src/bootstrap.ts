@@ -8,7 +8,13 @@ import { createLogger } from './core/logger/logger.service.js';
 import { Container } from './core/container/container.js';
 import { TOKENS } from './core/container/tokens.js';
 import { APIRouter, createAPIHttpServer, createAuthEndpoints, createModuleConfigEndpoints, ok } from './core/api/index.js';
-import { DiscordOAuthProvider, FetchDiscordAPIClient, OAuthStateService } from './core/auth/index.js';
+import {
+  DatabaseSessionProvider,
+  DiscordOAuthProvider,
+  FetchDiscordAPIClient,
+  OAuthStateService,
+  SessionRepository,
+} from './core/auth/index.js';
 import { SettingsRegistry } from './core/settings/settings-registry.js';
 import { ModuleLoader } from './modules/module-loader.js';
 import { ManifestRegistry } from './modules/manifest-registry.js';
@@ -115,7 +121,14 @@ try {
     clientSecret: appConfig.discord.oauth?.clientSecret ?? '',
     redirectUri: appConfig.discord.oauth?.redirectUri ?? '',
   };
+  const sessionConfig = {
+    durationMs: appConfig.session?.durationMs ?? 1000 * 60 * 60 * 8,
+    cookieName: appConfig.session?.cookieName ?? 'hoak_session',
+    secureCookies: appConfig.env.nodeEnv === 'production',
+  };
   const oauthStateService = new OAuthStateService();
+  const sessionRepository = new SessionRepository(databaseAdapter);
+  const sessionProvider = new DatabaseSessionProvider(sessionRepository, sessionConfig);
   const discordOAuthProvider = new DiscordOAuthProvider(
     discordOAuthConfig,
     oauthStateService,
@@ -128,6 +141,7 @@ try {
   container.registerSingleton(TOKENS.ConfigProvider, () => configProvider);
   container.registerSingleton(TOKENS.ConfigurationService, () => configurationService);
   container.registerSingleton(TOKENS.AuthProvider, () => discordOAuthProvider);
+  container.registerSingleton(TOKENS.SessionProvider, () => sessionProvider);
 
   const generalModule = new GeneralModule();
   const voiceModule = new VoiceModule();
@@ -155,7 +169,7 @@ try {
   moduleLoader.registerModule(goodbyeModule);
 
   await moduleLoader.loadAll(container);
-  for (const endpoint of createAuthEndpoints({ authProvider: discordOAuthProvider })) {
+  for (const endpoint of createAuthEndpoints({ authProvider: discordOAuthProvider, sessionProvider, sessionConfig })) {
     apiRouter.register(endpoint);
   }
   for (const endpoint of createModuleConfigEndpoints({

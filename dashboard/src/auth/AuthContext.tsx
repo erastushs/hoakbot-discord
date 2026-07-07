@@ -41,7 +41,7 @@ export function AuthProvider({
     setError(undefined);
 
     try {
-      const response = await api.getMe();
+      const response = await api.bootstrapSession();
       if (response.authenticationState !== 'authenticated' || !response.user) {
         setUser(undefined);
         setGuilds([]);

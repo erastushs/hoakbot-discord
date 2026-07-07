@@ -88,6 +88,15 @@ export class DatabaseSessionProvider implements ISessionProvider {
     await this.repository.revoke(sessionId, this.now());
   }
 
+  async updateSessionMetadata(sessionId: string, metadata: Record<string, unknown>): Promise<SessionRecord | undefined> {
+    const updated = await this.repository.updateMetadata(sessionId, metadata);
+    if (!updated || updated.revokedAt || this.isExpired(updated)) {
+      return undefined;
+    }
+
+    return updated;
+  }
+
   isExpired(session: Pick<SessionIdentity, 'expiresAt'>): boolean {
     return session.expiresAt.getTime() <= this.now().getTime();
   }

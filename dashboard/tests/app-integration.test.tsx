@@ -67,6 +67,7 @@ describe('App backend integration', () => {
   it('loads home modules from the guild modules endpoint', async () => {
     const fetcher = vi.fn(async (url: string) => {
       if (url.endsWith('/me')) return meResponse();
+      if (url.endsWith('/csrf')) return jsonResponse({ success: true, data: { csrfToken: 'csrf-token' } });
       return jsonResponse({ success: true, data: { modules: [manifest] } });
     });
     vi.stubGlobal('fetch', fetcher);
@@ -87,6 +88,7 @@ describe('App backend integration', () => {
     const user = userEvent.setup();
     const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.endsWith('/me')) return meResponse();
+      if (url.endsWith('/csrf')) return jsonResponse({ success: true, data: { csrfToken: 'csrf-token' } });
 
       if (init?.method === 'PATCH') {
         return jsonResponse({
@@ -132,7 +134,7 @@ describe('App backend integration', () => {
     expect(patchCall[1]).toEqual({
       method: 'PATCH',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': 'csrf-token' },
       body: JSON.stringify({ settings: { 'generic.title': 'Saved title' } }),
     });
   });
@@ -169,6 +171,7 @@ describe('App backend integration', () => {
     const user = userEvent.setup();
     const fetcher = vi.fn(async (url: string) => {
       if (url.endsWith('/me')) return meResponse();
+      if (url.endsWith('/csrf')) return jsonResponse({ success: true, data: { csrfToken: 'csrf-token' } });
       if (url.endsWith('/logout')) return jsonResponse({ success: true, data: { authenticationState: 'anonymous' } });
       return jsonResponse({ success: true, data: { modules: [manifest] } });
     });
@@ -183,7 +186,7 @@ describe('App backend integration', () => {
     expect(fetcher).toHaveBeenCalledWith('/api/v1/logout', {
       method: 'POST',
       credentials: 'include',
-      headers: undefined,
+      headers: { 'X-CSRF-Token': 'csrf-token' },
       body: undefined,
     });
   });

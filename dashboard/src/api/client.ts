@@ -1,5 +1,6 @@
 import type {
   APIResponse,
+  CsrfResponse,
   GetManifestsResponse,
   GetMetadataResponse,
   GetModulesResponse,
@@ -27,10 +28,12 @@ export interface APIClientOptions {
 }
 
 const DEFAULT_API_BASE_URL = '/api/v1';
+const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export class APIClient {
   private readonly baseUrl: string;
   private readonly fetcher: typeof fetch;
+  private csrfToken: string | undefined;
 
   constructor(options: APIClientOptions = {}) {
     this.baseUrl = resolveAPIBaseUrl(options.baseUrl);
@@ -43,6 +46,10 @@ export class APIClient {
 
   post<T>(path: string, body?: unknown): Promise<T> {
     return this.request<T>('POST', path, body);
+  }
+
+  put<T>(path: string, body?: unknown): Promise<T> {
+    return this.request<T>('PUT', path, body);
   }
 
   patch<T>(path: string, body?: unknown): Promise<T> {
@@ -61,8 +68,22 @@ export class APIClient {
     return this.get<MeResponse>('/me');
   }
 
+  async bootstrapSession(): Promise<MeResponse> {
+    const me = await this.getMe();
+    if (me.authenticationState === 'authenticated') {
+      const csrf = await this.get<CsrfResponse>('/csrf');
+      this.csrfToken = csrf.csrfToken;
+    } else {
+      this.csrfToken = undefined;
+    }
+
+    return me;
+  }
+
   logout(): Promise<LogoutResponse> {
-    return this.post<LogoutResponse>('/logout');
+    return this.post<LogoutResponse>('/logout').finally(() => {
+      this.csrfToken = undefined;
+    });
   }
 
   getGuildModules(guildId: string): Promise<GetModulesResponse> {
@@ -91,7 +112,7 @@ export class APIClient {
       response = await this.fetcher(url, {
         method,
         credentials: 'include',
-        headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+        headers: this.requestHeaders(method, body),
         body: body === undefined ? undefined : JSON.stringify(body),
       });
       console.debug('[dashboard-api] response:status', { method, url, status: response.status });
@@ -108,7 +129,7 @@ export class APIClient {
       success: false,
       error: { code: 'INVALID_RESPONSE', message: 'Backend returned an invalid response.' },
     }))) as APIResponse<T>;
-    console.debug('[dashboard-api] response:json', { method, url, payload });
+    console.debug('[dashboard-api] response:json', { method, url, payload: path === '/csrf' ? '[redacted]' : payload });
 
     if (!response.ok || !payload.success) {
       console.debug('[dashboard-api] request:throw', { method, url, status: response.status, payload });
@@ -121,6 +142,19 @@ export class APIClient {
     }
 
     return payload.data as T;
+  }
+
+  private requestHeaders(method: string, body: unknown): Record<string, string> | undefined {
+    const headers: Record<string, string> = {};
+    if (body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    if (STATE_CHANGING_METHODS.has(method) && this.csrfToken) {
+      headers['X-CSRF-Token'] = this.csrfToken;
+    }
+
+    return Object.keys(headers).length > 0 ? headers : undefined;
   }
 }
 

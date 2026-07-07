@@ -93,6 +93,20 @@ export class SessionRepository {
     return rows[0] ? this.toRecord(rows[0]) : undefined;
   }
 
+  async updateMetadata(sessionId: string, metadata: Record<string, unknown>): Promise<SessionRecord | undefined> {
+    const sql = this.getSql();
+    const rows = await sql<SessionRow[]>`
+      UPDATE auth_sessions
+      SET metadata = ${sql.json(this.toJsonValue(metadata))},
+          last_accessed_at = ${new Date()}
+      WHERE session_id = ${sessionId}
+        AND revoked_at IS NULL
+      RETURNING session_id, user_id, username, global_name, avatar, provider, created_at, expires_at, last_accessed_at, revoked_at, metadata
+    `;
+
+    return rows[0] ? this.toRecord(rows[0]) : undefined;
+  }
+
   async revoke(sessionId: string, revokedAt: Date): Promise<void> {
     const sql = this.getSql();
     await sql`

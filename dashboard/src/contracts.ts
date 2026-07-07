@@ -130,6 +130,10 @@ export interface LogoutResponse {
   authenticationState: 'anonymous';
 }
 
+export interface CsrfResponse {
+  csrfToken: string;
+}
+
 export interface APIResponse<T> {
   success: boolean;
   data?: T;

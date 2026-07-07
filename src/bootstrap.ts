@@ -12,8 +12,11 @@ import {
   createAuthorizationMiddleware,
   createAPIHttpServer,
   createAuthEndpoints,
+  createCsrfEndpoints,
+  createCsrfMiddleware,
   createModuleConfigEndpoints,
   createSessionAuthMiddleware,
+  CsrfService,
   ok,
 } from './core/api/index.js';
 import {
@@ -140,6 +143,7 @@ try {
   const oauthStateService = new OAuthStateService();
   const sessionRepository = new SessionRepository(databaseAdapter);
   const sessionProvider = new DatabaseSessionProvider(sessionRepository, sessionConfig);
+  const csrfService = new CsrfService({ tokenTtlMs: sessionConfig.durationMs });
   const guildResolver = new GuildResolver(new ClientGuildDataSource(client));
   const authorizationProvider = new AuthorizationProvider({ ownerIds: appConfig.ownerIds }, guildResolver);
   const discordOAuthProvider = new DiscordOAuthProvider(
@@ -185,6 +189,7 @@ try {
   await moduleLoader.loadAll(container);
   apiRouter.use(createSessionAuthMiddleware({ sessionProvider, sessionConfig }));
   apiRouter.use(createAuthorizationMiddleware({ authorizationProvider }));
+  apiRouter.use(createCsrfMiddleware({ csrfService }));
   for (const endpoint of createAuthEndpoints({
     authProvider: discordOAuthProvider,
     sessionProvider,
@@ -192,7 +197,11 @@ try {
     authorizationProvider,
     guildResolver,
     dashboardUrl: appConfig.dashboard?.url ?? 'http://localhost:5173',
+    csrfService,
   })) {
+    apiRouter.register(endpoint);
+  }
+  for (const endpoint of createCsrfEndpoints({ csrfService, sessionProvider })) {
     apiRouter.register(endpoint);
   }
   for (const endpoint of createModuleConfigEndpoints({

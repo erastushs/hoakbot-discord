@@ -11,6 +11,7 @@ import type {
   SessionRecord,
 } from '../auth/index.js';
 import { createExpiredSessionCookie, createSessionCookie } from '../auth/index.js';
+import type { CsrfService } from './csrf.service.js';
 import { ok } from './responses.js';
 import type { APIEndpoint } from './types.js';
 
@@ -32,6 +33,7 @@ export interface AuthEndpointDependencies {
   readonly authorizationProvider?: IAuthorizationProvider;
   readonly guildResolver?: GuildResolver;
   readonly dashboardUrl?: string;
+  readonly csrfService?: CsrfService;
 }
 
 export interface GuildEligibilityDiagnostics {
@@ -68,6 +70,7 @@ export function createAuthEndpoints({
   authorizationProvider,
   guildResolver,
   dashboardUrl,
+  csrfService,
 }: AuthEndpointDependencies): APIEndpoint[] {
   return [
     {
@@ -106,7 +109,8 @@ export function createAuthEndpoints({
           return ok(result);
         }
 
-        const session = await sessionProvider.createSession(result.user, { guilds: result.guilds ?? [] });
+        const sessionMetadata = csrfService?.attachToMetadata({ guilds: result.guilds ?? [] }) ?? { guilds: result.guilds ?? [] };
+        const session = await sessionProvider.createSession(result.user, sessionMetadata);
         return {
           ...ok({ ...result, session }, dashboardUrl ? 303 : 200),
           headers: {
@@ -141,6 +145,14 @@ export function createAuthEndpoints({
       handler: async (request) => {
         const sessionId = readSessionCookie(request.headers?.['cookie'], sessionConfig?.cookieName);
         if (sessionId && sessionProvider) {
+          if (csrfService && sessionProvider.getSessionRecord && 'updateSessionMetadata' in sessionProvider) {
+            const record = await sessionProvider.getSessionRecord(sessionId);
+            const updateSessionMetadata = sessionProvider.updateSessionMetadata;
+            if (record && typeof updateSessionMetadata === 'function') {
+              await updateSessionMetadata.call(sessionProvider, sessionId, csrfService.invalidateMetadata(record.metadata));
+            }
+          }
+
           await sessionProvider.destroySession(sessionId);
         }
 

@@ -51,6 +51,33 @@ describe('APIClient', () => {
     });
   });
 
+  it('bootstraps CSRF and attaches it only to state-changing requests', async () => {
+    const fetcher = vi.fn(async (url: string) => {
+      if (url.endsWith('/me')) {
+        return jsonResponse({ success: true, data: { authenticationState: 'authenticated', user: { id: 'user-1' }, guilds: [] } });
+      }
+
+      if (url.endsWith('/csrf')) {
+        return jsonResponse({ success: true, data: { csrfToken: 'csrf-token' } });
+      }
+
+      return jsonResponse({ success: true, data: { ok: true } });
+    });
+    const client = new APIClient({ baseUrl: '/api/v1', fetcher: fetcher as unknown as typeof fetch });
+
+    await client.bootstrapSession();
+    await client.get('/modules');
+    await client.patch('/settings', { enabled: true });
+
+    expect(fetcher).toHaveBeenNthCalledWith(1, '/api/v1/me', expect.objectContaining({ headers: undefined }));
+    expect(fetcher).toHaveBeenNthCalledWith(2, '/api/v1/csrf', expect.objectContaining({ headers: undefined }));
+    expect(fetcher).toHaveBeenNthCalledWith(3, '/api/v1/modules', expect.objectContaining({ method: 'GET', headers: undefined }));
+    expect(fetcher).toHaveBeenNthCalledWith(4, '/api/v1/settings', expect.objectContaining({
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': 'csrf-token' },
+    }));
+  });
+
   it('centralizes API errors', async () => {
     const fetcher = vi.fn(async () =>
       jsonResponse({ success: false, error: { code: 'FORBIDDEN', message: 'No access' } }, false, 403),
@@ -121,11 +148,15 @@ describe('APIClient', () => {
         return jsonResponse({ success: true, data: { authenticationState: 'authenticated', guilds: [] } });
       }
 
+      if (url.endsWith('/csrf')) {
+        return jsonResponse({ success: true, data: { csrfToken: 'csrf-token' } });
+      }
+
       return jsonResponse({ success: true, data: { authenticationState: 'anonymous' } });
     });
     const client = new APIClient({ baseUrl: '/api/v1', fetcher: fetcher as unknown as typeof fetch });
 
-    await client.getMe();
+    await client.bootstrapSession();
     await client.logout();
 
     expect(fetcher).toHaveBeenNthCalledWith(1, '/api/v1/me', {
@@ -134,8 +165,35 @@ describe('APIClient', () => {
       headers: undefined,
       body: undefined,
     });
-    expect(fetcher).toHaveBeenNthCalledWith(2, '/api/v1/logout', {
+    expect(fetcher).toHaveBeenNthCalledWith(2, '/api/v1/csrf', {
+      method: 'GET',
+      credentials: 'include',
+      headers: undefined,
+      body: undefined,
+    });
+    expect(fetcher).toHaveBeenNthCalledWith(3, '/api/v1/logout', {
       method: 'POST',
+      credentials: 'include',
+      headers: { 'X-CSRF-Token': 'csrf-token' },
+      body: undefined,
+    });
+  });
+
+  it('stores CSRF only after authenticated bootstrap', async () => {
+    const fetcher = vi.fn(async (url: string) => {
+      if (url.endsWith('/me')) {
+        return jsonResponse({ success: true, data: { authenticationState: 'anonymous', guilds: [] } });
+      }
+
+      return jsonResponse({ success: true, data: { csrfToken: 'csrf-token' } });
+    });
+    const client = new APIClient({ baseUrl: '/api/v1', fetcher: fetcher as unknown as typeof fetch });
+
+    await client.bootstrapSession();
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledWith('/api/v1/me', {
+      method: 'GET',
       credentials: 'include',
       headers: undefined,
       body: undefined,

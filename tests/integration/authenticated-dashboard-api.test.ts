@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { APIRouter, createAuthorizationMiddleware, createModuleConfigEndpoints, createSessionAuthMiddleware } from '../../src/core/api/index.js';
+import { APIRouter, createAuthorizationMiddleware, createCsrfMiddleware, createModuleConfigEndpoints, createSessionAuthMiddleware, CsrfService } from '../../src/core/api/index.js';
 import type { IAuthorizationProvider, ISessionProvider, SessionConfig, SessionRecord } from '../../src/core/auth/index.js';
 import type { IConfigProvider } from '../../src/core/config/provider.types.js';
 import { SettingsRegistry } from '../../src/core/settings/settings-registry.js';
@@ -40,6 +40,13 @@ function appConfig(): Readonly<AppConfig> {
   };
 }
 
+const csrfService = new CsrfService({
+  now: () => new Date('2026-07-07T00:00:00.000Z'),
+  randomBytes: () => Buffer.alloc(32, 5),
+  tokenTtlMs: 60_000,
+});
+const validCsrf = csrfService.generateToken();
+
 function sessionProvider(valid: boolean): ISessionProvider {
   const record: SessionRecord = {
     id: 'valid-session',
@@ -47,7 +54,7 @@ function sessionProvider(valid: boolean): ISessionProvider {
     user: { id: 'user-1', provider: 'discord', username: 'admin' },
     createdAt: new Date(),
     expiresAt: new Date(Date.now() + 60_000),
-    metadata: { guilds: [{ id: 'guild-1', name: 'Guild One' }] },
+    metadata: csrfService.attachToMetadata({ guilds: [{ id: 'guild-1', name: 'Guild One' }] }, validCsrf),
   };
   return {
     createSession: vi.fn(),
@@ -91,6 +98,7 @@ function createRouter(validSession: boolean, authorized: boolean): APIRouter {
   const router = new APIRouter();
   router.use(createSessionAuthMiddleware({ sessionProvider: sessionProvider(validSession), sessionConfig }));
   router.use(createAuthorizationMiddleware({ authorizationProvider: authorizationProvider(authorized) }));
+  router.use(createCsrfMiddleware({ csrfService }));
   for (const endpoint of createModuleConfigEndpoints({ manifests, settings, config })) {
     router.register(endpoint);
   }
@@ -130,5 +138,38 @@ describe('authenticated dashboard API integration', () => {
         headers: { cookie: 'hoak_session=valid-session' },
       }),
     ).resolves.toMatchObject({ success: true, data: { guildId: 'guild-1' } });
+  });
+
+  it('returns 403 for PATCH without CSRF', async () => {
+    await expect(
+      createRouter(true, true).handle({
+        method: 'PATCH',
+        path: '/api/v1/guilds/guild-1/settings',
+        headers: { cookie: 'hoak_session=valid-session' },
+        body: { settings: { 'general.prefix': '?' } },
+      }),
+    ).resolves.toMatchObject({ success: false, status: 403, error: { code: 'INVALID_CSRF' } });
+  });
+
+  it('returns 403 for PATCH with invalid CSRF', async () => {
+    await expect(
+      createRouter(true, true).handle({
+        method: 'PATCH',
+        path: '/api/v1/guilds/guild-1/settings',
+        headers: { cookie: 'hoak_session=valid-session', 'X-CSRF-Token': 'invalid' },
+        body: { settings: { 'general.prefix': '?' } },
+      }),
+    ).resolves.toMatchObject({ success: false, status: 403, error: { code: 'INVALID_CSRF' } });
+  });
+
+  it('returns 200 for PATCH with valid CSRF', async () => {
+    await expect(
+      createRouter(true, true).handle({
+        method: 'PATCH',
+        path: '/api/v1/guilds/guild-1/settings',
+        headers: { cookie: 'hoak_session=valid-session', 'X-CSRF-Token': validCsrf.token },
+        body: { settings: { 'general.prefix': '?' } },
+      }),
+    ).resolves.toMatchObject({ success: true, status: 200, data: { guildId: 'guild-1' } });
   });
 });

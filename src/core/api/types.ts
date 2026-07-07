@@ -1,7 +1,7 @@
 import type { ZodTypeAny } from 'zod';
 import type { SessionRecord } from '../auth/index.js';
 
-export type APIHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+export type APIHttpMethod = 'GET' | 'HEAD' | 'OPTIONS' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export type APIAuthLevel = 'public' | 'authenticated' | 'guild_member' | 'guild_admin' | 'bot_owner';
 
 export interface APIPaginationMeta {
@@ -42,6 +42,7 @@ export type APIErrorCode =
   | 'VALIDATION_ERROR'
   | 'RATE_LIMITED'
   | 'CONFLICT'
+  | 'INVALID_CSRF'
   | 'INTERNAL_ERROR';
 
 export interface APIRequest {

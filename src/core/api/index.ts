@@ -2,6 +2,9 @@ export { APIAuthorizationService, UserGuildOwnershipChecker } from './authorizat
 export { APIError, apiError, toAPIErrorResponse } from './errors.js';
 export { createAuthorizationMiddleware } from './authorization.middleware.js';
 export { createAuthEndpoints } from './auth.endpoints.js';
+export { createCsrfEndpoints } from './csrf.endpoints.js';
+export { createCsrfMiddleware } from './csrf.middleware.js';
+export { CsrfService } from './csrf.service.js';
 export { MemoryAuthProvider } from './memory-auth.provider.js';
 export { createModuleConfigEndpoints } from './module-config.endpoints.js';
 export { OpenAPIMetadataRegistry } from './openapi.js';
@@ -23,6 +26,9 @@ export type {
 } from './authorization.js';
 export type { AuthorizationMiddlewareDependencies } from './authorization.middleware.js';
 export type { AuthEndpointDependencies } from './auth.endpoints.js';
+export type { CsrfEndpointDependencies } from './csrf.endpoints.js';
+export type { CsrfMiddlewareDependencies } from './csrf.middleware.js';
+export type { CsrfServiceOptions, CsrfSessionMetadata } from './csrf.service.js';
 export type { SessionAuthMiddlewareDependencies } from './session-auth.middleware.js';
 export type {
   AuthProvider,

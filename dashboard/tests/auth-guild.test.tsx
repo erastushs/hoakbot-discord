@@ -31,6 +31,10 @@ describe('authentication and guild context', () => {
   it('bootstraps authenticated session state from /me', async () => {
     const user = userEvent.setup();
     const fetcher = vi.fn(async (url: string) => {
+      if (url.endsWith('/csrf')) {
+        return { ok: true, status: 200, json: async () => ({ success: true, data: { csrfToken: 'csrf-token' } }) } as Response;
+      }
+
       if (url.endsWith('/logout')) {
         return { ok: true, status: 200, json: async () => ({ success: true, data: { authenticationState: 'anonymous' } }) } as Response;
       }

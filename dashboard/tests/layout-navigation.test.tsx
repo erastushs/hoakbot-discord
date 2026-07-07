@@ -48,7 +48,7 @@ describe('dashboard layout and navigation', () => {
     expect(links).toEqual(['Home', 'Beta', 'Alpha']);
   });
 
-  it('persists and applies dark mode without a refresh', async () => {
+  it('defaults to dark mode and persists light mode without a refresh', async () => {
     const storage = new Map<string, string>();
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => storage.get(key) ?? null,
@@ -57,9 +57,11 @@ describe('dashboard layout and navigation', () => {
     const user = userEvent.setup();
     renderLayout();
 
+    expect(document.documentElement.dataset.theme).toBe('dark');
+
     await user.click(screen.getByRole('button', { name: 'Toggle theme' }));
 
-    expect(document.documentElement.dataset.theme).toBe('dark');
-    expect(storage.get('hoak-dashboard-theme')).toBe('dark');
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(storage.get('hoak-dashboard-theme')).toBe('light');
   });
 });

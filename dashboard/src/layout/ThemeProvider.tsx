@@ -9,6 +9,7 @@ export interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 const THEME_STORAGE_KEY = 'hoak-dashboard-theme';
+const DEFAULT_THEME: ThemeMode = 'dark';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<ThemeMode>(() => readStoredTheme());
@@ -38,7 +39,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 function readStoredTheme(): ThemeMode {
   const stored = getThemeStorage()?.getItem(THEME_STORAGE_KEY);
-  return stored === 'dark' || stored === 'light' ? stored : 'light';
+  return stored === 'dark' || stored === 'light' ? stored : DEFAULT_THEME;
 }
 
 function getThemeStorage(): Storage | undefined {

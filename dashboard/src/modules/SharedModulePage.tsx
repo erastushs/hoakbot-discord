@@ -1,7 +1,7 @@
-import { AlertTriangle, Bot, Lock, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Bot, ShieldCheck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { Alert, Button, Card, EmptyState, Input, Section, SectionHeader, Select, Skeleton, StatusBadge, Switch, Textarea } from '../components/index.js';
+import { Button, Card, EmptyState, Input, Section, SectionHeader, Select, StatusBadge, Switch, Textarea } from '../components/index.js';
 import type { ModuleManifest, SettingMetadata } from '../contracts.js';
 import { PageHeader } from '../layout/PageHeader.js';
 
@@ -60,7 +60,6 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
   }
 
   const configuredCount = settings.length;
-  const permissionCount = manifest.permissions?.length ?? 0;
   const restartCount = settings.filter((setting) => setting.restartRequired).length;
   const moduleSummary = moduleSummaryLabel(manifest);
 
@@ -93,7 +92,7 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
         <SectionHeader description={`${manifest.name} controls are rendered from existing module metadata and current settings values.`} title="Overview" />
         <div className="grid gap-4 tablet:grid-cols-3">
           <Card className="grid gap-3">
-            <Bot className="h-5 w-5 text-dashboard-accent-primary" />
+            <Bot className="h-5 w-5 text-dashboard-text-secondary" />
             <div>
               <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Module</p>
               <p className="mt-1 text-heading-m text-dashboard-text-primary">{moduleSummary}</p>
@@ -118,11 +117,6 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
 
       <Section>
         <SectionHeader
-          actions={
-            <Button disabled={!onSave || dirtyKeys.size === 0 || saveStatus === 'saving'} onClick={() => void save()} variant="primary">
-              {saveStatus === 'saving' ? 'Saving' : 'Save changes'}
-            </Button>
-          }
           description="Changes use the existing settings API and preserve current dashboard behavior."
           title="Configuration"
         />
@@ -153,13 +147,23 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
                 </Card>
               );
             })}
-            <div className="flex flex-wrap items-center gap-3">
-              <Button disabled={!onSave || dirtyKeys.size === 0 || saveStatus === 'saving'} onClick={() => void save()} variant="primary">
-                {saveStatus === 'saving' ? 'Saving' : 'Save changes'}
-              </Button>
-              {saveStatus === 'saved' ? <StatusBadge status="enabled">Saved</StatusBadge> : null}
-              {saveStatus === 'error' ? <StatusBadge status="error">Save failed</StatusBadge> : null}
-              {error ? <span className="text-small text-dashboard-danger">{error}</span> : null}
+            <div className="sticky bottom-4 z-sticky rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-surface/95 p-3 shadow-elevation-2 backdrop-blur">
+              <div className="flex flex-col gap-3 tablet:flex-row tablet:items-center tablet:justify-between">
+                <div className="min-w-0">
+                  <p className="text-small font-medium text-dashboard-text-primary">Configuration changes</p>
+                  <p className="text-caption text-dashboard-text-secondary">
+                    {dirtyKeys.size > 0 ? `${dirtyKeys.size} unsaved setting${dirtyKeys.size === 1 ? '' : 's'}` : 'No unsaved changes'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  {saveStatus === 'saved' ? <StatusBadge status="enabled">Saved</StatusBadge> : null}
+                  {saveStatus === 'error' ? <StatusBadge status="error">Save failed</StatusBadge> : null}
+                  {error ? <span className="text-small text-dashboard-danger" role="alert">{error}</span> : null}
+                  <Button disabled={!onSave || dirtyKeys.size === 0 || saveStatus === 'saving'} isLoading={saveStatus === 'saving'} onClick={() => void save()} variant="primary">
+                    {saveStatus === 'saving' ? 'Saving' : 'Save changes'}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
@@ -168,19 +172,6 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
       </Section>
 
       <div className="grid gap-4 desktop:grid-cols-[1fr_360px]">
-        <Section>
-          <SectionHeader description="Permission controls are not exposed by the current backend contract." title="Permissions" />
-          <Alert
-            description={
-              permissionCount > 0
-                ? `${manifest.name} declares ${permissionCount} permission requirement${permissionCount === 1 ? '' : 's'}, but dashboard permission editing is unavailable.`
-                : 'This placeholder preserves the module template without inventing new authorization behavior.'
-            }
-            title="Permission management is unavailable for this module."
-            variant="info"
-          />
-        </Section>
-
         <Section>
           <SectionHeader description="Current frontend-visible module state." title="Status" />
           <Card className="grid gap-4">
@@ -192,29 +183,30 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
               <span className="text-small text-dashboard-text-secondary">Hot reload</span>
               <StatusBadge status={manifest.supportsHotReload ? 'enabled' : 'pending'}>{manifest.supportsHotReload ? 'Supported' : 'Restart'}</StatusBadge>
             </div>
-            <div aria-hidden className="grid gap-2 pt-2">
-              <Skeleton className="h-2 w-full" />
-              <Skeleton className="h-2 w-2/3" />
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-small text-dashboard-text-secondary">Configured settings</span>
+              <span className="text-small font-medium text-dashboard-text-primary">{configuredCount}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-small text-dashboard-text-secondary">Restart-sensitive</span>
+              <span className="text-small font-medium text-dashboard-text-primary">{restartCount}</span>
+            </div>
+          </Card>
+        </Section>
+
+        <Section>
+          <SectionHeader description="Existing authorization protects reads and writes for this module." title="Access" />
+          <Card className="grid gap-4">
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 text-dashboard-success" />
+              <div>
+                <h3 className="text-small font-semibold text-dashboard-text-primary">Protected configuration</h3>
+                <p className="mt-1 text-small text-dashboard-text-secondary">Changes are submitted through the existing authorized settings API.</p>
+              </div>
             </div>
           </Card>
         </Section>
       </div>
-
-      <Section>
-        <SectionHeader description={`Reserved for destructive ${manifest.name} module operations if the backend exposes them later.`} title="Danger Zone" />
-        <Card variant="danger">
-          <div className="flex flex-col gap-3 tablet:flex-row tablet:items-center tablet:justify-between">
-            <div className="flex items-start gap-3">
-              <Lock className="mt-1 h-5 w-5 text-dashboard-danger" />
-              <div>
-                <h3 className="text-small font-semibold text-dashboard-text-primary">No destructive actions available</h3>
-                <p className="mt-1 text-small text-dashboard-text-secondary">{manifest.name} settings currently expose configuration only. No backend destructive action exists.</p>
-              </div>
-            </div>
-            <Button disabled variant="danger">Unavailable</Button>
-          </div>
-        </Card>
-      </Section>
     </div>
   );
 }
@@ -274,10 +266,6 @@ function ModuleSettingControl({
 }
 
 function moduleSummaryLabel(manifest: ModuleManifest): string {
-  if (manifest.id === 'general') {
-    return 'Core utility';
-  }
-
   return `${titleCase(manifest.category)} module`;
 }
 

@@ -14,7 +14,7 @@ export function PageHeader({
   title: ReactNode;
 }) {
   return (
-    <header className="mb-6 border-b border-dashboard-border-subtle pb-6">
+    <header className="mb-6 pb-2">
       <div className="flex flex-col gap-4 tablet:flex-row tablet:items-start tablet:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">

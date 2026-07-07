@@ -21,7 +21,7 @@ export function Input({ className, description, error, id, label, ...props }: In
         aria-describedby={[descriptionId, errorId].filter(Boolean).join(' ') || undefined}
         aria-invalid={Boolean(error) || undefined}
         className={cx(
-          'h-10 rounded-md border border-dashboard-border-subtle bg-dashboard-bg-app px-3 text-small text-dashboard-text-primary shadow-elevation-0 transition duration-hover ease-dashboard placeholder:text-dashboard-text-disabled hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface focus:border-dashboard-border-strong focus:bg-dashboard-bg-surface focus:outline-none focus:ring-2 focus:ring-dashboard-focus-ring/40 disabled:cursor-not-allowed disabled:border-dashboard-border-subtle disabled:bg-dashboard-bg-muted disabled:text-dashboard-text-disabled disabled:opacity-70',
+          'h-10 rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-app px-3 text-small text-dashboard-text-primary shadow-elevation-0 transition duration-hover ease-dashboard placeholder:text-dashboard-text-disabled hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface focus:border-dashboard-border-strong focus:bg-dashboard-bg-surface focus:outline-none focus:ring-2 focus:ring-dashboard-focus-ring/35 disabled:cursor-not-allowed disabled:border-dashboard-border-subtle disabled:bg-dashboard-bg-muted disabled:text-dashboard-text-disabled disabled:opacity-70',
           className,
         )}
         id={inputId}

@@ -35,7 +35,7 @@ describe('dashboard layout and navigation', () => {
 
     expect(screen.getByText('Hoak Dashboard')).toBeInTheDocument();
     expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('Home');
-    expect(screen.getByRole('button', { name: 'Search modules and settings' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Toggle theme' })).toBeInTheDocument();
     expect(screen.getByText('Main content')).toBeInTheDocument();
   });
 

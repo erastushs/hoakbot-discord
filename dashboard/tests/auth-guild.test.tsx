@@ -65,7 +65,7 @@ describe('authentication and guild context', () => {
 
     await user.click(screen.getByRole('button', { name: 'Admin' }));
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Sign in to Hoak Dashboard' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Manage Hoak Bot with confidence' })).toBeInTheDocument());
   });
 
   it('shows unauthenticated login state', async () => {
@@ -83,7 +83,7 @@ describe('authentication and guild context', () => {
       </AuthProvider>,
     );
 
-    expect(await screen.findByRole('heading', { name: 'Sign in to Hoak Dashboard' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Manage Hoak Bot with confidence' })).toBeInTheDocument();
     expect(screen.queryByText('hidden dashboard')).not.toBeInTheDocument();
   });
 

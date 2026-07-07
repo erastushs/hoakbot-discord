@@ -1,4 +1,5 @@
 import type { SettingMetadata, SettingOption } from '../contracts.js';
+import { Card, Input, Select, Switch, Textarea } from '../components/index.js';
 
 export interface SettingControlProps {
   setting: SettingMetadata;
@@ -15,39 +16,29 @@ export function SettingControl({ setting, value, onChange }: SettingControlProps
 
   if (setting.type === 'boolean') {
     return (
-      <label className="flex items-center justify-between gap-4 rounded-md border border-slate-200 bg-white p-4">
-        <span>
-          <span className="block text-sm font-medium text-slate-900">{setting.label}</span>
-          <span className="block text-sm text-slate-500">{setting.description}</span>
-        </span>
-        <input
-          aria-label={setting.label}
-          checked={Boolean(value)}
-          className="h-5 w-5"
-          onChange={(event) => onChange(event.target.checked)}
-          type="checkbox"
-        />
-      </label>
+      <Switch
+        checked={Boolean(value)}
+        description={setting.description}
+        label={setting.label}
+        onCheckedChange={onChange}
+      />
     );
   }
 
   return (
-    <label className="grid gap-2 rounded-md border border-slate-200 bg-white p-4" htmlFor={id}>
-      <span>
-        <span className="block text-sm font-medium text-slate-900">{setting.label}</span>
-        <span className="block text-sm text-slate-500">{setting.description}</span>
-      </span>
+    <Card className="grid gap-4">
       {renderInput(setting, id, value, onChange)}
-    </label>
+    </Card>
   );
 }
 
 function renderInput(setting: SettingMetadata, id: string, value: unknown, onChange: (value: unknown) => void) {
   if (setting.type === 'number') {
     return (
-      <input
-        className="h-10 rounded-md border border-slate-200 px-3 text-sm"
+      <Input
+        description={setting.description}
         id={id}
+        label={setting.label}
         max={setting.max}
         min={setting.min}
         onChange={(event) => onChange(event.target.valueAsNumber)}
@@ -60,26 +51,23 @@ function renderInput(setting: SettingMetadata, id: string, value: unknown, onCha
 
   if (setting.type === 'select') {
     return (
-      <select
-        className="h-10 rounded-md border border-slate-200 px-3 text-sm"
+      <Select
+        description={setting.description}
         id={id}
+        label={setting.label}
         onChange={(event) => onChange(event.target.value)}
+        options={options(setting)}
         value={typeof value === 'string' ? value : ''}
-      >
-        {options(setting).map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      />
     );
   }
 
   if (setting.type === 'text' || setting.type === 'template') {
     return (
-      <textarea
-        className="min-h-24 rounded-md border border-slate-200 px-3 py-2 text-sm"
+      <Textarea
+        description={setting.description}
         id={id}
+        label={setting.label}
         onChange={(event) => onChange(event.target.value)}
         placeholder={setting.placeholder}
         value={typeof value === 'string' ? value : ''}
@@ -88,9 +76,10 @@ function renderInput(setting: SettingMetadata, id: string, value: unknown, onCha
   }
 
   return (
-    <input
-      className="h-10 rounded-md border border-slate-200 px-3 text-sm"
+    <Input
+      description={setting.description}
       id={id}
+      label={setting.label}
       onChange={(event) => onChange(event.target.value)}
       placeholder={setting.placeholder ?? defaultPlaceholder(setting.type)}
       type="text"

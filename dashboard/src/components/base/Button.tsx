@@ -7,9 +7,9 @@ type ButtonSize = 'sm' | 'md' | 'lg';
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'border-dashboard-accent-primary bg-dashboard-accent-primary text-dashboard-text-primary shadow-elevation-1 hover:border-dashboard-accent-hover hover:bg-dashboard-accent-hover hover:shadow-elevation-2 active:border-dashboard-accent-primary active:bg-dashboard-accent-primary',
+    'border-dashboard-accent-primary bg-dashboard-accent-primary text-dashboard-text-primary shadow-elevation-0 hover:border-dashboard-accent-hover hover:bg-dashboard-accent-hover hover:shadow-elevation-1 active:border-dashboard-accent-primary active:bg-dashboard-accent-primary',
   secondary:
-    'border-dashboard-border-subtle bg-dashboard-bg-surface text-dashboard-text-primary hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface-elevated hover:shadow-elevation-1 active:bg-dashboard-bg-muted',
+    'border-dashboard-border-subtle bg-dashboard-bg-surface text-dashboard-text-primary hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface-elevated active:bg-dashboard-bg-muted',
   tertiary:
     'border-transparent bg-dashboard-bg-muted text-dashboard-text-primary hover:bg-dashboard-bg-surface-elevated hover:shadow-elevation-1 active:bg-dashboard-bg-muted',
   ghost: 'border-transparent bg-transparent text-dashboard-text-secondary hover:bg-dashboard-bg-muted hover:text-dashboard-text-primary active:bg-dashboard-bg-surface',
@@ -45,7 +45,7 @@ export function Button({
     <button
       aria-busy={isLoading || undefined}
       className={cx(
-        'inline-flex items-center justify-center rounded-md border font-medium transition duration-hover ease-dashboard motion-safe:active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring disabled:translate-y-0 disabled:cursor-not-allowed disabled:border-dashboard-border-subtle disabled:bg-dashboard-bg-muted disabled:text-dashboard-text-disabled disabled:opacity-70 disabled:shadow-elevation-0',
+        'inline-flex items-center justify-center rounded-lg border font-medium transition duration-hover ease-dashboard motion-safe:active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring disabled:translate-y-0 disabled:cursor-not-allowed disabled:border-dashboard-border-subtle disabled:bg-dashboard-bg-muted disabled:text-dashboard-text-disabled disabled:opacity-70 disabled:shadow-elevation-0',
         variantClasses[variant],
         sizeClasses[size],
         className,

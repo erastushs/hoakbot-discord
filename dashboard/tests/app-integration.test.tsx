@@ -163,8 +163,8 @@ describe('App backend integration', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'Sign in to Hoak Dashboard' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Discord Login' })).toHaveAttribute('href', '/api/v1/auth/login');
+    expect(await screen.findByRole('heading', { name: 'Manage Hoak Bot with confidence' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Continue with Discord' })).toHaveAttribute('href', '/api/v1/auth/login');
   });
 
   it('logs out and returns to the login page', async () => {
@@ -182,7 +182,7 @@ describe('App backend integration', () => {
     await screen.findByRole('heading', { name: 'Alpha' });
     await user.click(screen.getByRole('button', { name: 'Sign out' }));
 
-    expect(await screen.findByRole('heading', { name: 'Sign in to Hoak Dashboard' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Manage Hoak Bot with confidence' })).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledWith('/api/v1/logout', {
       method: 'POST',
       credentials: 'include',

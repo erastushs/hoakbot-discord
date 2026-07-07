@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { Button, StatusBadge } from '../components/index.js';
 import type { SettingMetadata } from '../contracts.js';
 import { SettingControl } from './SettingControl.js';
 
@@ -66,17 +67,17 @@ export function SettingsRenderer({
         />
       ))}
       {onSave ? (
-        <div className="flex items-center gap-3">
-          <button
-            className="rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
             disabled={dirtyKeys.size === 0 || saveStatus === 'saving'}
+            isLoading={saveStatus === 'saving'}
             onClick={() => void save()}
-            type="button"
+            variant="primary"
           >
             {saveStatus === 'saving' ? 'Saving' : 'Save changes'}
-          </button>
-          {saveStatus === 'saved' ? <span className="text-sm text-emerald-700">Saved</span> : null}
-          {saveStatus === 'error' ? <span className="text-sm text-red-700">{error}</span> : null}
+          </Button>
+          {saveStatus === 'saved' ? <StatusBadge status="enabled">Saved</StatusBadge> : null}
+          {saveStatus === 'error' ? <span className="text-small text-dashboard-danger" role="alert">{error}</span> : null}
         </div>
       ) : null}
     </div>

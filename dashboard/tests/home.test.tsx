@@ -13,10 +13,8 @@ describe('DashboardHome', () => {
     expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
     expect(screen.getByText('Modules Enabled')).toBeInTheDocument();
     expect(screen.getByText('Configured Modules')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Quick Actions' })).toBeInTheDocument();
-    expect(screen.getByText('Configure Voice')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Module Overview' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Recent Activity' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Modules' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Guild' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'System Health' })).toBeInTheDocument();
 
     expect(screen.getByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
@@ -31,6 +29,5 @@ describe('DashboardHome', () => {
     render(<DashboardHome manifests={[]} />);
 
     expect(screen.getByText('No modules available')).toBeInTheDocument();
-    expect(screen.getByText('Refresh modules')).toBeInTheDocument();
   });
 });

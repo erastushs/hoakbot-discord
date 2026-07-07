@@ -49,6 +49,7 @@ export interface APIRequest {
   method: APIHttpMethod;
   path: string;
   headers?: Record<string, string | undefined>;
+  ip?: string;
   params?: Record<string, string>;
   query?: Record<string, unknown>;
   body?: unknown;

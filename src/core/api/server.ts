@@ -73,9 +73,17 @@ async function toAPIRequest(request: IncomingMessage): Promise<APIRequest> {
     method: method as APIHttpMethod,
     path: url.pathname,
     headers: toHeaders(request),
+    ip: clientIp(request),
     query: Object.fromEntries(url.searchParams.entries()),
     body,
   };
+}
+
+function clientIp(request: IncomingMessage): string {
+  const forwardedFor = request.headers['x-forwarded-for'];
+  const forwarded = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+  const firstForwarded = forwarded?.split(',')[0]?.trim();
+  return firstForwarded || request.socket.remoteAddress || 'unknown';
 }
 
 function toHeaders(request: IncomingMessage): Record<string, string | undefined> {

@@ -15,10 +15,13 @@ import {
   createCsrfEndpoints,
   createCsrfMiddleware,
   createModuleConfigEndpoints,
+  createRateLimitMiddleware,
   createSecurityHeadersMiddleware,
   createSessionAuthMiddleware,
   CsrfService,
+  dashboardRateLimitRules,
   ok,
+  RateLimiter,
 } from './core/api/index.js';
 import {
   AuthorizationProvider,
@@ -145,6 +148,7 @@ try {
   const sessionRepository = new SessionRepository(databaseAdapter);
   const sessionProvider = new DatabaseSessionProvider(sessionRepository, sessionConfig);
   const csrfService = new CsrfService({ tokenTtlMs: sessionConfig.durationMs });
+  const rateLimiter = new RateLimiter();
   const guildResolver = new GuildResolver(new ClientGuildDataSource(client));
   const authorizationProvider = new AuthorizationProvider({ ownerIds: appConfig.ownerIds }, guildResolver);
   const discordOAuthProvider = new DiscordOAuthProvider(
@@ -189,6 +193,7 @@ try {
 
   await moduleLoader.loadAll(container);
   apiRouter.use(createSecurityHeadersMiddleware());
+  apiRouter.use(createRateLimitMiddleware({ limiter: rateLimiter, rules: dashboardRateLimitRules, logger }));
   apiRouter.use(createSessionAuthMiddleware({ sessionProvider, sessionConfig }));
   apiRouter.use(createAuthorizationMiddleware({ authorizationProvider }));
   apiRouter.use(createCsrfMiddleware({ csrfService }));

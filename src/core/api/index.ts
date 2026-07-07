@@ -8,6 +8,8 @@ export { CsrfService } from './csrf.service.js';
 export { MemoryAuthProvider } from './memory-auth.provider.js';
 export { createModuleConfigEndpoints } from './module-config.endpoints.js';
 export { OpenAPIMetadataRegistry } from './openapi.js';
+export { createRateLimitMiddleware, dashboardRateLimitRules, rateLimitHeaders } from './rate-limit.middleware.js';
+export { RateLimiter } from './rate-limiter.service.js';
 export { APIRouter } from './router.js';
 export { applySecurityHeaders, createSecurityHeadersMiddleware, securityHeaders, withSecurityHeaders } from './security-headers.middleware.js';
 export { createSessionAuthMiddleware, readCookie } from './session-auth.middleware.js';
@@ -53,6 +55,8 @@ export type {
 } from './contracts.js';
 export type { ModuleConfigEndpointDependencies } from './module-config.endpoints.js';
 export type { OpenAPIEndpointMetadata } from './openapi.js';
+export type { RateLimitMiddlewareDependencies, RateLimitRouteRule } from './rate-limit.middleware.js';
+export type { RateLimiterOptions, RateLimitResult, RateLimitRule } from './rate-limiter.service.js';
 export type { APIHttpServer, APIHttpServerOptions } from './server.js';
 export type {
   APIAuthLevel,

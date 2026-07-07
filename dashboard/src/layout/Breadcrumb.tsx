@@ -5,12 +5,18 @@ export interface BreadcrumbItem {
 
 export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="text-sm text-slate-500">
+    <nav aria-label="Breadcrumb" className="text-caption text-dashboard-text-tertiary">
       <ol className="flex flex-wrap items-center gap-2">
         {items.map((item, index) => (
-          <li className="flex items-center gap-2" key={item.label}>
+          <li className="flex min-w-0 items-center gap-2" key={`${item.label}-${index}`}>
             {index > 0 ? <span aria-hidden>/</span> : null}
-            {item.href ? <a className="hover:text-slate-900" href={item.href}>{item.label}</a> : <span>{item.label}</span>}
+            {item.href ? (
+              <a className="truncate transition duration-hover hover:text-dashboard-text-primary" href={item.href}>
+                {item.label}
+              </a>
+            ) : (
+              <span className="truncate">{item.label}</span>
+            )}
           </li>
         ))}
       </ol>

@@ -35,7 +35,7 @@ describe('dashboard layout and navigation', () => {
 
     expect(screen.getByText('Hoak Dashboard')).toBeInTheDocument();
     expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('Home');
-    expect(screen.getByText('Search modules and settings')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Search modules and settings' })).toBeInTheDocument();
     expect(screen.getByText('Main content')).toBeInTheDocument();
   });
 
@@ -45,7 +45,7 @@ describe('dashboard layout and navigation', () => {
     const moduleNav = screen.getByLabelText('Modules');
     const links = within(moduleNav).getAllByRole('link').map((link) => link.textContent);
 
-    expect(links).toEqual(['Home', 'Beta', 'Alpha']);
+    expect(links).toEqual(['Beta', 'Alpha']);
   });
 
   it('defaults to dark mode and persists light mode without a refresh', async () => {

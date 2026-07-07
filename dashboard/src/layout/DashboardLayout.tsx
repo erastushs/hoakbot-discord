@@ -15,12 +15,14 @@ export function DashboardLayout({
   breadcrumb: BreadcrumbItem[];
 }) {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950">
-      <div className="flex">
+    <div className="min-h-screen bg-dashboard-bg-app text-dashboard-text-primary">
+      <div className="min-h-screen lg:flex">
         <Sidebar manifests={manifests} />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 lg:pl-sidebar">
           <TopNavigation breadcrumb={breadcrumb} />
-          <main className="mx-auto w-full max-w-7xl px-6 py-6">{children}</main>
+          <main className="min-h-[calc(100vh-var(--header-height))] overflow-y-auto px-4 py-6 tablet:px-6 desktop:px-8">
+            <div className="mx-auto w-full max-w-page">{children}</div>
+          </main>
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ export { MemoryAuthProvider } from './memory-auth.provider.js';
 export { createModuleConfigEndpoints } from './module-config.endpoints.js';
 export { OpenAPIMetadataRegistry } from './openapi.js';
 export { APIRouter } from './router.js';
+export { applySecurityHeaders, createSecurityHeadersMiddleware, securityHeaders, withSecurityHeaders } from './security-headers.middleware.js';
 export { createSessionAuthMiddleware, readCookie } from './session-auth.middleware.js';
 export { createAPIHttpServer } from './server.js';
 export { fail, noContent, ok, paginated } from './responses.js';
@@ -29,6 +30,7 @@ export type { AuthEndpointDependencies } from './auth.endpoints.js';
 export type { CsrfEndpointDependencies } from './csrf.endpoints.js';
 export type { CsrfMiddlewareDependencies } from './csrf.middleware.js';
 export type { CsrfServiceOptions, CsrfSessionMetadata } from './csrf.service.js';
+export type { SecurityHeadersOptions } from './security-headers.middleware.js';
 export type { SessionAuthMiddlewareDependencies } from './session-auth.middleware.js';
 export type {
   AuthProvider,

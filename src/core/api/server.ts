@@ -4,6 +4,7 @@ import { URL } from 'node:url';
 
 import type { ILogger } from '../logger/logger.service.js';
 import type { APIRouter } from './router.js';
+import { applySecurityHeaders } from './security-headers.middleware.js';
 import type { APIHttpMethod, APIRequest, APIResponse } from './types.js';
 
 const SUPPORTED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
@@ -24,6 +25,7 @@ export interface APIHttpServer {
 export function createAPIHttpServer({ port, router, logger }: APIHttpServerOptions): APIHttpServer {
   const server = createServer(async (request, response) => {
     setCorsHeaders(response);
+    applySecurityHeaders(response);
 
     if (request.method === 'OPTIONS') {
       response.writeHead(204);

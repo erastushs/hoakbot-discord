@@ -15,6 +15,7 @@ import {
   createCsrfEndpoints,
   createCsrfMiddleware,
   createModuleConfigEndpoints,
+  createSecurityHeadersMiddleware,
   createSessionAuthMiddleware,
   CsrfService,
   ok,
@@ -187,6 +188,7 @@ try {
   moduleLoader.registerModule(goodbyeModule);
 
   await moduleLoader.loadAll(container);
+  apiRouter.use(createSecurityHeadersMiddleware());
   apiRouter.use(createSessionAuthMiddleware({ sessionProvider, sessionConfig }));
   apiRouter.use(createAuthorizationMiddleware({ authorizationProvider }));
   apiRouter.use(createCsrfMiddleware({ csrfService }));

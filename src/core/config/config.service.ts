@@ -39,6 +39,7 @@ export class ConfigService {
       CLIENT_ID: process.env['CLIENT_ID'],
       DATABASE_URL: process.env['DATABASE_URL'],
       API_PORT: process.env['API_PORT'],
+      DASHBOARD_URL: process.env['DASHBOARD_URL'],
       DISCORD_CLIENT_ID: process.env['DISCORD_CLIENT_ID'],
       DISCORD_CLIENT_SECRET: process.env['DISCORD_CLIENT_SECRET'],
       DISCORD_REDIRECT_URI: process.env['DISCORD_REDIRECT_URI'],
@@ -89,6 +90,9 @@ export class ConfigService {
       databaseUrl: env.DATABASE_URL,
       api: {
         port: env.API_PORT,
+      },
+      dashboard: {
+        url: env.DASHBOARD_URL,
       },
       session: {
         durationMs: env.SESSION_DURATION,

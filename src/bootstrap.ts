@@ -192,6 +192,7 @@ try {
     sessionProvider,
     sessionConfig,
     authorizationProvider,
+    dashboardUrl: appConfig.dashboard?.url ?? 'http://localhost:5173',
   })) {
     apiRouter.register(endpoint);
   }

@@ -105,6 +105,7 @@ export const envSchema = z.object({
   CLIENT_ID: z.string().min(1, 'CLIENT_ID is required'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   API_PORT: z.coerce.number().int().positive().max(65535).default(3000),
+  DASHBOARD_URL: z.string().url().default('http://localhost:5173'),
   DISCORD_CLIENT_ID: z.string().optional(),
   DISCORD_CLIENT_SECRET: z.string().optional(),
   DISCORD_REDIRECT_URI: z.string().optional(),
@@ -133,6 +134,9 @@ export const appConfigSchema = z.object({
   databaseUrl: z.string(),
   api: z.object({
     port: z.number().int().positive().max(65535),
+  }),
+  dashboard: z.object({
+    url: z.string().url(),
   }),
   session: z.object({
     durationMs: z.number().int().positive(),

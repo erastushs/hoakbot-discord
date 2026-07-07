@@ -21,6 +21,7 @@ export interface AuthEndpointDependencies {
   readonly sessionProvider?: ISessionProvider & { getSessionRecord?(sessionId: string): Promise<SessionRecord | undefined> };
   readonly sessionConfig?: SessionConfig;
   readonly authorizationProvider?: IAuthorizationProvider;
+  readonly dashboardUrl?: string;
 }
 
 export interface MeResponse {
@@ -44,6 +45,7 @@ export function createAuthEndpoints({
   sessionProvider,
   sessionConfig,
   authorizationProvider,
+  dashboardUrl,
 }: AuthEndpointDependencies): APIEndpoint[] {
   return [
     {
@@ -84,7 +86,7 @@ export function createAuthEndpoints({
 
         const session = await sessionProvider.createSession(result.user, { guilds: result.guilds ?? [] });
         return {
-          ...ok({ ...result, session }),
+          ...ok({ ...result, session }, dashboardUrl ? 303 : 200),
           headers: {
             'Set-Cookie': createSessionCookie({
               name: sessionConfig.cookieName,
@@ -92,6 +94,7 @@ export function createAuthEndpoints({
               expiresAt: session.expiresAt,
               secure: sessionConfig.secureCookies,
             }),
+            ...(dashboardUrl ? { Location: dashboardUrl } : {}),
           },
         };
       },

@@ -222,6 +222,7 @@ npm run dev
 | `DISCORD_REDIRECT_URI` | Required for OAuth | empty string | Discord OAuth callback URL |
 | `DATABASE_URL` | Yes | – | PostgreSQL connection string |
 | `API_PORT` | No | `3000` | REST API port (localhost-only in production) |
+| `DASHBOARD_URL` | No | `http://localhost:5173` | Dashboard URL used as the post-login OAuth redirect target |
 | `SESSION_DURATION` | No | `28800000` | Dashboard session lifetime in milliseconds |
 | `COOKIE_NAME` | No | `hoak_session` | HttpOnly dashboard session cookie name |
 | `SESSION_CLEANUP_INTERVAL` | No | `3600000` | Session cleanup interval in milliseconds for cleanup tooling |
@@ -244,6 +245,8 @@ https://dashboard.hoakfamily.web.id/api/v1/auth/callback
 ```
 
 The dashboard OAuth implementation requests only the `identify` and `guilds` scopes. Sessions are stored server-side in PostgreSQL and exposed to the browser only through an HttpOnly cookie named by `COOKIE_NAME`. Use `NODE_ENV=production` in production so session cookies are marked `Secure`.
+
+After a successful OAuth callback, the backend creates the server-side session, sets the session cookie, and redirects the browser to `DASHBOARD_URL`.
 
 ---
 
@@ -369,6 +372,7 @@ Production dashboard OAuth requires:
 - `DISCORD_CLIENT_ID` or `CLIENT_ID` set to the Discord application client ID.
 - `DISCORD_CLIENT_SECRET` set from the Discord Developer Portal.
 - `DISCORD_REDIRECT_URI` set to the exact configured OAuth2 redirect URI.
+- `DASHBOARD_URL` set to the dashboard origin users should return to after login, for example `https://dashboard.hoakfamily.web.id`.
 - `COOKIE_NAME` set to the desired HttpOnly session cookie name, usually `hoak_session`.
 - `SESSION_DURATION` set to the desired session lifetime in milliseconds.
 - `NODE_ENV=production` so session cookies include the `Secure` flag.

@@ -121,6 +121,9 @@ export interface AppConfig {
   api: {
     port: number;
   };
+  dashboard?: {
+    url: string;
+  };
   session?: {
     durationMs: number;
     cookieName: string;

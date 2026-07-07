@@ -45,13 +45,19 @@ function authorizationProvider(allowedGuildIds: string[]): IAuthorizationProvide
   } as IAuthorizationProvider;
 }
 
-function router(provider = sessionProvider(), authz?: IAuthorizationProvider) {
+function router(
+  provider = sessionProvider(),
+  authz?: IAuthorizationProvider,
+  auth = authProvider(),
+  dashboardUrl?: string,
+) {
   const api = new APIRouter();
   for (const endpoint of createAuthEndpoints({
-    authProvider: authProvider(),
+    authProvider: auth,
     sessionProvider: provider,
     sessionConfig,
     authorizationProvider: authz,
+    dashboardUrl,
   })) {
     api.register(endpoint);
   }
@@ -148,5 +154,56 @@ describe('dashboard auth endpoints', () => {
     expect(provider.destroySession).toHaveBeenCalledWith('session-1');
     expect(response).toMatchObject({ success: true, data: { authenticationState: 'anonymous' } });
     expect(response.headers?.['Set-Cookie']).toContain('Expires=Thu, 01 Jan 1970 00:00:00 GMT');
+  });
+
+  it('redirects to DASHBOARD_URL after successful OAuth callback while setting the session cookie', async () => {
+    const auth: IAuthProvider = {
+      ...authProvider(),
+      handleCallback: vi.fn(async () => ({
+        ok: true,
+        user: { id: 'user-1', provider: 'discord', username: 'admin' },
+        guilds: [{ id: 'guild-1', name: 'Guild One' }],
+      })),
+    };
+    const provider = {
+      ...sessionProvider(),
+      createSession: vi.fn(async () => ({
+        id: 'session-1',
+        userId: 'user-1',
+        createdAt: new Date(),
+        expiresAt: new Date('2026-07-07T08:00:00.000Z'),
+      })),
+    } as unknown as ISessionProvider & { getSessionRecord(sessionId: string): Promise<SessionRecord | undefined> };
+    const { api } = router(provider, undefined, auth, 'http://localhost:5173');
+
+    const response = await api.handle({
+      method: 'GET',
+      path: '/api/v1/auth/callback',
+      query: { code: 'code', state: 'state' },
+    });
+
+    expect(response).toMatchObject({ success: true, status: 303, headers: { Location: 'http://localhost:5173' } });
+    expect(response.headers?.['Set-Cookie']).toContain('hoak_session=session-1');
+    expect(provider.createSession).toHaveBeenCalledWith(
+      { id: 'user-1', provider: 'discord', username: 'admin' },
+      { guilds: [{ id: 'guild-1', name: 'Guild One' }] },
+    );
+  });
+
+  it('keeps failed OAuth callback responses as JSON envelopes', async () => {
+    const auth: IAuthProvider = {
+      ...authProvider(),
+      handleCallback: vi.fn(async () => ({ ok: false, code: 'auth.cancelled', message: 'access_denied' })),
+    };
+    const { api } = router(sessionProvider(), undefined, auth, 'http://localhost:5173');
+
+    const response = await api.handle({ method: 'GET', path: '/api/v1/auth/callback', query: { error: 'access_denied' } });
+
+    expect(response).toMatchObject({
+      success: true,
+      status: 200,
+      data: { ok: false, code: 'auth.cancelled' },
+    });
+    expect(response.headers?.['Location']).toBeUndefined();
   });
 });

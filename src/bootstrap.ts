@@ -132,7 +132,7 @@ try {
   const discordOAuthProvider = new DiscordOAuthProvider(
     discordOAuthConfig,
     oauthStateService,
-    new FetchDiscordAPIClient(discordOAuthConfig),
+    new FetchDiscordAPIClient(discordOAuthConfig, logger),
   );
 
   container.registerSingleton(TOKENS.SettingsRegistry, () => settingsRegistry);

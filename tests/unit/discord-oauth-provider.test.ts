@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createAuthEndpoints } from '../../src/core/api/auth.endpoints.js';
 import { APIRouter } from '../../src/core/api/router.js';
-import { DiscordOAuthProvider, OAuthStateService } from '../../src/core/auth/index.js';
+import { DiscordOAuthProvider, FetchDiscordAPIClient, OAuthStateService } from '../../src/core/auth/index.js';
 import type { DiscordAPIClient, DiscordOAuthConfig } from '../../src/core/auth/index.js';
 
 const config: DiscordOAuthConfig = {
@@ -143,6 +143,33 @@ describe('DiscordOAuthProvider', () => {
       code: 'auth.provider_error',
       message: 'Discord token exchange failed.',
     });
+  });
+});
+
+describe('FetchDiscordAPIClient', () => {
+  it('logs Discord token exchange response details without exposing request secrets', async () => {
+    const logger = { warn: vi.fn() };
+    const fetcher = vi.fn(async () =>
+      new Response(JSON.stringify({ error: 'invalid_grant', error_description: 'Invalid authorization code' }), {
+        status: 400,
+      }),
+    );
+    vi.stubGlobal('fetch', fetcher);
+    const client = new FetchDiscordAPIClient(config, logger as never);
+
+    await expect(client.exchangeCode('super-secret-code')).rejects.toThrow('Discord token exchange failed.');
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      {
+        status: 400,
+        discordResponseBody: JSON.stringify({ error: 'invalid_grant', error_description: 'Invalid authorization code' }),
+        oauthErrorCode: 'invalid_grant',
+        oauthErrorDescription: 'Invalid authorization code',
+      },
+      'Discord OAuth token exchange failed',
+    );
+    expect(JSON.stringify(logger.warn.mock.calls)).not.toContain('discord-client-secret');
+    expect(JSON.stringify(logger.warn.mock.calls)).not.toContain('super-secret-code');
   });
 });
 

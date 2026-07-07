@@ -4,6 +4,8 @@ import type {
   GetMetadataResponse,
   GetModulesResponse,
   GetSettingsResponse,
+  LogoutResponse,
+  MeResponse,
   PatchSettingsResponse,
 } from '../contracts.js';
 
@@ -55,6 +57,14 @@ export class APIClient {
     return this.get<GetManifestsResponse>('/modules');
   }
 
+  getMe(): Promise<MeResponse> {
+    return this.get<MeResponse>('/me');
+  }
+
+  logout(): Promise<LogoutResponse> {
+    return this.post<LogoutResponse>('/logout');
+  }
+
   getGuildModules(guildId: string): Promise<GetModulesResponse> {
     return this.get<GetModulesResponse>(`/guilds/${encodeURIComponent(guildId)}/modules`);
   }
@@ -80,6 +90,7 @@ export class APIClient {
       console.debug('[dashboard-api] fetch:execute', { method, url });
       response = await this.fetcher(url, {
         method,
+        credentials: 'include',
         headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
       });

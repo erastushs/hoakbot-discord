@@ -11,7 +11,7 @@ export interface ISessionProvider {
   /**
    * Create a new server-side session for an authenticated user.
    */
-  createSession(user: AuthenticatedUser): Promise<SessionIdentity>;
+  createSession(user: AuthenticatedUser, metadata?: Record<string, unknown>): Promise<SessionIdentity>;
 
   /**
    * Resolve an existing server-side session by opaque session identifier.

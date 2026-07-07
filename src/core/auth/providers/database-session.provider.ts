@@ -29,7 +29,7 @@ export class DatabaseSessionProvider implements ISessionProvider {
     this.maxCreateAttempts = options.maxCreateAttempts ?? DEFAULT_MAX_CREATE_ATTEMPTS;
   }
 
-  async createSession(user: AuthenticatedUser): Promise<SessionIdentity> {
+  async createSession(user: AuthenticatedUser, metadata?: Record<string, unknown>): Promise<SessionIdentity> {
     for (let attempt = 0; attempt < this.maxCreateAttempts; attempt += 1) {
       const now = this.now();
       const sessionId = this.generateSessionId();
@@ -41,6 +41,7 @@ export class DatabaseSessionProvider implements ISessionProvider {
           createdAt: now,
           expiresAt: this.expiresAt(now),
           lastAccessedAt: now,
+          metadata,
         });
         return this.toIdentity(record);
       } catch (error) {
@@ -54,12 +55,17 @@ export class DatabaseSessionProvider implements ISessionProvider {
   }
 
   async getSession(sessionId: string): Promise<SessionIdentity | undefined> {
+    const record = await this.getSessionRecord(sessionId);
+    return record ? this.toIdentity(record) : undefined;
+  }
+
+  async getSessionRecord(sessionId: string): Promise<SessionRecord | undefined> {
     const record = await this.repository.find(sessionId);
     if (!record || record.revokedAt || this.isExpired(record)) {
       return undefined;
     }
 
-    return this.toIdentity(record);
+    return record;
   }
 
   async refreshSession(sessionId: string): Promise<SessionIdentity | undefined> {

@@ -114,6 +114,12 @@ async function readBody(request: IncomingMessage): Promise<unknown> {
 
 function sendJSON(response: ServerResponse, apiResponse: APIResponse): void {
   const status = apiResponse.status ?? 200;
+  if (status >= 300 && status < 400 && apiResponse.headers?.['Location']) {
+    response.writeHead(status, apiResponse.headers);
+    response.end();
+    return;
+  }
+
   response.writeHead(status, { 'Content-Type': 'application/json', ...apiResponse.headers });
   response.end(JSON.stringify(apiResponse));
 }

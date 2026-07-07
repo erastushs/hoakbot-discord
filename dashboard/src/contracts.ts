@@ -114,8 +114,20 @@ export interface GuildSummary {
 
 export interface DashboardUser {
   id: string;
-  username: string;
+  username?: string;
+  displayName?: string;
   avatarUrl?: string;
+}
+
+export interface MeResponse {
+  authenticationState: 'anonymous' | 'authenticated' | 'expired' | 'invalid';
+  user?: DashboardUser;
+  guilds: GuildSummary[];
+  selectedGuild?: GuildSummary;
+}
+
+export interface LogoutResponse {
+  authenticationState: 'anonymous';
 }
 
 export interface APIResponse<T> {

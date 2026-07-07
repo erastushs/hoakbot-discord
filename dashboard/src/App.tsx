@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { APIClient, DashboardAPIError } from './api/client.js';
 import { AuthGuard } from './auth/AuthGuard.js';
-import { AuthProvider } from './auth/AuthContext.js';
+import { AuthProvider, useAuth } from './auth/AuthContext.js';
 import { GuildProvider } from './guilds/GuildContext.js';
 import { DashboardHome } from './home/DashboardHome.js';
 import { DashboardLayout } from './layout/DashboardLayout.js';
 import { ThemeProvider } from './layout/ThemeProvider.js';
 import { ModulePage } from './modules/ModulePage.js';
-import type { GuildSummary, ModuleManifest, SettingMetadata } from './contracts.js';
+import type { ModuleManifest, SettingMetadata } from './contracts.js';
 
 interface DashboardState {
   status: 'loading' | 'ready' | 'error';
@@ -19,9 +19,23 @@ interface DashboardState {
 }
 
 export function App() {
-  const moduleId = getModuleIdFromPath(window.location.pathname);
   const api = useMemo(() => new APIClient(), []);
-  const guild = useMemo(() => resolveGuild(), []);
+
+  return (
+    <ThemeProvider>
+      <AuthProvider api={api}>
+        <GuildProvider>
+          <DashboardShell api={api} />
+        </GuildProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
+
+function DashboardShell({ api }: { api: APIClient }) {
+  const moduleId = getModuleIdFromPath(window.location.pathname);
+  const auth = useAuth();
+  const guild = auth.selectedGuild;
   const [state, setState] = useState<DashboardState>({
     status: 'loading',
     manifests: [],
@@ -35,17 +49,21 @@ export function App() {
     let actualResponseObject: unknown;
     let expectedResponseObject: unknown;
 
+    if (auth.status !== 'authenticated') {
+      return;
+    }
+
     if (!guild) {
       const nextState: DashboardState = {
         status: 'error',
         manifests: [],
         settings: [],
         values: {},
-        error: 'Set VITE_GUILD_ID or open the dashboard with ?guildId=<discord-guild-id>.',
+        error: 'No authorized guilds are available for this Discord account.',
       };
       console.debug('[dashboard-app] loadDashboard:missingGuild', {
-        failingStatement: 'resolveGuild()',
-        thrownException: { name: 'MissingGuildError', message: 'Missing guild id' },
+        failingStatement: 'auth.selectedGuild',
+        thrownException: { name: 'MissingGuildError', message: 'Missing authenticated guild id' },
         actualResponseObject: guild,
         expectedResponseObject: { id: 'discord-guild-id', name: 'display name' },
         moduleId,
@@ -204,7 +222,7 @@ export function App() {
       logStateUpdate('error', nextState, moduleId);
       setState(nextState);
     }
-  }, [api, guild, moduleId]);
+  }, [api, auth.status, guild, moduleId]);
 
   useEffect(() => {
     void loadDashboard();
@@ -232,38 +250,26 @@ export function App() {
     ? state.manifests.find((candidate) => candidate.id === moduleId)
     : undefined;
   const breadcrumb = manifest ? [{ label: 'Home' }, { label: manifest.name }] : [{ label: 'Home' }];
-  const guilds = guild ? [guild] : [];
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <GuildProvider guilds={guilds}>
-          <AuthGuard>
-            <DashboardLayout breadcrumb={breadcrumb} manifests={state.manifests}>
-              {state.status === 'loading' ? (
-                <DashboardStateMessage title="Loading dashboard" message="Loading platform data from the backend." />
-              ) : state.status === 'error' ? (
-                <DashboardStateMessage
-                  actionLabel="Retry"
-                  message={state.error ?? 'The dashboard could not load platform data.'}
-                  onAction={() => void loadDashboard()}
-                  title="Dashboard unavailable"
-                />
-              ) : manifest ? (
-                <ModulePage
-                  manifest={manifest}
-                  onSave={saveSettings}
-                  settings={state.settings}
-                  values={state.values}
-                />
-              ) : (
-                <DashboardHome manifests={state.manifests} />
-              )}
-            </DashboardLayout>
-          </AuthGuard>
-        </GuildProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthGuard>
+      <DashboardLayout breadcrumb={breadcrumb} manifests={state.manifests}>
+        {state.status === 'loading' ? (
+          <DashboardStateMessage title="Loading dashboard" message="Loading platform data from the backend." />
+        ) : state.status === 'error' ? (
+          <DashboardStateMessage
+            actionLabel="Retry"
+            message={state.error ?? 'The dashboard could not load platform data.'}
+            onAction={() => void loadDashboard()}
+            title="Dashboard unavailable"
+          />
+        ) : manifest ? (
+          <ModulePage manifest={manifest} onSave={saveSettings} settings={state.settings} values={state.values} />
+        ) : (
+          <DashboardHome manifests={state.manifests} />
+        )}
+      </DashboardLayout>
+    </AuthGuard>
   );
 }
 
@@ -293,23 +299,6 @@ function DashboardStateMessage({
       ) : null}
     </section>
   );
-}
-
-function resolveGuild(): GuildSummary | undefined {
-  const params = new URLSearchParams(window.location.search);
-  const guildId = params.get('guildId') ?? import.meta.env.VITE_GUILD_ID;
-  const guildName = params.get('guildName') ?? import.meta.env.VITE_GUILD_NAME;
-  const iconUrl = params.get('guildIconUrl') ?? import.meta.env.VITE_GUILD_ICON_URL;
-
-  if (!guildId) {
-    return undefined;
-  }
-
-  return {
-    id: guildId,
-    name: guildName?.trim() || 'Current guild',
-    iconUrl: iconUrl?.trim() || undefined,
-  };
 }
 
 function toErrorMessage(error: unknown): string {

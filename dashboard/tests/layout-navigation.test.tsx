@@ -11,7 +11,14 @@ import { guilds, manifests } from './test-data.js';
 function renderLayout() {
   render(
     <ThemeProvider>
-      <AuthProvider initialUser={{ id: 'user-1', username: 'Admin' }}>
+      <AuthProvider
+        initialState={{
+          status: 'authenticated',
+          user: { id: 'user-1', username: 'Admin' },
+          guilds,
+          selectedGuild: guilds[0],
+        }}
+      >
         <GuildProvider guilds={guilds}>
           <DashboardLayout breadcrumb={[{ label: 'Home' }]} manifests={manifests}>
             <p>Main content</p>

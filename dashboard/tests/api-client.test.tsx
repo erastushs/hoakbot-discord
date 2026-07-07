@@ -25,19 +25,27 @@ describe('APIClient', () => {
     await client.patch('/settings', { enabled: true });
     await client.delete('/settings/demo');
 
-    expect(fetcher).toHaveBeenNthCalledWith(1, '/api/v1/modules', { method: 'GET', headers: undefined, body: undefined });
+    expect(fetcher).toHaveBeenNthCalledWith(1, '/api/v1/modules', {
+      method: 'GET',
+      credentials: 'include',
+      headers: undefined,
+      body: undefined,
+    });
     expect(fetcher).toHaveBeenNthCalledWith(2, '/api/v1/modules', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'demo' }),
     });
     expect(fetcher).toHaveBeenNthCalledWith(3, '/api/v1/settings', {
       method: 'PATCH',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled: true }),
     });
     expect(fetcher).toHaveBeenNthCalledWith(4, '/api/v1/settings/demo', {
       method: 'DELETE',
+      credentials: 'include',
       headers: undefined,
       body: undefined,
     });
@@ -65,6 +73,7 @@ describe('APIClient', () => {
 
     expect(fetcher).toHaveBeenCalledWith('http://localhost:3000/api/v1/modules', {
       method: 'GET',
+      credentials: 'include',
       headers: undefined,
       body: undefined,
     });
@@ -85,6 +94,7 @@ describe('APIClient', () => {
 
     expect(fetcher).toHaveBeenCalledWith('/api/v1/modules', {
       method: 'GET',
+      credentials: 'include',
       headers: undefined,
       body: undefined,
     });
@@ -99,6 +109,34 @@ describe('APIClient', () => {
 
     expect(fetcher).toHaveBeenCalledWith('/api/v1/modules', {
       method: 'GET',
+      credentials: 'include',
+      headers: undefined,
+      body: undefined,
+    });
+  });
+
+  it('loads current session and logs out', async () => {
+    const fetcher = vi.fn(async (url: string) => {
+      if (url.endsWith('/me')) {
+        return jsonResponse({ success: true, data: { authenticationState: 'authenticated', guilds: [] } });
+      }
+
+      return jsonResponse({ success: true, data: { authenticationState: 'anonymous' } });
+    });
+    const client = new APIClient({ baseUrl: '/api/v1', fetcher: fetcher as unknown as typeof fetch });
+
+    await client.getMe();
+    await client.logout();
+
+    expect(fetcher).toHaveBeenNthCalledWith(1, '/api/v1/me', {
+      method: 'GET',
+      credentials: 'include',
+      headers: undefined,
+      body: undefined,
+    });
+    expect(fetcher).toHaveBeenNthCalledWith(2, '/api/v1/logout', {
+      method: 'POST',
+      credentials: 'include',
       headers: undefined,
       body: undefined,
     });

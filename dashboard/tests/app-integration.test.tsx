@@ -40,6 +40,18 @@ function jsonResponse<T>(body: APIResponse<T>, ok = true, status = 200): Respons
   } as Response;
 }
 
+function meResponse() {
+  return jsonResponse({
+    success: true,
+    data: {
+      authenticationState: 'authenticated',
+      user: { id: 'user-1', username: 'admin', displayName: 'Admin' },
+      guilds: [{ id: 'guild-1', name: 'Guild One' }],
+      selectedGuild: { id: 'guild-1', name: 'Guild One' },
+    },
+  });
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -53,15 +65,19 @@ describe('App backend integration', () => {
   });
 
   it('loads home modules from the guild modules endpoint', async () => {
-    const fetcher = vi.fn(async () => jsonResponse({ success: true, data: { modules: [manifest] } }));
+    const fetcher = vi.fn(async (url: string) => {
+      if (url.endsWith('/me')) return meResponse();
+      return jsonResponse({ success: true, data: { modules: [manifest] } });
+    });
     vi.stubGlobal('fetch', fetcher);
-    window.history.pushState({}, '', '/?guildId=guild-1');
+    window.history.pushState({}, '', '/');
 
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledWith('/api/v1/guilds/guild-1/modules', {
       method: 'GET',
+      credentials: 'include',
       headers: undefined,
       body: undefined,
     });
@@ -70,6 +86,8 @@ describe('App backend integration', () => {
   it('loads module metadata, loads guild values, and saves changes through PATCH', async () => {
     const user = userEvent.setup();
     const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith('/me')) return meResponse();
+
       if (init?.method === 'PATCH') {
         return jsonResponse({
           success: true,
@@ -91,7 +109,7 @@ describe('App backend integration', () => {
       return jsonResponse({ success: true, data: { modules: [manifest] } });
     });
     vi.stubGlobal('fetch', fetcher);
-    window.history.pushState({}, '', '/modules/module%3Aalpha?guildId=guild-1');
+    window.history.pushState({}, '', '/modules/module%3Aalpha');
 
     render(<App />);
 
@@ -113,6 +131,7 @@ describe('App backend integration', () => {
     expect(patchCall[0]).toBe('/api/v1/guilds/guild-1/settings');
     expect(patchCall[1]).toEqual({
       method: 'PATCH',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ settings: { 'generic.title': 'Saved title' } }),
     });
@@ -125,10 +144,45 @@ describe('App backend integration', () => {
         throw new TypeError('Failed to fetch');
       }),
     );
-    window.history.pushState({}, '', '/?guildId=guild-1');
+    window.history.pushState({}, '', '/');
 
     render(<App />);
 
-    expect(await screen.findByText('Failed to fetch (NETWORK_ERROR)')).toBeInTheDocument();
+    expect(await screen.findByText('Failed to fetch')).toBeInTheDocument();
+  });
+
+  it('shows login page when there is no authenticated session', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ success: true, data: { authenticationState: 'anonymous', guilds: [] } })),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Sign in to Hoak Dashboard' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Discord Login' })).toHaveAttribute('href', '/api/v1/auth/login');
+  });
+
+  it('logs out and returns to the login page', async () => {
+    const user = userEvent.setup();
+    const fetcher = vi.fn(async (url: string) => {
+      if (url.endsWith('/me')) return meResponse();
+      if (url.endsWith('/logout')) return jsonResponse({ success: true, data: { authenticationState: 'anonymous' } });
+      return jsonResponse({ success: true, data: { modules: [manifest] } });
+    });
+    vi.stubGlobal('fetch', fetcher);
+
+    render(<App />);
+
+    await screen.findByRole('heading', { name: 'Alpha' });
+    await user.click(screen.getByRole('button', { name: 'Sign out' }));
+
+    expect(await screen.findByRole('heading', { name: 'Sign in to Hoak Dashboard' })).toBeInTheDocument();
+    expect(fetcher).toHaveBeenCalledWith('/api/v1/logout', {
+      method: 'POST',
+      credentials: 'include',
+      headers: undefined,
+      body: undefined,
+    });
   });
 });

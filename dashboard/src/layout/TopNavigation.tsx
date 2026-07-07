@@ -26,11 +26,14 @@ export function TopNavigation({ breadcrumb }: { breadcrumb: BreadcrumbItem[] }) 
         >
           <Moon className="h-4 w-4" />
         </button>
-        <span className="text-sm font-medium text-slate-700">{auth.user?.username}</span>
+        {auth.user?.avatarUrl ? <img alt="" className="h-8 w-8 rounded-full" src={auth.user.avatarUrl} /> : null}
+        <span className="text-sm font-medium text-slate-700">
+          {auth.user?.displayName ?? auth.user?.username ?? 'Authenticated user'}
+        </span>
         <button
           aria-label="Sign out"
           className="grid h-9 w-9 place-items-center rounded-md border border-slate-200 text-slate-700"
-          onClick={auth.signOut}
+          onClick={() => void auth.signOut()}
           type="button"
         >
           <LogOut className="h-4 w-4" />

@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
+import { useOptionalAuth } from '../auth/AuthContext.js';
 import type { GuildSummary } from '../contracts.js';
 
 export interface GuildContextValue {
@@ -11,15 +12,18 @@ export interface GuildContextValue {
 const GuildContext = createContext<GuildContextValue | undefined>(undefined);
 
 export function GuildProvider({ children, guilds = [] }: { children: ReactNode; guilds?: GuildSummary[] }) {
-  const [currentGuildId, setCurrentGuildId] = useState(guilds[0]?.id);
+  const auth = useOptionalAuth();
+  const [localGuildId, setLocalGuildId] = useState(guilds[0]?.id);
+  const sourceGuilds = auth && auth.guilds.length > 0 ? auth.guilds : guilds;
+  const selectedGuild = auth?.selectedGuild ?? sourceGuilds.find((guild) => guild.id === localGuildId) ?? sourceGuilds[0];
 
   const value = useMemo<GuildContextValue>(
     () => ({
-      guilds,
-      currentGuild: guilds.find((guild) => guild.id === currentGuildId),
-      setCurrentGuild: setCurrentGuildId,
+      guilds: sourceGuilds,
+      currentGuild: selectedGuild,
+      setCurrentGuild: auth?.setSelectedGuild ?? setLocalGuildId,
     }),
-    [currentGuildId, guilds],
+    [auth?.setSelectedGuild, selectedGuild, sourceGuilds],
   );
 
   return <GuildContext.Provider value={value}>{children}</GuildContext.Provider>;

@@ -10,12 +10,9 @@ describe('DashboardHome', () => {
 
     expect(screen.getByRole('heading', { name: 'Dashboard Home' })).toBeInTheDocument();
     expect(screen.getByText('Operational')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
-    expect(screen.getByText('Modules Enabled')).toBeInTheDocument();
-    expect(screen.getByText('Configured Modules')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Modules' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Guild' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'System Health' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'System' })).toBeInTheDocument();
 
     expect(screen.getByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Beta' })).toBeInTheDocument();

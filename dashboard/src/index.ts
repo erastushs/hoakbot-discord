@@ -8,7 +8,7 @@ export { DashboardHome } from './home/DashboardHome.js';
 export { Breadcrumb } from './layout/Breadcrumb.js';
 export { DashboardLayout } from './layout/DashboardLayout.js';
 export { Sidebar } from './layout/Sidebar.js';
-export { ThemeProvider, useTheme } from './layout/ThemeProvider.js';
+export { ThemeProvider } from './layout/ThemeProvider.js';
 export { TopNavigation } from './layout/TopNavigation.js';
 export { SettingControl } from './settings/SettingControl.js';
 export { SettingsRenderer } from './settings/SettingsRenderer.js';

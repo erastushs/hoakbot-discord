@@ -276,8 +276,8 @@ function DashboardShell({ api }: { api: APIClient }) {
 
 function DashboardLoadingState() {
   return (
-    <div aria-busy="true" aria-live="polite" className="grid gap-8" role="status">
-      <header className="mb-6 border-b border-dashboard-border-subtle pb-6">
+    <div aria-busy="true" aria-live="polite" className="grid gap-10" role="status">
+      <header className="mb-2 pb-2">
         <div className="flex flex-col gap-4 tablet:flex-row tablet:items-start tablet:justify-between">
           <div className="grid min-w-0 gap-3">
             <Skeleton className="h-8 w-56" />
@@ -290,21 +290,21 @@ function DashboardLoadingState() {
 
       <section className="grid gap-4">
         <div className="grid gap-2">
-          <Skeleton className="h-7 w-36" />
+          <Skeleton className="h-6 w-32" />
           <Skeleton className="h-4 w-72" />
         </div>
-        <div className="grid gap-4 tablet:grid-cols-3">
-          <Card className="grid gap-3">
+        <div className="grid gap-5 tablet:grid-cols-3">
+          <Card className="grid gap-3 p-5">
             <Skeleton className="h-5 w-5 rounded-full" />
             <Skeleton className="h-3 w-24" />
             <Skeleton className="h-6 w-36" />
           </Card>
-          <Card className="grid gap-3">
+          <Card className="grid gap-3 p-5">
             <Skeleton className="h-5 w-5 rounded-full" />
             <Skeleton className="h-3 w-28" />
             <Skeleton className="h-6 w-32" />
           </Card>
-          <Card className="grid gap-3">
+          <Card className="grid gap-3 p-5">
             <Skeleton className="h-5 w-5 rounded-full" />
             <Skeleton className="h-3 w-20" />
             <Skeleton className="h-6 w-40" />
@@ -317,7 +317,7 @@ function DashboardLoadingState() {
           <Skeleton className="h-7 w-44" />
           <Skeleton className="h-4 w-96 max-w-full" />
         </div>
-        <Card className="grid gap-5">
+        <Card className="grid gap-5 p-5">
           <Skeleton className="h-6 w-40" />
           <div className="grid gap-4">
             <Skeleton className="h-20 w-full" />
@@ -343,7 +343,7 @@ function DashboardStateMessage({
   title: string;
 }) {
   return (
-    <section className="rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-surface p-6 shadow-elevation-1">
+    <section className="rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-surface/82 p-6 shadow-elevation-1 backdrop-blur-xl">
       <h1 className="text-heading-m text-dashboard-text-primary">{title}</h1>
       <p className="mt-2 max-w-2xl text-small text-dashboard-text-secondary">{message}</p>
       {actionLabel && onAction ? (

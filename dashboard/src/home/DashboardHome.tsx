@@ -1,6 +1,6 @@
 import { Boxes, Building2 } from 'lucide-react';
 
-import { Button, Card, EmptyState, Section, SectionHeader, StatCard, StatusBadge } from '../components/index.js';
+import { Button, Card, EmptyState, Section, SectionHeader, StatusBadge } from '../components/index.js';
 import type { ModuleManifest } from '../contracts.js';
 import { useOptionalAuth } from '../auth/AuthContext.js';
 import { PageHeader } from '../layout/PageHeader.js';
@@ -17,7 +17,6 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
   const auth = useOptionalAuth();
   const guildName = auth?.selectedGuild?.name ?? 'Current guild';
   const orderedManifests = sortedManifests(manifests);
-  const featuredCount = manifests.filter((manifest) => manifest.dashboard?.homePage.featured).length;
   const hotReloadCount = manifests.filter((manifest) => manifest.supportsHotReload).length;
 
   return (
@@ -36,19 +35,6 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
           </span>
         </div>
       </PageHeader>
-
-      <Section>
-        <SectionHeader
-          description="High-level operational signals for this guild workspace."
-          title="Overview"
-        />
-        <div className="grid auto-rows-fr gap-5 tablet:grid-cols-2 desktop:grid-cols-4">
-          <StatCard description="Loaded from module manifests." label="Modules Enabled" value={manifests.length} />
-          <StatCard description="Featured for dashboard access." label="Configured Modules" value={featuredCount} />
-          <StatCard description="Dashboard API reachable." label="System Status" value="Healthy" />
-          <StatCard description={`${hotReloadCount} support hot reload.`} label="Bot Status" value="Online" />
-        </div>
-      </Section>
 
       <Section>
         <SectionHeader
@@ -128,7 +114,7 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
         </Section>
 
         <Section className="h-full">
-          <SectionHeader description="Current frontend-visible health indicators." title="System Health" />
+          <SectionHeader description="Current frontend-visible platform state." title="System" />
           <Card className="grid h-full content-start gap-3 p-5">
             <div className="flex items-center justify-between gap-3">
               <span className="text-small text-dashboard-text-secondary">Dashboard API</span>

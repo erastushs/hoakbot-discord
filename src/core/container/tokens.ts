@@ -13,6 +13,7 @@ import type { ManifestRegistry } from '../../modules/manifest-registry.js';
 import type { ModuleRegistry } from '../../modules/module-registry.js';
 import type { Client } from 'discord.js';
 import type { CommandRegistry } from '../../shared/command-registry.js';
+import type { IAuthProvider, IAuthorizationProvider, ISessionProvider } from '../auth/index.js';
 
 export const TOKENS = {
   Config: Symbol('config') as InjectionToken<ConfigService>,
@@ -29,4 +30,7 @@ export const TOKENS = {
   ManifestRegistry: Symbol('manifestRegistry') as InjectionToken<ManifestRegistry>,
   ModuleRegistry: Symbol('moduleRegistry') as InjectionToken<ModuleRegistry>,
   ConfigProvider: Symbol('configProvider') as InjectionToken<IConfigProvider>,
+  AuthProvider: Symbol('authProvider') as InjectionToken<IAuthProvider>,
+  SessionProvider: Symbol('sessionProvider') as InjectionToken<ISessionProvider>,
+  AuthorizationProvider: Symbol('authorizationProvider') as InjectionToken<IAuthorizationProvider>,
 } as const;

@@ -41,8 +41,23 @@ describe('session authentication middleware', () => {
     router.register(endpoint('/auth/login', 'public'));
     router.register(endpoint('/auth/callback', 'public'));
 
-    await expect(router.handle({ method: 'GET', path: '/api/v1/auth/login' })).resolves.toMatchObject({ success: true });
-    await expect(router.handle({ method: 'GET', path: '/api/v1/auth/callback' })).resolves.toMatchObject({ success: true });
+    await expect(router.handle({ method: 'GET', path: '/api/v1/auth/login' })).resolves.toMatchObject({
+      success: true,
+    });
+    await expect(router.handle({ method: 'GET', path: '/api/v1/auth/callback' })).resolves.toMatchObject({
+      success: true,
+    });
+  });
+
+  it('allows system health without a session', async () => {
+    const router = new APIRouter();
+    router.use(createSessionAuthMiddleware({ sessionProvider: sessionProvider(false), sessionConfig }));
+    router.register(endpoint('/system/health', 'public'));
+
+    await expect(router.handle({ method: 'GET', path: '/api/v1/system/health' })).resolves.toMatchObject({
+      success: true,
+      data: { reached: true },
+    });
   });
 
   it('returns 401 for protected dashboard API endpoints without a valid session', async () => {

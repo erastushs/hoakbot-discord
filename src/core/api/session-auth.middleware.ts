@@ -2,7 +2,7 @@ import type { ISessionProvider, SessionConfig, SessionRecord } from '../auth/ind
 import { fail } from './responses.js';
 import type { APIMiddleware } from './types.js';
 
-const PUBLIC_AUTH_PATHS = new Set(['/auth/login', '/auth/callback']);
+const PUBLIC_AUTH_PATHS = new Set(['/auth/login', '/auth/callback', '/system/health']);
 
 export interface SessionAuthMiddlewareDependencies {
   readonly sessionProvider: ISessionProvider;

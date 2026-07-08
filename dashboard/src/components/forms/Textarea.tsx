@@ -21,7 +21,7 @@ export function Textarea({ className, description, error, id, label, ...props }:
         aria-describedby={[descriptionId, errorId].filter(Boolean).join(' ') || undefined}
         aria-invalid={Boolean(error) || undefined}
         className={cx(
-          'min-h-24 rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-control/62 px-3 py-2.5 text-small text-dashboard-text-primary shadow-elevation-0 backdrop-blur-xl transition duration-hover ease-dashboard placeholder:text-dashboard-text-disabled hover:border-dashboard-accent-primary/50 hover:bg-dashboard-bg-control/82 focus:border-dashboard-accent-primary focus:bg-dashboard-bg-control/90 focus:outline-none focus:ring-2 focus:ring-dashboard-focus-ring/24 disabled:cursor-not-allowed disabled:border-dashboard-border-subtle disabled:bg-dashboard-bg-muted disabled:text-dashboard-text-disabled disabled:opacity-70',
+          'min-h-24 w-full rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-control/62 px-3 py-2.5 text-small text-dashboard-text-primary shadow-elevation-0 backdrop-blur-xl transition duration-hover ease-dashboard placeholder:text-dashboard-text-disabled hover:border-dashboard-accent-primary/50 hover:bg-dashboard-bg-control/82 focus:border-dashboard-accent-primary focus:bg-dashboard-bg-control/90 focus:outline-none focus:ring-2 focus:ring-dashboard-focus-ring/24 disabled:cursor-not-allowed disabled:border-dashboard-border-subtle disabled:bg-dashboard-bg-muted disabled:text-dashboard-text-disabled disabled:opacity-70',
           className,
         )}
         id={textareaId}

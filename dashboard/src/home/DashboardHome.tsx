@@ -18,7 +18,7 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
   const orderedManifests = sortedManifests(manifests);
 
   return (
-    <div className="grid gap-10">
+    <div className="grid gap-6 tablet:gap-8 wide:gap-10">
       <PageHeader
         description={`Configure modules for ${guildName} from the current authenticated Discord workspace.`}
         title="Dashboard Home"
@@ -30,7 +30,7 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
           title="Modules"
         />
         {orderedManifests.length > 0 ? (
-          <div className="grid auto-rows-fr gap-5 tablet:grid-cols-2 desktop:grid-cols-3">
+          <div className="grid auto-rows-fr gap-4 tablet:grid-cols-2 wide:grid-cols-3 wide:gap-5">
             {orderedManifests.map((manifest) => (
               <Card className="grid h-full gap-5 p-5" key={manifest.id}>
                 <div className="min-w-0">
@@ -38,7 +38,7 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
                   <p className="text-caption text-dashboard-text-tertiary">v{manifest.version}</p>
                 </div>
                 <p className="text-small text-dashboard-text-secondary">{manifest.description}</p>
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-caption font-medium text-dashboard-text-tertiary">{manifest.category}</span>
                   <Button
                     onClick={() => {
@@ -61,7 +61,7 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
         )}
       </Section>
 
-      <div className="grid gap-5 desktop:grid-cols-[1fr_360px]">
+      <div className="grid gap-4 tablet:grid-cols-2 wide:grid-cols-[1fr_360px] wide:gap-5">
         <Section className="h-full">
           <SectionHeader
             description="Current selected workspace from the authenticated session."
@@ -75,7 +75,7 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
                 <p className="text-small text-dashboard-text-secondary">Selected guild workspace</p>
               </div>
             </div>
-            <div className="grid gap-3 pt-2 tablet:grid-cols-2">
+            <div className="grid gap-3 pt-2">
               <div>
                 <p className="text-caption uppercase tracking-[0.16em] text-dashboard-text-tertiary">Available modules</p>
                 <p className="mt-1 text-body font-semibold text-dashboard-text-primary">{manifests.length}</p>
@@ -104,7 +104,7 @@ function guildInitial(name: string): string {
 
 function SystemRow({ label, status, value }: { label: string; status: 'info' | 'success' | 'warning'; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-3">
       <span className="text-small text-dashboard-text-secondary">{label}</span>
       <span className="inline-flex items-center gap-2 text-small font-medium text-dashboard-text-primary">
         <span aria-hidden className={`h-2 w-2 rounded-full ${statusClassName(status)}`} />

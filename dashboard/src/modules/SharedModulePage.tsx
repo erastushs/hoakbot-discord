@@ -62,7 +62,7 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
   const moduleSummary = moduleSummaryLabel(manifest);
 
   return (
-    <div className="grid gap-10">
+    <div className="grid gap-6 tablet:gap-8 wide:gap-10">
       <PageHeader
         actions={
           <Button disabled={!onSave || dirtyKeys.size === 0 || saveStatus === 'saving'} onClick={() => void save()} variant="primary">
@@ -75,7 +75,7 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
 
       <Section>
         <SectionHeader description={`${manifest.name} controls are rendered from existing module metadata and current settings values.`} title="Overview" />
-        <div className="grid gap-5 tablet:grid-cols-3">
+        <div className="grid gap-4 tablet:grid-cols-2 wide:grid-cols-3 wide:gap-5">
           <Card className="grid gap-3 p-5">
             <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Module</p>
             <p className="text-heading-m text-dashboard-text-primary">{moduleSummary}</p>
@@ -119,8 +119,8 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
                 </Card>
               );
             })}
-            <div className="sticky bottom-4 z-sticky rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-surface/82 p-3 shadow-elevation-2 backdrop-blur-2xl">
-              <div className="flex flex-col gap-3 tablet:flex-row tablet:items-center tablet:justify-between">
+            <div className="sticky bottom-3 z-sticky rounded-2xl border border-dashboard-border-subtle bg-dashboard-bg-surface/82 p-3 shadow-elevation-2 backdrop-blur-2xl tablet:bottom-4">
+              <div className="flex flex-col gap-3 wide:flex-row wide:items-center wide:justify-between">
                 <div className="min-w-0">
                   <p className="text-small font-medium text-dashboard-text-primary">Configuration changes</p>
                   <p className="text-caption text-dashboard-text-secondary">
@@ -131,7 +131,7 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
                   {saveStatus === 'saved' ? <span className="text-small font-medium text-dashboard-success">Saved</span> : null}
                   {saveStatus === 'error' ? <span className="text-small font-medium text-dashboard-danger">Save failed</span> : null}
                   {error ? <span className="text-small text-dashboard-danger" role="alert">{error}</span> : null}
-                  <Button disabled={!onSave || dirtyKeys.size === 0 || saveStatus === 'saving'} isLoading={saveStatus === 'saving'} onClick={() => void save()} variant="primary">
+                  <Button className="w-full tablet:w-auto" disabled={!onSave || dirtyKeys.size === 0 || saveStatus === 'saving'} isLoading={saveStatus === 'saving'} onClick={() => void save()} variant="primary">
                     {saveStatus === 'saving' ? 'Saving' : 'Save changes'}
                   </Button>
                 </div>
@@ -143,7 +143,7 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
         )}
       </Section>
 
-      <div className="grid gap-5 desktop:grid-cols-[1fr_360px]">
+      <div className="grid gap-4 wide:grid-cols-[1fr_360px] wide:gap-5">
         <Section>
           <SectionHeader description="Existing authorization protects reads and writes for this module." title="Access" />
           <Card className="grid gap-4 p-5">

@@ -241,6 +241,14 @@ textarea {
   z-index: var(--z-sticky);
 }
 
+.z-dropdown {
+  z-index: var(--z-dropdown);
+}
+
+.z-drawer {
+  z-index: var(--z-drawer);
+}
+
 @keyframes dashboard-page-in {
   from {
     opacity: 0;
@@ -250,6 +258,16 @@ textarea {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes dashboard-overlay-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }
 

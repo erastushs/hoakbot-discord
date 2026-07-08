@@ -1,5 +1,5 @@
 import { ChevronDown, Home, LogOut } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 
 import { GuildSwitcher } from '../guilds/GuildSwitcher.js';
 import type { ModuleManifest } from '../contracts.js';
@@ -26,8 +26,25 @@ function groupManifests(manifests: ModuleManifest[]): Array<[string, ModuleManif
   ]);
 }
 
-export function Sidebar({ isLoading = false, manifests }: { isLoading?: boolean; manifests: ModuleManifest[] }) {
+export function Sidebar({
+  drawerId,
+  isDesktop,
+  isDrawerOpen,
+  isLoading = false,
+  manifests,
+  onClose,
+  onNavigate,
+}: {
+  drawerId: string;
+  isDesktop: boolean;
+  isDrawerOpen: boolean;
+  isLoading?: boolean;
+  manifests: ModuleManifest[];
+  onClose(): void;
+  onNavigate(): void;
+}) {
   const auth = useAuth();
+  const sidebarRef = useRef<HTMLElement>(null);
   const currentPath = window.location.pathname;
   const displayName = auth.user?.displayName ?? auth.user?.username;
   const username = auth.user?.username ?? auth.user?.id;
@@ -45,19 +62,76 @@ export function Sidebar({ isLoading = false, manifests }: { isLoading?: boolean;
     setExpandedGroups((current) => ({ ...current, [key]: !current[key] }));
   }
 
+  useEffect(() => {
+    if (!isDrawerOpen || isDesktop) {
+      return;
+    }
+
+    const firstFocusable = getFocusableElements(sidebarRef.current)[0];
+    firstFocusable?.focus();
+  }, [isDesktop, isDrawerOpen]);
+
+  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (isDesktop || !isDrawerOpen) {
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+
+    if (event.key !== 'Tab') {
+      return;
+    }
+
+    const focusableElements = getFocusableElements(sidebarRef.current);
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    if (!firstElement || !lastElement) {
+      return;
+    }
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+      return;
+    }
+
+    if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  }
+
   return (
-    <aside className="fixed inset-y-0 left-0 z-sticky hidden w-sidebar flex-col border-r border-white/8 bg-dashboard-bg-sidebar/90 px-2.5 py-3.5 shadow-elevation-2 backdrop-blur-2xl desktop:flex">
+    <aside
+      aria-hidden={!isDesktop && !isDrawerOpen}
+      className={`fixed inset-y-0 left-0 z-drawer flex w-sidebar flex-col border-r border-white/8 bg-dashboard-bg-sidebar/90 px-2.5 py-3.5 shadow-elevation-2 backdrop-blur-2xl transition-transform duration-hover ease-dashboard wide:z-sticky wide:translate-x-0 ${
+        isDrawerOpen || isDesktop ? 'translate-x-0' : '-translate-x-full'
+      }`}
+      id={drawerId}
+      onKeyDown={handleKeyDown}
+      ref={sidebarRef}
+    >
       <a
         className="flex h-9 cursor-pointer items-center gap-2 rounded-lg px-2 text-small font-semibold text-dashboard-text-primary transition duration-hover ease-dashboard hover:bg-dashboard-accent-muted/45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring"
         href="/"
+        onClick={onNavigate}
       >
         <BotAvatar className="rounded-lg ring-1 ring-white/10" />
         <span className="tracking-tight">Hoak Dashboard</span>
       </a>
 
       <nav aria-label="Primary" className="mt-6 space-y-5 overflow-y-auto pr-1">
-        <SidebarGroup expanded={expandedGroups.dashboard} groupKey="dashboard" onToggle={toggleGroup} title="Dashboard">
-          <SidebarLink active={currentPath === '/'} href="/" icon={<Home className="h-4 w-4" />} label="Dashboard" />
+          <SidebarGroup expanded={expandedGroups.dashboard} groupKey="dashboard" onToggle={toggleGroup} title="Dashboard">
+          <SidebarLink active={currentPath === '/'} href="/" icon={<Home className="h-4 w-4" />} label="Dashboard" onNavigate={onNavigate} />
         </SidebarGroup>
 
         {showModuleSkeletons || moduleGroups.length > 0 ? (
@@ -77,6 +151,7 @@ export function Sidebar({ isLoading = false, manifests }: { isLoading?: boolean;
                       active={currentPath === `/modules/${encodeURIComponent(manifest.id)}`}
                       key={manifest.id}
                       label={manifest.name}
+                      onNavigate={onNavigate}
                     />
                   )),
                 )}
@@ -156,7 +231,7 @@ function SidebarGroup({ children, expanded, groupKey, onToggle, title }: { child
   );
 }
 
-function SidebarLink({ active = false, href, icon, label }: { active?: boolean; href: string; icon?: ReactNode; label: string }) {
+function SidebarLink({ active = false, href, icon, label, onNavigate }: { active?: boolean; href: string; icon?: ReactNode; label: string; onNavigate(): void }) {
   return (
     <a
       aria-current={active ? 'page' : undefined}
@@ -166,9 +241,20 @@ function SidebarLink({ active = false, href, icon, label }: { active?: boolean; 
           : 'border-transparent bg-dashboard-bg-page/28 text-dashboard-text-secondary hover:border-dashboard-accent-primary/28 hover:bg-dashboard-accent-muted/32 hover:text-dashboard-text-primary focus-visible:bg-dashboard-accent-muted/36'
       }`}
       href={href}
+      onClick={onNavigate}
     >
       {icon ? <span className={`grid h-4.5 w-4.5 place-items-center transition duration-hover ${active ? 'text-dashboard-accent-hover' : 'text-dashboard-text-tertiary group-hover:text-dashboard-accent-hover'}`}>{icon}</span> : null}
       <span className="truncate">{label}</span>
     </a>
+  );
+}
+
+function getFocusableElements(container: HTMLElement | null): HTMLElement[] {
+  if (!container) {
+    return [];
+  }
+
+  return [...container.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), select:not([disabled]), textarea:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')].filter(
+    (element) => !element.hasAttribute('disabled') && element.tabIndex !== -1,
   );
 }

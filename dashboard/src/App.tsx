@@ -277,7 +277,7 @@ function DashboardShell({ api }: { api: APIClient }) {
 function DashboardLoadingState({ moduleId }: { moduleId?: string }) {
   if (moduleId) {
     return (
-      <div aria-busy="true" aria-live="polite" className="grid gap-10" role="status">
+      <div aria-busy="true" aria-live="polite" className="grid gap-6 tablet:gap-8 wide:gap-10" role="status">
         <header className="mb-2 pb-2">
           <div className="flex flex-col gap-4 tablet:flex-row tablet:items-start tablet:justify-between">
             <div className="grid min-w-0 gap-3">
@@ -294,7 +294,7 @@ function DashboardLoadingState({ moduleId }: { moduleId?: string }) {
             <Skeleton className="h-6 w-32" />
             <Skeleton className="h-4 w-96 max-w-full" />
           </div>
-          <div className="grid gap-5 tablet:grid-cols-3">
+          <div className="grid gap-4 tablet:grid-cols-2 wide:grid-cols-3 wide:gap-5">
             <Card className="grid gap-3 p-5"><Skeleton className="h-3 w-24" /><Skeleton className="h-7 w-36" /></Card>
             <Card className="grid gap-3 p-5"><Skeleton className="h-3 w-28" /><Skeleton className="h-7 w-32" /></Card>
           </div>
@@ -314,7 +314,7 @@ function DashboardLoadingState({ moduleId }: { moduleId?: string }) {
   }
 
   return (
-    <div aria-busy="true" aria-live="polite" className="grid gap-10" role="status">
+      <div aria-busy="true" aria-live="polite" className="grid gap-6 tablet:gap-8 wide:gap-10" role="status">
       <header className="mb-2 pb-2">
         <div className="flex flex-col gap-4 tablet:flex-row tablet:items-start tablet:justify-between">
           <div className="grid min-w-0 gap-3">
@@ -331,7 +331,7 @@ function DashboardLoadingState({ moduleId }: { moduleId?: string }) {
           <Skeleton className="h-6 w-32" />
           <Skeleton className="h-4 w-72" />
         </div>
-        <div className="grid gap-5 tablet:grid-cols-3">
+        <div className="grid gap-4 tablet:grid-cols-2 wide:grid-cols-3 wide:gap-5">
           <Card className="grid gap-3 p-5">
             <Skeleton className="h-5 w-5 rounded-full" />
             <Skeleton className="h-3 w-24" />

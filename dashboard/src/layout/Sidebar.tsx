@@ -1,5 +1,5 @@
-import { Home, LogOut } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { ChevronDown, Home, LogOut } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 
 import { GuildSwitcher } from '../guilds/GuildSwitcher.js';
 import type { ModuleManifest } from '../contracts.js';
@@ -32,6 +32,16 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
   const displayName = auth.user?.displayName ?? auth.user?.username ?? 'Authenticated user';
   const username = auth.user?.username ?? auth.user?.id ?? 'Discord user';
   const userInitial = displayName.trim().charAt(0).toUpperCase() || 'H';
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    administration: false,
+    dashboard: true,
+    modules: true,
+    settings: false,
+  });
+
+  function toggleGroup(key: string) {
+    setExpandedGroups((current) => ({ ...current, [key]: !current[key] }));
+  }
 
   return (
     <aside className="fixed inset-y-0 left-0 z-sticky hidden w-sidebar flex-col border-r border-white/8 bg-dashboard-bg-sidebar/90 px-2.5 py-3.5 shadow-elevation-2 backdrop-blur-2xl desktop:flex">
@@ -44,11 +54,11 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
       </a>
 
       <nav aria-label="Primary" className="mt-6 space-y-5 overflow-y-auto pr-1">
-        <SidebarGroup title="Dashboard">
+        <SidebarGroup expanded={expandedGroups.dashboard} groupKey="dashboard" onToggle={toggleGroup} title="Dashboard">
           <SidebarLink active={currentPath === '/'} href="/" icon={<Home className="h-4 w-4" />} label="Dashboard" />
         </SidebarGroup>
 
-        <SidebarGroup title="Modules">
+        <SidebarGroup expanded={expandedGroups.modules} groupKey="modules" onToggle={toggleGroup} title="Modules">
           <nav aria-label="Modules" className="space-y-1">
             {groupManifests(manifests).flatMap(([, entries]) =>
               entries.map((manifest) => (
@@ -62,6 +72,10 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
             )}
           </nav>
         </SidebarGroup>
+
+        <SidebarGroup expanded={expandedGroups.administration} groupKey="administration" onToggle={toggleGroup} title="Administration" />
+
+        <SidebarGroup expanded={expandedGroups.settings} groupKey="settings" onToggle={toggleGroup} title="Settings" />
       </nav>
 
       <div className="mt-auto space-y-2.5 pt-3">
@@ -86,11 +100,29 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
   );
 }
 
-function SidebarGroup({ children, title }: { children: ReactNode; title: string }) {
+function SidebarGroup({ children, expanded, groupKey, onToggle, title }: { children?: ReactNode; expanded: boolean; groupKey: string; onToggle(groupKey: string): void; title: string }) {
+  const contentId = `sidebar-${groupKey}-content`;
+
   return (
     <section>
-      <h2 className="px-2 text-[0.65rem] font-semibold uppercase tracking-[0.17em] text-dashboard-text-tertiary">{title}</h2>
-      <div className="mt-2 space-y-1">{children}</div>
+      <button
+        aria-controls={contentId}
+        aria-expanded={expanded}
+        className="flex w-full cursor-pointer items-center justify-between rounded-lg px-2 py-1 text-left text-[0.65rem] font-semibold uppercase tracking-[0.17em] text-dashboard-text-tertiary transition duration-hover ease-dashboard hover:bg-dashboard-accent-muted/32 hover:text-dashboard-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring"
+        onClick={() => onToggle(groupKey)}
+        type="button"
+      >
+        <span>{title}</span>
+        <ChevronDown aria-hidden className={`h-3.5 w-3.5 transition duration-hover ease-dashboard ${expanded ? 'rotate-0' : '-rotate-90'}`} />
+      </button>
+      <div
+        className={`grid overflow-hidden transition-all duration-hover ease-dashboard ${expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+        id={contentId}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="mt-2 space-y-1">{children}</div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -99,7 +131,7 @@ function SidebarLink({ active = false, href, icon, label }: { active?: boolean; 
   return (
     <a
       aria-current={active ? 'page' : undefined}
-      className={`group flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1.5 text-[0.8125rem] font-medium transition duration-hover ease-dashboard focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring ${
+      className={`group flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1.5 text-[0.8125rem] font-medium transition duration-hover ease-dashboard motion-safe:hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring ${
         active
           ? 'border-dashboard-accent-primary/42 bg-dashboard-accent-muted/58 text-dashboard-text-primary shadow-elevation-1'
           : 'border-transparent bg-dashboard-bg-page/28 text-dashboard-text-secondary hover:border-dashboard-accent-primary/28 hover:bg-dashboard-accent-muted/32 hover:text-dashboard-text-primary focus-visible:bg-dashboard-accent-muted/36'

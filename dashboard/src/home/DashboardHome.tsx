@@ -87,10 +87,10 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
         <Section className="h-full">
           <SectionHeader description="Frontend-visible platform state from current dashboard data." title="System" />
           <Card className="grid h-full content-start gap-3 p-5">
-            <SystemRow label="Dashboard API" value="Online" />
-            <SystemRow label="Authentication" value="Protected" />
-            <SystemRow label="Module metadata" value={manifests.length > 0 ? 'Loaded' : 'Empty'} />
-            <SystemRow label="Configuration" value="Metadata driven" />
+            <SystemRow label="Dashboard API" status="success" value="Online" />
+            <SystemRow label="Authentication" status="info" value="Protected" />
+            <SystemRow label="Module metadata" status={manifests.length > 0 ? 'success' : 'warning'} value={manifests.length > 0 ? 'Loaded' : 'Empty'} />
+            <SystemRow label="Configuration" status="info" value="Metadata driven" />
           </Card>
         </Section>
       </div>
@@ -102,11 +102,26 @@ function guildInitial(name: string): string {
   return name.trim().charAt(0).toUpperCase() || 'G';
 }
 
-function SystemRow({ label, value }: { label: string; value: string }) {
+function SystemRow({ label, status, value }: { label: string; status: 'info' | 'success' | 'warning'; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-small text-dashboard-text-secondary">{label}</span>
-      <span className="text-small font-medium text-dashboard-text-primary">{value}</span>
+      <span className="inline-flex items-center gap-2 text-small font-medium text-dashboard-text-primary">
+        <span aria-hidden className={`h-2 w-2 rounded-full ${statusClassName(status)}`} />
+        {value}
+      </span>
     </div>
   );
+}
+
+function statusClassName(status: 'info' | 'success' | 'warning'): string {
+  if (status === 'success') {
+    return 'bg-dashboard-success shadow-[0_0_12px_oklch(0.7_0.085_155_/_0.42)]';
+  }
+
+  if (status === 'warning') {
+    return 'bg-dashboard-warning shadow-[0_0_12px_oklch(0.77_0.085_82_/_0.42)]';
+  }
+
+  return 'bg-dashboard-info shadow-[0_0_12px_oklch(0.7_0.06_235_/_0.42)]';
 }

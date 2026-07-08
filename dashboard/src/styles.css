@@ -267,10 +267,12 @@ textarea {
 .dashboard-shell-background {
   position: relative;
   isolation: isolate;
+  overflow: hidden;
   background:
-    radial-gradient(circle at 18% 12%, oklch(0.6 0.038 300 / 0.08), transparent 25rem),
-    radial-gradient(circle at 86% 22%, oklch(0.62 0.03 210 / 0.06), transparent 28rem),
-    linear-gradient(145deg, oklch(0.21 0.022 274 / 0.96), oklch(0.18 0.018 255 / 0.98));
+    radial-gradient(circle at 20% 16%, oklch(0.64 0.055 310 / 0.16), transparent 25rem),
+    radial-gradient(circle at 82% 24%, oklch(0.64 0.042 185 / 0.1), transparent 28rem),
+    radial-gradient(circle at 50% 86%, oklch(0.48 0.04 260 / 0.11), transparent 26rem),
+    linear-gradient(145deg, oklch(0.19 0.02 275), oklch(0.15 0.015 250));
 }
 
 .dashboard-shell-background::before {
@@ -280,8 +282,9 @@ textarea {
   pointer-events: none;
   content: '';
   background:
-    radial-gradient(circle at 38% 8%, oklch(0.72 0.032 330 / 0.04), transparent 20rem),
-    radial-gradient(circle at 66% 88%, oklch(0.64 0.028 155 / 0.035), transparent 24rem);
+    radial-gradient(circle at 24% 20%, oklch(0.68 0.038 310 / 0.055), transparent 18rem),
+    radial-gradient(circle at 74% 74%, oklch(0.62 0.03 170 / 0.045), transparent 22rem),
+    radial-gradient(circle at 46% 102%, oklch(0.55 0.03 250 / 0.04), transparent 26rem);
   filter: blur(44px);
 }
 

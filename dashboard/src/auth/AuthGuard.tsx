@@ -8,7 +8,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   const auth = useAuth();
 
   if (auth.status === 'loading') {
-    return <AuthStatePanel message="Checking your dashboard session." title="Loading session" />;
+    return <>{children}</>;
   }
 
   if (!auth.authenticated) {

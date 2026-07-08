@@ -256,7 +256,7 @@ function DashboardShell({ api }: { api: APIClient }) {
     <AuthGuard>
       <DashboardLayout breadcrumb={breadcrumb} manifests={state.manifests}>
         {state.status === 'loading' ? (
-          <DashboardLoadingState />
+          <DashboardLoadingState moduleId={moduleId} />
         ) : state.status === 'error' ? (
           <DashboardStateMessage
             actionLabel="Retry"
@@ -274,7 +274,45 @@ function DashboardShell({ api }: { api: APIClient }) {
   );
 }
 
-function DashboardLoadingState() {
+function DashboardLoadingState({ moduleId }: { moduleId?: string }) {
+  if (moduleId) {
+    return (
+      <div aria-busy="true" aria-live="polite" className="grid gap-10" role="status">
+        <header className="mb-2 pb-2">
+          <div className="flex flex-col gap-4 tablet:flex-row tablet:items-start tablet:justify-between">
+            <div className="grid min-w-0 gap-3">
+              <Skeleton className="h-8 w-56" />
+              <Skeleton className="h-4 w-full max-w-2xl" />
+              <Skeleton className="h-4 w-80 max-w-full" />
+            </div>
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </header>
+
+        <section className="grid gap-4 rounded-2xl bg-dashboard-bg-section/54 p-4 shadow-elevation-1 backdrop-blur-xl tablet:p-5">
+          <div className="grid gap-2">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-4 w-96 max-w-full" />
+          </div>
+          <div className="grid gap-5 tablet:grid-cols-3">
+            <Card className="grid gap-3 p-5"><Skeleton className="h-3 w-24" /><Skeleton className="h-7 w-36" /></Card>
+            <Card className="grid gap-3 p-5"><Skeleton className="h-3 w-28" /><Skeleton className="h-7 w-32" /></Card>
+          </div>
+        </section>
+
+        <section className="grid gap-4 rounded-2xl bg-dashboard-bg-section/54 p-4 shadow-elevation-1 backdrop-blur-xl tablet:p-5">
+          <Skeleton className="h-6 w-40" />
+          <Card className="grid gap-4 p-5">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </Card>
+        </section>
+        <span className="sr-only">Loading module dashboard content</span>
+      </div>
+    );
+  }
+
   return (
     <div aria-busy="true" aria-live="polite" className="grid gap-10" role="status">
       <header className="mb-2 pb-2">

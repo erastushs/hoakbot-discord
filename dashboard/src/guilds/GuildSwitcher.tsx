@@ -11,7 +11,6 @@ export function GuildSwitcher() {
     <label className="grid gap-1.5 text-caption font-medium uppercase tracking-[0.17em] text-dashboard-text-tertiary">
       <span>Guild</span>
       <span className="relative block">
-        {currentGuild ? <Avatar alt={currentGuild.name} className="pointer-events-none absolute left-3 top-2 h-6 w-6" fallback={guildInitial(currentGuild.name)} size="sm" src={currentGuild.iconUrl} /> : null}
         {hasMultipleGuilds ? (
           <>
             <select
@@ -28,17 +27,21 @@ export function GuildSwitcher() {
                 </option>
               ))}
             </select>
+            {currentGuild ? <Avatar alt={currentGuild.name} className="pointer-events-none absolute left-3 top-2 z-sticky h-6 w-6 shadow-elevation-1" fallback={guildInitial(currentGuild.name)} size="sm" src={currentGuild.iconUrl} /> : null}
             <ChevronDown aria-hidden className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-dashboard-text-tertiary" />
           </>
         ) : (
-          <span
-            aria-label="Current guild"
-            className={`flex h-10 w-full items-center rounded-lg border border-white/5 bg-dashboard-bg-page/48 pr-3 text-small font-medium text-dashboard-text-primary shadow-elevation-0 backdrop-blur-xl ${
-              currentGuild ? 'pl-11' : 'px-3'
-            }`}
-          >
-            <span className="truncate">{currentGuild?.name ?? 'No guild selected'}</span>
-          </span>
+          <>
+            <span
+              aria-label="Current guild"
+              className={`flex h-10 w-full items-center rounded-lg border border-white/5 bg-dashboard-bg-page/48 pr-3 text-small font-medium text-dashboard-text-primary shadow-elevation-0 backdrop-blur-xl ${
+                currentGuild ? 'pl-11' : 'px-3'
+              }`}
+            >
+              <span className="truncate">{currentGuild?.name ?? 'No guild selected'}</span>
+            </span>
+            {currentGuild ? <Avatar alt={currentGuild.name} className="pointer-events-none absolute left-3 top-2 z-sticky h-6 w-6 shadow-elevation-1" fallback={guildInitial(currentGuild.name)} size="sm" src={currentGuild.iconUrl} /> : null}
+          </>
         )}
       </span>
     </label>

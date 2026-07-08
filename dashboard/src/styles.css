@@ -28,9 +28,6 @@
   --color-dashboard-info: var(--color-info);
   --color-dashboard-focus-ring: var(--color-focus-ring);
 
-  --text-heading-xl: 1.875rem;
-  --text-heading-xl--line-height: 2.375rem;
-  --text-heading-xl--font-weight: 700;
   --text-heading-l: 1.5rem;
   --text-heading-l--line-height: 2rem;
   --text-heading-l--font-weight: 600;
@@ -43,8 +40,6 @@
   --text-small--line-height: 1.25rem;
   --text-caption: 0.75rem;
   --text-caption--line-height: 1rem;
-  --text-code: 0.875rem;
-  --text-code--line-height: 1.25rem;
 
   --spacing-0: 0;
   --spacing-1: 0.25rem;
@@ -57,12 +52,8 @@
   --spacing-10: 2.5rem;
   --spacing-12: 3rem;
   --spacing-sidebar: var(--sidebar-width);
-  --spacing-sidebar-collapsed: var(--sidebar-collapsed-width);
   --spacing-header: var(--header-height);
   --spacing-page: var(--page-max-width);
-  --spacing-page-wide: var(--page-wide-max-width);
-  --spacing-form: var(--form-max-width);
-  --spacing-table-min: var(--table-min-width);
 
   --radius-xs: var(--radius-xs);
   --radius-sm: var(--radius-sm);
@@ -78,9 +69,6 @@
   --ease-dashboard: cubic-bezier(0.16, 1, 0.3, 1);
   --animate-duration-hover: var(--duration-hover);
   --animate-duration-focus: var(--duration-focus);
-  --animate-duration-dialog: var(--duration-dialog);
-  --animate-duration-sidebar: var(--duration-sidebar);
-  --animate-duration-toast: var(--duration-toast);
   --animate-duration-page: var(--duration-page);
 
   --breakpoint-mobile: 40rem;
@@ -145,29 +133,15 @@
 
   --duration-hover: 150ms;
   --duration-focus: 150ms;
-  --duration-dropdown: 180ms;
-  --duration-dialog: 220ms;
-  --duration-sidebar: 250ms;
-  --duration-toast: 220ms;
   --duration-page: 250ms;
 
-  --z-base: 0;
   --z-sticky: 20;
   --z-dropdown: 40;
   --z-drawer: 50;
-  --z-dialog: 60;
-  --z-toast: 70;
 
   --sidebar-width: 16.5rem;
-  --sidebar-collapsed-width: 4.5rem;
   --header-height: 4rem;
   --page-max-width: 75rem;
-  --page-wide-max-width: 90rem;
-  --container-padding-desktop: 2rem;
-  --container-padding-tablet: 1.5rem;
-  --container-padding-mobile: 1rem;
-  --form-max-width: 45rem;
-  --table-min-width: 45rem;
 
   color: var(--color-text-primary);
   background: var(--color-bg-app);
@@ -365,13 +339,6 @@ textarea {
   }
 }
 
-@utility text-heading-xl {
-  font-size: 1.875rem;
-  font-weight: 650;
-  line-height: 2.375rem;
-  letter-spacing: -0.025em;
-}
-
 @utility text-heading-l {
   font-size: 1.375rem;
   font-weight: 620;
@@ -399,10 +366,4 @@ textarea {
 @utility text-caption {
   font-size: 0.75rem;
   line-height: 1rem;
-}
-
-@utility text-code {
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  line-height: 1.25rem;
 }

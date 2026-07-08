@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from 'react';
+import { useEffect, useState } from 'react';
 
 import { cx } from '../utils.js';
 
@@ -10,16 +10,30 @@ const sizeClasses: Record<AvatarSize, string> = {
   lg: 'h-12 w-12 text-body',
 };
 
-export interface AvatarProps extends HTMLAttributes<HTMLSpanElement> {
+export interface AvatarProps {
   alt?: string;
+  className?: string;
   fallback?: string;
   size?: AvatarSize;
   src?: string;
 }
 
-export function Avatar({ alt = '', className, fallback = 'H', size = 'md', src, ...props }: AvatarProps) {
-  if (src) {
-    return <img alt={alt} className={cx('rounded-full object-cover', sizeClasses[size], className)} src={src} />;
+export function Avatar({ alt = '', className, fallback = 'H', size = 'md', src }: AvatarProps) {
+  const [failedSrc, setFailedSrc] = useState<string>();
+
+  useEffect(() => {
+    setFailedSrc(undefined);
+  }, [src]);
+
+  if (src && failedSrc !== src) {
+    return (
+      <img
+        alt={alt}
+        className={cx('rounded-full object-cover', sizeClasses[size], className)}
+        onError={() => setFailedSrc(src)}
+        src={src}
+      />
+    );
   }
 
   return (
@@ -29,7 +43,6 @@ export function Avatar({ alt = '', className, fallback = 'H', size = 'md', src, 
         sizeClasses[size],
         className,
       )}
-      {...props}
     >
       {fallback.slice(0, 2).toUpperCase()}
     </span>

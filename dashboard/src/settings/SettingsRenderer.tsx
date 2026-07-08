@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { Button, StatusBadge } from '../components/index.js';
+import { Button } from '../components/index.js';
 import type { SettingMetadata } from '../contracts.js';
 import { SettingControl } from './SettingControl.js';
 
@@ -76,7 +76,7 @@ export function SettingsRenderer({
           >
             {saveStatus === 'saving' ? 'Saving' : 'Save changes'}
           </Button>
-          {saveStatus === 'saved' ? <StatusBadge status="enabled">Saved</StatusBadge> : null}
+          {saveStatus === 'saved' ? <span className="text-small font-medium text-dashboard-success">Saved</span> : null}
           {saveStatus === 'error' ? <span className="text-small text-dashboard-danger" role="alert">{error}</span> : null}
         </div>
       ) : null}

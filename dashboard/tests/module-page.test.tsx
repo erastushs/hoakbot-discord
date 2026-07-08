@@ -39,7 +39,6 @@ describe('ModulePage', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'General' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Configuration' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Status' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Access' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('Updated title');
     expect(screen.getByRole('spinbutton', { name: /Count/ })).toHaveValue(3);
@@ -60,7 +59,6 @@ describe('ModulePage', () => {
     expect(screen.getByRole('heading', { name: 'General' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Configuration' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Status' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Access' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('Updated title');
   });

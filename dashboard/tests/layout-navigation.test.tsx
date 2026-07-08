@@ -13,7 +13,7 @@ function renderLayout() {
       <AuthProvider
         initialState={{
           status: 'authenticated',
-          user: { id: 'user-1', username: 'Admin' },
+          user: { id: 'user-1', username: 'admin', displayName: 'Admin', avatarUrl: 'https://example.com/avatar.png' },
           guilds,
           selectedGuild: guilds[0],
         }}
@@ -33,6 +33,9 @@ describe('dashboard layout and navigation', () => {
     renderLayout();
 
     expect(screen.getByText('Hoak Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Admin')).toBeInTheDocument();
+    expect(screen.getByText('admin')).toBeInTheDocument();
+    expect(document.querySelector('img[src="https://example.com/avatar.png"]')).toBeInTheDocument();
     expect(screen.getByLabelText('Breadcrumb')).toHaveTextContent('Home');
     expect(screen.queryByRole('button', { name: 'Toggle theme' })).not.toBeInTheDocument();
     expect(screen.getByText('Main content')).toBeInTheDocument();

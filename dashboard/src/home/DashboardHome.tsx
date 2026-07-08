@@ -1,4 +1,4 @@
-import { Avatar, Button, Card, EmptyState, Section, SectionHeader } from '../components/index.js';
+import { Avatar, Card, EmptyState, Section, SectionHeader } from '../components/index.js';
 import type { ModuleManifest } from '../contracts.js';
 import { useOptionalAuth } from '../auth/AuthContext.js';
 import { PageHeader } from '../layout/PageHeader.js';
@@ -40,15 +40,12 @@ export function DashboardHome({ manifests }: { manifests: ModuleManifest[] }) {
                 <p className="text-small text-dashboard-text-secondary">{manifest.description}</p>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-caption font-medium text-dashboard-text-tertiary">{manifest.category}</span>
-                  <Button
-                    onClick={() => {
-                      window.location.href = `/modules/${encodeURIComponent(manifest.id)}${window.location.search}`;
-                    }}
-                    size="sm"
-                    variant="primary"
+                  <a
+                    className="inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashboard-accent-primary bg-dashboard-accent-primary px-3 text-caption font-medium text-dashboard-text-primary shadow-[0_0_22px_oklch(0.67_0.12_285_/_0.24),var(--shadow-elevation-2)] transition duration-hover ease-dashboard hover:border-dashboard-accent-hover hover:bg-dashboard-accent-hover hover:shadow-[0_0_30px_oklch(0.72_0.13_285_/_0.32),var(--shadow-elevation-3)] motion-safe:hover:-translate-y-px motion-safe:active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring"
+                    href={`/modules/${encodeURIComponent(manifest.id)}${window.location.search}`}
                   >
                     Configure
-                  </Button>
+                  </a>
                 </div>
               </Card>
             ))}

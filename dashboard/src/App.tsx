@@ -45,7 +45,7 @@ function DashboardShell({ api }: { api: APIClient }) {
   });
 
   const loadDashboard = useCallback(async () => {
-    console.debug('[dashboard-app] loadDashboard:start', { guild, moduleId });
+    debugDashboard('[dashboard-app] loadDashboard:start', { guild, moduleId });
     let failingStatement = 'loadDashboard:start';
     let actualResponseObject: unknown;
     let expectedResponseObject: unknown;
@@ -62,7 +62,7 @@ function DashboardShell({ api }: { api: APIClient }) {
         values: {},
         error: 'No authorized guilds are available for this Discord account.',
       };
-      console.debug('[dashboard-app] loadDashboard:missingGuild', {
+      debugDashboard('[dashboard-app] loadDashboard:missingGuild', {
         failingStatement: 'auth.selectedGuild',
         thrownException: { name: 'MissingGuildError', message: 'Missing authenticated guild id' },
         actualResponseObject: guild,
@@ -83,14 +83,14 @@ function DashboardShell({ api }: { api: APIClient }) {
     try {
       failingStatement = 'await api.getGuildModules(guild.id)';
       expectedResponseObject = { modules: 'ModuleManifest[]' };
-      console.debug('[dashboard-app] loadDashboard:await:start', {
+      debugDashboard('[dashboard-app] loadDashboard:await:start', {
         statement: failingStatement,
         guildId: guild.id,
         expectedResponseObject,
       });
       const modulesResponse = await api.getGuildModules(guild.id);
       actualResponseObject = modulesResponse;
-      console.debug('[dashboard-app] loadDashboard:await:return', {
+      debugDashboard('[dashboard-app] loadDashboard:await:return', {
         statement: failingStatement,
         returnedValue: modulesResponse,
         parsedJson: modulesResponse,
@@ -110,14 +110,14 @@ function DashboardShell({ api }: { api: APIClient }) {
         ? 'await api.getModuleSettings(moduleId)'
         : 'await Promise.resolve({ settings: [] })';
       expectedResponseObject = { settings: 'SettingMetadata[]' };
-      console.debug('[dashboard-app] loadDashboard:await:start', {
+      debugDashboard('[dashboard-app] loadDashboard:await:start', {
         statement: failingStatement,
         moduleId,
         expectedResponseObject,
       });
       const metadataResponse = moduleId ? await api.getModuleSettings(moduleId) : await Promise.resolve({ settings: [] });
       actualResponseObject = metadataResponse;
-      console.debug('[dashboard-app] loadDashboard:await:return', {
+      debugDashboard('[dashboard-app] loadDashboard:await:return', {
         statement: failingStatement,
         returnedValue: metadataResponse,
         parsedJson: metadataResponse,
@@ -143,7 +143,7 @@ function DashboardShell({ api }: { api: APIClient }) {
           values: {},
           error: `Module "${moduleId}" was not found by the backend.`,
         };
-        console.debug('[dashboard-app] loadDashboard:moduleNotFound', {
+        debugDashboard('[dashboard-app] loadDashboard:moduleNotFound', {
           failingStatement: 'modules.find((candidate) => candidate.id === moduleId)',
           thrownException: {
             name: 'ModuleNotFoundError',
@@ -167,7 +167,7 @@ function DashboardShell({ api }: { api: APIClient }) {
       expectedResponseObject = moduleId
         ? { guildId: 'string', settings: 'SettingValue[]' }
         : undefined;
-      console.debug('[dashboard-app] loadDashboard:await:start', {
+      debugDashboard('[dashboard-app] loadDashboard:await:start', {
         statement: failingStatement,
         guildId: guild.id,
         moduleId,
@@ -175,7 +175,7 @@ function DashboardShell({ api }: { api: APIClient }) {
       });
       const valuesResponse = moduleId ? await api.getGuildSettings(guild.id) : await Promise.resolve(undefined);
       actualResponseObject = valuesResponse;
-      console.debug('[dashboard-app] loadDashboard:await:return', {
+      debugDashboard('[dashboard-app] loadDashboard:await:return', {
         statement: failingStatement,
         returnedValue: valuesResponse,
         parsedJson: valuesResponse,
@@ -200,7 +200,7 @@ function DashboardShell({ api }: { api: APIClient }) {
       };
       logStateUpdate('ready', nextState, moduleId);
       setState(nextState);
-      console.debug('[dashboard-app] loadDashboard:ready', {
+      debugDashboard('[dashboard-app] loadDashboard:ready', {
         moduleCount: modules.length,
         settingCount: settings.length,
         settingValueCount: valuesResponse?.settings.length ?? 0,
@@ -213,7 +213,7 @@ function DashboardShell({ api }: { api: APIClient }) {
         values: {},
         error: toErrorMessage(error),
       };
-      console.error('[dashboard-app] loadDashboard:failed', {
+      debugDashboardError('[dashboard-app] loadDashboard:failed', {
         failingStatement,
         thrownException: serializeError(error),
         actualResponseObject,
@@ -411,7 +411,7 @@ function logStateUpdate(reason: string, nextState: DashboardState, selectedModul
     ? nextState.manifests.find((candidate) => candidate.id === selectedModuleId)
     : undefined;
 
-  console.debug('[dashboard-app] loadDashboard:setState', {
+  debugDashboard('[dashboard-app] loadDashboard:setState', {
     reason,
     status: nextState.status,
     modules: nextState.manifests,
@@ -423,6 +423,18 @@ function logStateUpdate(reason: string, nextState: DashboardState, selectedModul
         }
       : selectedModuleId,
   });
+}
+
+function debugDashboard(message: string, details: Record<string, unknown>): void {
+  if (import.meta.env.DEV) {
+    globalThis.console.debug(message, details);
+  }
+}
+
+function debugDashboardError(message: string, details: Record<string, unknown>): void {
+  if (import.meta.env.DEV) {
+    globalThis.console.error(message, details);
+  }
 }
 
 function assertResponseShape<T>(

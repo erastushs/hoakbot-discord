@@ -104,20 +104,20 @@ export class APIClient {
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const url = `${this.baseUrl}${path}`;
-    console.debug('[dashboard-api] request:start', { method, path, url });
+    debugDashboardAPI('[dashboard-api] request:start', { method, path, url });
 
     let response: Response;
     try {
-      console.debug('[dashboard-api] fetch:execute', { method, url });
+      debugDashboardAPI('[dashboard-api] fetch:execute', { method, url });
       response = await this.fetcher(url, {
         method,
         credentials: 'include',
         headers: this.requestHeaders(method, body),
         body: body === undefined ? undefined : JSON.stringify(body),
       });
-      console.debug('[dashboard-api] response:status', { method, url, status: response.status });
+      debugDashboardAPI('[dashboard-api] response:status', { method, url, status: response.status });
     } catch (error) {
-      console.debug('[dashboard-api] request:throw', { method, url, error });
+      debugDashboardAPI('[dashboard-api] request:throw', { method, url, error });
       throw new DashboardAPIError(
         error instanceof Error ? error.message : 'Backend is offline or unreachable',
         'NETWORK_ERROR',
@@ -129,10 +129,10 @@ export class APIClient {
       success: false,
       error: { code: 'INVALID_RESPONSE', message: 'Backend returned an invalid response.' },
     }))) as APIResponse<T>;
-    console.debug('[dashboard-api] response:json', { method, url, payload: path === '/csrf' ? '[redacted]' : payload });
+    debugDashboardAPI('[dashboard-api] response:json', { method, url, payload: path === '/csrf' ? '[redacted]' : payload });
 
     if (!response.ok || !payload.success) {
-      console.debug('[dashboard-api] request:throw', { method, url, status: response.status, payload });
+      debugDashboardAPI('[dashboard-api] request:throw', { method, url, status: response.status, payload });
       throw new DashboardAPIError(
         payload.error?.message ?? 'Request failed',
         payload.error?.code ?? 'UNKNOWN_ERROR',
@@ -163,11 +163,17 @@ function resolveAPIBaseUrl(baseUrl?: string): string {
   const resolved = configured?.trim() || DEFAULT_API_BASE_URL;
 
   const normalized = resolved.replace(/\/+$/, '');
-  console.debug('[dashboard-api] resolveAPIBaseUrl', {
+  debugDashboardAPI('[dashboard-api] resolveAPIBaseUrl', {
     explicitBaseUrl: baseUrl,
     envBaseUrl: import.meta.env.VITE_API_BASE_URL,
     resolvedBaseUrl: normalized,
   });
 
   return normalized;
+}
+
+function debugDashboardAPI(message: string, details: Record<string, unknown>): void {
+  if (import.meta.env.DEV) {
+    globalThis.console.debug(message, details);
+  }
 }

@@ -63,6 +63,15 @@ export function Sidebar({
   }
 
   useEffect(() => {
+    if (!isDesktop && !isDrawerOpen) {
+      sidebarRef.current?.setAttribute('inert', '');
+      return;
+    }
+
+    sidebarRef.current?.removeAttribute('inert');
+  }, [isDesktop, isDrawerOpen]);
+
+  useEffect(() => {
     if (!isDrawerOpen || isDesktop) {
       return;
     }

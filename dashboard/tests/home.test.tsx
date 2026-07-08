@@ -18,7 +18,7 @@ describe('DashboardHome', () => {
     expect(screen.getByText('utility')).toBeInTheDocument();
     expect(screen.getByText('automation')).toBeInTheDocument();
     expect(screen.getAllByText('v1.0.0')).toHaveLength(2);
-    expect(screen.getAllByRole('button', { name: 'Configure' })).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: 'Configure' })).toHaveLength(2);
   });
 
   it('shows an empty state when module metadata is unavailable', () => {

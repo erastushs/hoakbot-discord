@@ -27,7 +27,7 @@ export function Select({ className, description, error, id, label, options, ...p
         aria-describedby={[descriptionId, errorId].filter(Boolean).join(' ') || undefined}
         aria-invalid={Boolean(error) || undefined}
         className={cx(
-          'h-10 rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-surface/58 px-3 text-small text-dashboard-text-primary shadow-elevation-0 backdrop-blur-xl transition duration-hover ease-dashboard hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface-elevated/68 focus:border-dashboard-border-strong focus:bg-dashboard-bg-surface-elevated/72 focus:outline-none focus:ring-2 focus:ring-dashboard-focus-ring/20 disabled:cursor-not-allowed disabled:border-dashboard-border-subtle disabled:bg-dashboard-bg-muted disabled:text-dashboard-text-disabled disabled:opacity-70',
+          'h-10 cursor-pointer rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-control/62 px-3 text-small text-dashboard-text-primary shadow-elevation-0 backdrop-blur-xl transition duration-hover ease-dashboard hover:border-dashboard-accent-primary/50 hover:bg-dashboard-bg-control/82 focus:border-dashboard-accent-primary focus:bg-dashboard-bg-control/90 focus:outline-none focus:ring-2 focus:ring-dashboard-focus-ring/24 disabled:cursor-not-allowed disabled:border-dashboard-border-subtle disabled:bg-dashboard-bg-muted disabled:text-dashboard-text-disabled disabled:opacity-70',
           className,
         )}
         id={selectId}

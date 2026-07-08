@@ -16,7 +16,7 @@ export function GuildSwitcher() {
           <>
             <select
               aria-label="Current guild"
-              className={`h-10 w-full appearance-none rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-surface/48 pr-8 text-small font-medium text-dashboard-text-primary backdrop-blur-xl transition duration-hover ease-dashboard hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface-elevated/64 focus:border-dashboard-border-strong focus:outline-none focus:ring-2 focus:ring-dashboard-focus-ring/20 ${
+              className={`h-10 w-full cursor-pointer appearance-none rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-control/62 pr-8 text-small font-medium text-dashboard-text-primary shadow-elevation-0 backdrop-blur-xl transition duration-hover ease-dashboard hover:border-dashboard-accent-primary/50 hover:bg-dashboard-bg-control/82 focus:border-dashboard-accent-primary focus:outline-none focus:ring-2 focus:ring-dashboard-focus-ring/24 ${
                 currentGuild ? 'pl-11' : 'px-3'
               }`}
               onChange={(event) => setCurrentGuild(event.target.value)}
@@ -33,7 +33,7 @@ export function GuildSwitcher() {
         ) : (
           <span
             aria-label="Current guild"
-            className={`flex h-10 w-full items-center rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-surface/38 pr-3 text-small font-medium text-dashboard-text-primary backdrop-blur-xl ${
+            className={`flex h-10 w-full items-center rounded-lg border border-white/5 bg-dashboard-bg-page/48 pr-3 text-small font-medium text-dashboard-text-primary shadow-elevation-0 backdrop-blur-xl ${
               currentGuild ? 'pl-11' : 'px-3'
             }`}
           >

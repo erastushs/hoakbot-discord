@@ -34,9 +34,9 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
   const userInitial = displayName.trim().charAt(0).toUpperCase() || 'H';
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-sticky hidden w-sidebar flex-col border-r border-white/6 bg-dashboard-bg-sidebar/62 px-2.5 py-3.5 backdrop-blur-2xl desktop:flex">
+    <aside className="fixed inset-y-0 left-0 z-sticky hidden w-sidebar flex-col border-r border-white/8 bg-dashboard-bg-sidebar/90 px-2.5 py-3.5 shadow-elevation-2 backdrop-blur-2xl desktop:flex">
       <a
-        className="flex h-9 items-center gap-2 rounded-lg px-2 text-small font-semibold text-dashboard-text-primary transition duration-hover ease-dashboard hover:bg-dashboard-bg-muted/48 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring"
+        className="flex h-9 cursor-pointer items-center gap-2 rounded-lg px-2 text-small font-semibold text-dashboard-text-primary transition duration-hover ease-dashboard hover:bg-dashboard-accent-muted/45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring"
         href="/"
       >
         <BotAvatar className="rounded-lg ring-1 ring-white/10" />
@@ -66,7 +66,7 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
 
       <div className="mt-auto space-y-2.5 pt-3">
         <GuildSwitcher />
-        <div className="flex w-full items-center gap-2.5 rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-surface/48 p-2 text-left backdrop-blur-xl">
+        <div className="flex w-full items-center gap-2.5 rounded-lg border border-white/6 bg-dashboard-bg-page/56 p-2 text-left shadow-elevation-1 backdrop-blur-xl">
           <Avatar alt={displayName} className="ring-1 ring-white/10" fallback={userInitial} src={auth.user?.avatarUrl} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-small font-medium text-dashboard-text-primary">{displayName}</span>
@@ -74,7 +74,7 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
           </span>
           <button
             aria-label="Sign out"
-            className="grid h-8 w-8 place-items-center rounded-lg text-dashboard-text-tertiary transition duration-hover ease-dashboard hover:bg-dashboard-bg-muted/58 hover:text-dashboard-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring"
+            className="grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-dashboard-text-tertiary transition duration-hover ease-dashboard hover:bg-dashboard-accent-muted/48 hover:text-dashboard-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring"
             onClick={() => void auth.signOut()}
             type="button"
           >
@@ -99,14 +99,14 @@ function SidebarLink({ active = false, href, icon, label }: { active?: boolean; 
   return (
     <a
       aria-current={active ? 'page' : undefined}
-      className={`group flex items-center gap-2 rounded-lg px-2 py-1.5 text-[0.8125rem] font-medium transition duration-hover ease-dashboard focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring ${
+      className={`group flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1.5 text-[0.8125rem] font-medium transition duration-hover ease-dashboard focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring ${
         active
-          ? 'border border-white/6 bg-dashboard-bg-surface-elevated/56 text-dashboard-text-primary'
-          : 'border border-transparent text-dashboard-text-secondary hover:bg-dashboard-bg-muted/48 hover:text-dashboard-text-primary focus-visible:bg-dashboard-bg-muted'
+          ? 'border-dashboard-accent-primary/42 bg-dashboard-accent-muted/58 text-dashboard-text-primary shadow-elevation-1'
+          : 'border-transparent bg-dashboard-bg-page/28 text-dashboard-text-secondary hover:border-dashboard-accent-primary/28 hover:bg-dashboard-accent-muted/32 hover:text-dashboard-text-primary focus-visible:bg-dashboard-accent-muted/36'
       }`}
       href={href}
     >
-      {icon ? <span className={`grid h-4.5 w-4.5 place-items-center transition duration-hover ${active ? 'text-dashboard-accent-hover' : 'text-dashboard-text-tertiary group-hover:text-dashboard-text-primary'}`}>{icon}</span> : null}
+      {icon ? <span className={`grid h-4.5 w-4.5 place-items-center transition duration-hover ${active ? 'text-dashboard-accent-hover' : 'text-dashboard-text-tertiary group-hover:text-dashboard-accent-hover'}`}>{icon}</span> : null}
       <span className="truncate">{label}</span>
     </a>
   );

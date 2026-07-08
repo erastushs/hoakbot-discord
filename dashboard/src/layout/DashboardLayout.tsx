@@ -20,7 +20,7 @@ export function DashboardLayout({
         <Sidebar manifests={manifests} />
         <div className="dashboard-main-surface min-w-0 flex-1 lg:pl-sidebar">
           <TopNavigation breadcrumb={breadcrumb} />
-          <main className="min-h-[calc(100vh-var(--header-height))] overflow-y-auto px-4 py-8 tablet:px-6 tablet:py-10 desktop:px-10 desktop:py-12">
+          <main className="min-h-[calc(100vh-var(--header-height))] overflow-y-auto bg-dashboard-bg-page/86 px-4 py-8 tablet:px-6 tablet:py-10 desktop:px-10 desktop:py-12">
             <div className="mx-auto w-full max-w-page motion-safe:animate-[dashboard-page-in_var(--duration-page)_var(--ease-dashboard)]">{children}</div>
           </main>
         </div>

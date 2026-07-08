@@ -13,7 +13,7 @@ export function Switch({ checked = false, className, description, label, onCheck
   return (
     <button
       aria-checked={checked}
-      className={cx('flex w-full items-center justify-between gap-4 rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-surface/54 p-3.5 text-left shadow-elevation-0 backdrop-blur-xl transition duration-hover ease-dashboard hover:border-dashboard-border-strong hover:bg-dashboard-bg-surface-elevated/66 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring disabled:cursor-not-allowed disabled:bg-dashboard-bg-muted disabled:opacity-60 disabled:shadow-elevation-0', className)}
+      className={cx('flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-control/56 p-3.5 text-left shadow-elevation-0 backdrop-blur-xl transition duration-hover ease-dashboard hover:border-dashboard-accent-primary/50 hover:bg-dashboard-bg-control/78 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring disabled:cursor-not-allowed disabled:bg-dashboard-bg-muted disabled:opacity-60 disabled:shadow-elevation-0', className)}
       onClick={() => onCheckedChange?.(!checked)}
       role="switch"
       type={type}

@@ -7,17 +7,19 @@ import type { BreadcrumbItem } from './Breadcrumb.js';
 
 export function DashboardLayout({
   children,
+  isLoading = false,
   manifests,
   breadcrumb,
 }: {
   children: ReactNode;
+  isLoading?: boolean;
   manifests: ModuleManifest[];
   breadcrumb: BreadcrumbItem[];
 }) {
   return (
     <div className="dashboard-shell-background min-h-screen text-dashboard-text-primary">
       <div className="min-h-screen lg:flex">
-        <Sidebar manifests={manifests} />
+        <Sidebar isLoading={isLoading} manifests={manifests} />
         <div className="dashboard-main-surface min-w-0 flex-1 lg:pl-sidebar">
           <TopNavigation breadcrumb={breadcrumb} />
           <main className="min-h-[calc(100vh-var(--header-height))] overflow-y-auto bg-dashboard-bg-page/86 px-4 py-8 tablet:px-6 tablet:py-10 desktop:px-10 desktop:py-12">

@@ -4,7 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { GuildSwitcher } from '../guilds/GuildSwitcher.js';
 import type { ModuleManifest } from '../contracts.js';
 import { useAuth } from '../auth/AuthContext.js';
-import { Avatar } from '../components/index.js';
+import { Avatar, Skeleton } from '../components/index.js';
 import { BotAvatar } from './BotAvatar.js';
 
 function groupManifests(manifests: ModuleManifest[]): Array<[string, ModuleManifest[]]> {
@@ -26,12 +26,14 @@ function groupManifests(manifests: ModuleManifest[]): Array<[string, ModuleManif
   ]);
 }
 
-export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
+export function Sidebar({ isLoading = false, manifests }: { isLoading?: boolean; manifests: ModuleManifest[] }) {
   const auth = useAuth();
   const currentPath = window.location.pathname;
-  const displayName = auth.user?.displayName ?? auth.user?.username ?? 'Authenticated user';
-  const username = auth.user?.username ?? auth.user?.id ?? 'Discord user';
-  const userInitial = displayName.trim().charAt(0).toUpperCase() || 'H';
+  const displayName = auth.user?.displayName ?? auth.user?.username;
+  const username = auth.user?.username ?? auth.user?.id;
+  const userInitial = displayName?.trim().charAt(0).toUpperCase() || 'H';
+  const moduleGroups = groupManifests(manifests);
+  const showModuleSkeletons = isLoading && moduleGroups.length === 0;
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     administration: false,
     dashboard: true,
@@ -58,20 +60,30 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
           <SidebarLink active={currentPath === '/'} href="/" icon={<Home className="h-4 w-4" />} label="Dashboard" />
         </SidebarGroup>
 
-        <SidebarGroup expanded={expandedGroups.modules} groupKey="modules" onToggle={toggleGroup} title="Modules">
-          <nav aria-label="Modules" className="space-y-1">
-            {groupManifests(manifests).flatMap(([, entries]) =>
-              entries.map((manifest) => (
-                <SidebarLink
-                  href={`/modules/${encodeURIComponent(manifest.id)}`}
-                  active={currentPath === `/modules/${encodeURIComponent(manifest.id)}`}
-                  key={manifest.id}
-                  label={manifest.name}
-                />
-              )),
+        {showModuleSkeletons || moduleGroups.length > 0 ? (
+          <SidebarGroup expanded={expandedGroups.modules} groupKey="modules" onToggle={toggleGroup} title="Modules">
+            {showModuleSkeletons ? (
+              <div aria-hidden className="space-y-1 px-2 py-1">
+                <Skeleton className="h-7 w-full" />
+                <Skeleton className="h-7 w-10/12" />
+                <Skeleton className="h-7 w-11/12" />
+              </div>
+            ) : (
+              <nav aria-label="Modules" className="space-y-1">
+                {moduleGroups.flatMap(([, entries]) =>
+                  entries.map((manifest) => (
+                    <SidebarLink
+                      href={`/modules/${encodeURIComponent(manifest.id)}`}
+                      active={currentPath === `/modules/${encodeURIComponent(manifest.id)}`}
+                      key={manifest.id}
+                      label={manifest.name}
+                    />
+                  )),
+                )}
+              </nav>
             )}
-          </nav>
-        </SidebarGroup>
+          </SidebarGroup>
+        ) : null}
 
         <SidebarGroup expanded={expandedGroups.administration} groupKey="administration" onToggle={toggleGroup} title="Administration" />
 
@@ -81,19 +93,32 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
       <div className="mt-auto space-y-2.5 pt-3">
         <GuildSwitcher />
         <div className="flex w-full items-center gap-2.5 rounded-lg border border-white/6 bg-dashboard-bg-page/56 p-2 text-left shadow-elevation-1 backdrop-blur-xl">
-          <Avatar alt={displayName} className="ring-1 ring-white/10" fallback={userInitial} src={auth.user?.avatarUrl} />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-small font-medium text-dashboard-text-primary">{displayName}</span>
-            <span className="block truncate text-caption text-dashboard-text-tertiary">{username}</span>
-          </span>
-          <button
-            aria-label="Sign out"
-            className="grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-dashboard-text-tertiary transition duration-hover ease-dashboard hover:bg-dashboard-accent-muted/48 hover:text-dashboard-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring"
-            onClick={() => void auth.signOut()}
-            type="button"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+          {auth.status === 'loading' ? (
+            <>
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <span className="grid min-w-0 flex-1 gap-1">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-20" />
+              </span>
+              <Skeleton className="h-8 w-8 rounded-lg" />
+            </>
+          ) : displayName ? (
+            <>
+              <Avatar alt={displayName} className="ring-1 ring-white/10" fallback={userInitial} src={auth.user?.avatarUrl} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-small font-medium text-dashboard-text-primary">{displayName}</span>
+                {username ? <span className="block truncate text-caption text-dashboard-text-tertiary">{username}</span> : null}
+              </span>
+              <button
+                aria-label="Sign out"
+                className="grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-dashboard-text-tertiary transition duration-hover ease-dashboard hover:bg-dashboard-accent-muted/48 hover:text-dashboard-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dashboard-focus-ring"
+                onClick={() => void auth.signOut()}
+                type="button"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
     </aside>
@@ -102,6 +127,10 @@ export function Sidebar({ manifests }: { manifests: ModuleManifest[] }) {
 
 function SidebarGroup({ children, expanded, groupKey, onToggle, title }: { children?: ReactNode; expanded: boolean; groupKey: string; onToggle(groupKey: string): void; title: string }) {
   const contentId = `sidebar-${groupKey}-content`;
+
+  if (!children) {
+    return null;
+  }
 
   return (
     <section>

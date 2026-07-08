@@ -254,7 +254,7 @@ function DashboardShell({ api }: { api: APIClient }) {
 
   return (
     <AuthGuard>
-      <DashboardLayout breadcrumb={breadcrumb} manifests={state.manifests}>
+      <DashboardLayout breadcrumb={breadcrumb} isLoading={state.status === 'loading'} manifests={state.manifests}>
         {state.status === 'loading' ? (
           <DashboardLoadingState moduleId={moduleId} />
         ) : state.status === 'error' ? (

@@ -52,6 +52,7 @@ import { ModerationModule } from './modules/moderation/moderation.module.js';
 import { LoggingModule } from './modules/logging/logging.module.js';
 import { WelcomeModule } from './modules/welcome/welcome.module.js';
 import { GoodbyeModule } from './modules/goodbye/goodbye.module.js';
+import { ShrineModule } from './modules/shrine/shrine.module.js';
 import { CommandRegistry } from './shared/command-registry.js';
 import type { HealthReport } from './core/health/types.js';
 
@@ -182,24 +183,28 @@ try {
   const loggingModule = new LoggingModule();
   const welcomeModule = new WelcomeModule();
   const goodbyeModule = new GoodbyeModule();
+  const shrineModule = new ShrineModule();
   manifestRegistry.register(generalModule.manifest);
   manifestRegistry.register(voiceModule.manifest);
   manifestRegistry.register(moderationModule.manifest);
   manifestRegistry.register(loggingModule.manifest);
   manifestRegistry.register(welcomeModule.manifest);
   manifestRegistry.register(goodbyeModule.manifest);
+  manifestRegistry.register(shrineModule.manifest);
   moduleRegistry.register(generalModule);
   moduleRegistry.register(voiceModule);
   moduleRegistry.register(moderationModule);
   moduleRegistry.register(loggingModule);
   moduleRegistry.register(welcomeModule);
   moduleRegistry.register(goodbyeModule);
+  moduleRegistry.register(shrineModule);
   moduleLoader.registerModule(generalModule);
   moduleLoader.registerModule(voiceModule);
   moduleLoader.registerModule(moderationModule);
   moduleLoader.registerModule(loggingModule);
   moduleLoader.registerModule(welcomeModule);
   moduleLoader.registerModule(goodbyeModule);
+  moduleLoader.registerModule(shrineModule);
 
   await moduleLoader.loadAll(container);
   apiRouter.use(createSecurityHeadersMiddleware());

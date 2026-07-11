@@ -6,6 +6,7 @@
     "logging": true,
     "welcome": true,
     "goodbye": true,
+    "shrine": true,
     "metrics": true,
     "tickets": false,
     "ai": false,

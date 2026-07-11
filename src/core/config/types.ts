@@ -79,6 +79,27 @@ export interface GoodbyeConfig {
   image: GoodbyeImageConfig;
 }
 
+export interface ShrinePollingConfig {
+  pollIntervalMs: number;
+  preResetWindowMs: number;
+  delayedUpdateWindowMs: number;
+  fallbackRetryMs: number;
+}
+
+export interface ShrineDevConfig {
+  forceAnnouncementOnStartup: boolean;
+}
+
+export interface ShrineConfig {
+  enabled: boolean;
+  guildId: string;
+  channelId: string;
+  nightLightBaseUrl: string;
+  imageCdnUrl: string;
+  polling: ShrinePollingConfig;
+  dev: ShrineDevConfig;
+}
+
 export interface BotConfig {
   prefix: string;
   guildId: string;
@@ -90,6 +111,7 @@ export interface BotConfig {
   logging: LoggingConfig;
   welcome: WelcomeConfig;
   goodbye: GoodbyeConfig;
+  shrine: ShrineConfig;
 }
 
 export interface PermissionsConfig {

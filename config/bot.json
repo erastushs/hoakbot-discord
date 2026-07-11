@@ -1,7 +1,7 @@
 {
   "prefix": "hoak",
-  "guildId": "",
-  "ownerIds": [],
+  "guildId": "504841992900182027",
+  "ownerIds": ["398542246523437066"],
   "defaultLanguage": "en",
   "presence": {
     "type": "WATCHING",
@@ -71,6 +71,22 @@
       "backgroundUrl": "https://media.discordapp.net/attachments/1471048538095091835/1471048701794586708/goodbyeHOAK.png?ex=6a48109d&is=6a46bf1d&hm=db142fb39c15c32d97f6b3c9b098a67f18021ef8a4324ec86d96af3b1a7e8d7f&=&format=webp&quality=lossless&width=1679&height=820",
       "title": "GOODBYE",
       "subtitle": "HOPE YOU ENJOY YOUR STAY"
+    }
+  },
+  "shrine": {
+    "enabled": true,
+    "guildId": "504841992900182027",
+    "channelId": "1471550778882785492",
+    "nightLightBaseUrl": "https://api.nightlight.gg/v1",
+    "imageCdnUrl": "https://cdn.nightlight.gg/img/",
+    "polling": {
+      "pollIntervalMs": 30000,
+      "preResetWindowMs": 120000,
+      "delayedUpdateWindowMs": 600000,
+      "fallbackRetryMs": 300000
+    },
+    "dev": {
+      "forceAnnouncementOnStartup": false
     }
   }
 }

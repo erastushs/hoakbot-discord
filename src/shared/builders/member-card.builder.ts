@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { resolve, dirname } from 'node:path';
+import { canvasFont } from '../canvas/fonts.js';
 import type { ImageService } from '../image/image.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -13,8 +14,6 @@ export interface MemberCardInput {
   title: string;
   subtitle: string;
 }
-
-const FONT_FAMILY = '"Noto Sans", "Noto Sans CJK JP", "Noto Color Emoji", sans-serif';
 
 const LAYOUT = {
   width: 800,
@@ -55,10 +54,6 @@ const LAYOUT = {
   placeholderAvatarBg: '#4a5568',
   placeholderAvatarInitials: '#ffffff',
 } as const;
-
-function fontString(size: number, weight: 'bold' | 'normal' = 'bold'): string {
-  return `${weight} ${size}px ${FONT_FAMILY}`;
-}
 
 export class MemberCardBuilder {
   constructor(private readonly imageService: ImageService) {}
@@ -147,7 +142,7 @@ export class MemberCardBuilder {
 
       const initial = this.deriveInitial(username);
       ctx.fillStyle = LAYOUT.placeholderAvatarInitials;
-      ctx.font = fontString(48, 'normal');
+      ctx.font = canvasFont(48, 'normal');
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(initial, cx, cy);
@@ -163,7 +158,7 @@ export class MemberCardBuilder {
     this.imageService.drawText(
       ctx,
       title,
-      fontString(LAYOUT.title.fontSize),
+      canvasFont(LAYOUT.title.fontSize),
       LAYOUT.width / 2,
       LAYOUT.title.y,
       LAYOUT.width - 80,
@@ -181,10 +176,10 @@ export class MemberCardBuilder {
     let size = LAYOUT.username.fontSize;
 
     ctx.save();
-    ctx.font = fontString(size);
+    ctx.font = canvasFont(size);
     while (ctx.measureText(username).width > maxWidth && size > LAYOUT.username.minFontSize) {
       size -= 1;
-      ctx.font = fontString(size);
+      ctx.font = canvasFont(size);
     }
     const adaptedFont = ctx.font;
     ctx.restore();
@@ -209,7 +204,7 @@ export class MemberCardBuilder {
     this.imageService.drawText(
       ctx,
       subtitle.toUpperCase(),
-      fontString(LAYOUT.subtitle.fontSize),
+      canvasFont(LAYOUT.subtitle.fontSize),
       LAYOUT.width / 2,
       LAYOUT.subtitle.y,
       LAYOUT.width - 80,

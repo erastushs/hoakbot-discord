@@ -17,4 +17,10 @@ export const COLORS = {
     LEAVE: 0xe74c3c,
     MOVE: 0xfacc15,
   },
+  SHRINE: {
+    VERY_HIGH: 0xef4444,
+    HIGH: 0xf97316,
+    MEDIUM: 0xfacc15,
+    LOW: 0x8d99ae,
+  },
 } as const;

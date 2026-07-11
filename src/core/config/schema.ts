@@ -75,6 +75,23 @@ const goodbyeSchema = z.object({
   }),
 });
 
+const shrineSchema = z.object({
+  enabled: z.boolean(),
+  guildId: z.string(),
+  channelId: z.string(),
+  nightLightBaseUrl: z.string().url(),
+  imageCdnUrl: z.string().url(),
+  polling: z.object({
+    pollIntervalMs: z.number().int().positive(),
+    preResetWindowMs: z.number().int().positive(),
+    delayedUpdateWindowMs: z.number().int().positive(),
+    fallbackRetryMs: z.number().int().positive(),
+  }),
+  dev: z.object({
+    forceAnnouncementOnStartup: z.boolean().default(false),
+  }).default({ forceAnnouncementOnStartup: false }),
+});
+
 const botSchema = z.object({
   prefix: z.string(),
   guildId: z.string(),
@@ -86,6 +103,7 @@ const botSchema = z.object({
   logging: loggingSchema,
   welcome: welcomeSchema,
   goodbye: goodbyeSchema,
+  shrine: shrineSchema,
 });
 
 const permissionsSchema = z.object({

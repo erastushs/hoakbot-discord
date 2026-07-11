@@ -14,6 +14,8 @@ logs/
 *.log
 !src/core/logs/
 !src/core/logs/logs.service.ts
+!dashboard/src/logs/
+!dashboard/src/logs/LogsPage.tsx
 
 # Database
 data/

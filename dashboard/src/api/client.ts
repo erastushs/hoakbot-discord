@@ -2,6 +2,7 @@ import type {
   APIResponse,
   CsrfResponse,
   GetManifestsResponse,
+  GetLogsResponse,
   GetMetadataResponse,
   GetModulesResponse,
   GetSettingsResponse,
@@ -100,6 +101,22 @@ export class APIClient {
 
   patchGuildSettings(guildId: string, settings: Record<string, unknown>): Promise<PatchSettingsResponse> {
     return this.patch<PatchSettingsResponse>(`/guilds/${encodeURIComponent(guildId)}/settings`, { settings });
+  }
+
+  getLogs(params: { limit?: number; cursor?: string; search?: string; levels?: string[]; modules?: string[]; since?: number } = {}): Promise<GetLogsResponse> {
+    const query = new URLSearchParams();
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.cursor) query.set('cursor', params.cursor);
+    if (params.search) query.set('search', params.search);
+    if (params.since) query.set('since', String(params.since));
+    for (const level of params.levels ?? []) query.append('level', level);
+    for (const module of params.modules ?? []) query.append('module', module);
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return this.get<GetLogsResponse>(`/logs${suffix}`);
+  }
+
+  logsStreamUrl(): string {
+    return `${this.baseUrl}/logs/stream`;
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {

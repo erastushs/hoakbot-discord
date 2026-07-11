@@ -3,8 +3,11 @@ import { Buffer } from 'node:buffer';
 import { URL } from 'node:url';
 
 import type { ILogger } from '../logger/logger.service.js';
+import type { ISessionProvider, SessionConfig } from '../auth/index.js';
+import type { DashboardLogEntry, LogsService } from '../logs/logs.service.js';
 import type { APIRouter } from './router.js';
 import { applySecurityHeaders } from './security-headers.middleware.js';
+import { readCookie } from './session-auth.middleware.js';
 import type { APIHttpMethod, APIRequest, APIResponse } from './types.js';
 
 const SUPPORTED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
@@ -15,7 +18,15 @@ export interface APIHttpServerOptions {
   router: APIRouter;
   logger: ILogger;
   cors?: APICorsOptions;
+  logsStream?: APILogsStreamOptions;
   trustProxy?: boolean;
+}
+
+export interface APILogsStreamOptions {
+  readonly path: string;
+  readonly logs: LogsService;
+  readonly sessionProvider: ISessionProvider;
+  readonly sessionConfig: SessionConfig;
 }
 
 export interface APICorsOptions {
@@ -29,7 +40,7 @@ export interface APIHttpServer {
   stop(): Promise<void>;
 }
 
-export function createAPIHttpServer({ port, router, logger, cors, trustProxy = false }: APIHttpServerOptions): APIHttpServer {
+export function createAPIHttpServer({ port, router, logger, cors, logsStream, trustProxy = false }: APIHttpServerOptions): APIHttpServer {
   const server = createServer(async (request, response) => {
     setCorsHeaders(request, response, cors);
     applySecurityHeaders(response);
@@ -41,6 +52,10 @@ export function createAPIHttpServer({ port, router, logger, cors, trustProxy = f
     }
 
     try {
+      if (await handleLogsStream(request, response, logsStream)) {
+        return;
+      }
+
       const apiRequest = await toAPIRequest(request, trustProxy);
       const apiResponse = await router.handle(apiRequest);
       sendJSON(response, apiResponse);
@@ -62,6 +77,55 @@ export function createAPIHttpServer({ port, router, logger, cors, trustProxy = f
     start: () => listen(server, port, logger),
     stop: () => close(server, logger),
   };
+}
+
+async function handleLogsStream(
+  request: IncomingMessage,
+  response: ServerResponse,
+  stream: APILogsStreamOptions | undefined,
+): Promise<boolean> {
+  if (!stream || request.method !== 'GET') {
+    return false;
+  }
+
+  const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
+  if (url.pathname !== stream.path) {
+    return false;
+  }
+
+  const sessionId = readCookie(toHeaders(request)['cookie'], stream.sessionConfig.cookieName);
+  const session = sessionId ? await stream.sessionProvider.getSession(sessionId) : undefined;
+  if (!session) {
+    sendJSON(response, {
+      success: false,
+      status: 401,
+      error: { code: 'AUTH_REQUIRED', message: 'Authentication required' },
+    });
+    return true;
+  }
+
+  response.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  response.write(': connected\n\n');
+
+  const heartbeat = setInterval(() => response.write(': heartbeat\n\n'), 25_000);
+  const unsubscribe = stream.logs.subscribe((entry) => writeSSE(response, entry));
+  request.on('close', () => {
+    clearInterval(heartbeat);
+    unsubscribe();
+  });
+
+  return true;
+}
+
+function writeSSE(response: ServerResponse, entry: DashboardLogEntry): void {
+  response.write(`id: ${entry.id}\n`);
+  response.write('event: log\n');
+  response.write(`data: ${JSON.stringify(entry)}\n\n`);
 }
 
 async function toAPIRequest(request: IncomingMessage, trustProxy: boolean): Promise<APIRequest> {

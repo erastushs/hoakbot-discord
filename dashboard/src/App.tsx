@@ -8,6 +8,7 @@ import { GuildProvider } from './guilds/GuildContext.js';
 import { DashboardHome } from './home/DashboardHome.js';
 import { DashboardLayout } from './layout/DashboardLayout.js';
 import { ThemeProvider } from './layout/ThemeProvider.js';
+import { LogsPage } from './logs/LogsPage.js';
 import { ModulePage } from './modules/ModulePage.js';
 import type { ModuleManifest, SettingMetadata } from './contracts.js';
 
@@ -35,6 +36,7 @@ export function App() {
 
 function DashboardShell({ api }: { api: APIClient }) {
   const moduleId = getModuleIdFromPath(window.location.pathname);
+  const page = getPageFromPath(window.location.pathname);
   const auth = useAuth();
   const guild = auth.selectedGuild;
   const [state, setState] = useState<DashboardState>({
@@ -250,7 +252,9 @@ function DashboardShell({ api }: { api: APIClient }) {
   const manifest = moduleId
     ? state.manifests.find((candidate) => candidate.id === moduleId)
     : undefined;
-  const breadcrumb = manifest ? [{ label: 'Home' }, { label: manifest.name }] : [{ label: 'Home' }];
+  const breadcrumb = page === 'logs'
+    ? [{ label: 'Dashboard' }, { label: 'Logs' }]
+    : manifest ? [{ label: 'Home' }, { label: manifest.name }] : [{ label: 'Home' }];
 
   return (
     <AuthGuard>
@@ -264,6 +268,8 @@ function DashboardShell({ api }: { api: APIClient }) {
             onAction={() => void loadDashboard()}
             title="Dashboard unavailable"
           />
+        ) : page === 'logs' ? (
+          <LogsPage api={api} />
         ) : manifest ? (
           <ModulePage manifest={manifest} onSave={saveSettings} settings={state.settings} values={state.values} />
         ) : (
@@ -404,6 +410,12 @@ function toErrorMessage(error: unknown): string {
 function getModuleIdFromPath(pathname: string): string | undefined {
   const match = pathname.match(/^\/modules\/(.+)$/);
   return match ? decodeURIComponent(match[1] ?? '') : undefined;
+}
+
+function getPageFromPath(pathname: string): 'home' | 'logs' | 'module' {
+  if (/^\/logs\/?$/.test(pathname)) return 'logs';
+  if (getModuleIdFromPath(pathname)) return 'module';
+  return 'home';
 }
 
 function logStateUpdate(reason: string, nextState: DashboardState, selectedModuleId: string | undefined): void {

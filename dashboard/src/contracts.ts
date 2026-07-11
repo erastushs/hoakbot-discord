@@ -173,3 +173,28 @@ export interface PatchSettingsResponse {
   settings: SettingValue[];
   version?: number;
 }
+
+export type DashboardLogLevel = 'TRACE' | 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'FATAL';
+
+export interface DashboardLogEntry {
+  id: string;
+  timestamp: string;
+  level: DashboardLogLevel;
+  module: string;
+  message: string;
+  guildId?: string;
+  userId?: string;
+  username?: string;
+  channel?: string;
+  event?: string;
+  path?: string;
+  metadata: Record<string, unknown>;
+  summary: Record<string, string>;
+  raw: Record<string, unknown>;
+}
+
+export interface GetLogsResponse {
+  logs: DashboardLogEntry[];
+  nextCursor?: string;
+  total: number;
+}

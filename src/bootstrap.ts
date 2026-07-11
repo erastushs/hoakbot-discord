@@ -14,6 +14,7 @@ import {
   createAuthEndpoints,
   createCsrfEndpoints,
   createCsrfMiddleware,
+  createLogsEndpoints,
   createModuleConfigEndpoints,
   createRateLimitMiddleware,
   createSecurityAuditMiddleware,
@@ -25,6 +26,7 @@ import {
   RateLimiter,
   SecurityAuditService,
 } from './core/api/index.js';
+import { LogsService } from './core/logs/logs.service.js';
 import {
   AuthorizationProvider,
   ClientGuildDataSource,
@@ -94,7 +96,8 @@ try {
   const appConfig = configService.load();
 
   bootstrapLogger.info('Creating logger...');
-  const logger = createLogger(configService);
+  const logsService = new LogsService();
+  const logger = createLogger(configService, logsService);
 
   logger.info('Registering core services...');
   const eventBus = new EventBus(logger);
@@ -236,6 +239,9 @@ try {
   })) {
     apiRouter.register(endpoint);
   }
+  for (const endpoint of createLogsEndpoints({ logs: logsService })) {
+    apiRouter.register(endpoint);
+  }
   await moduleLoader.startAll();
   metricsService.gauge('module_count').set(moduleLoader.getLoadedModules().length);
 
@@ -259,6 +265,12 @@ try {
     port: appConfig.api.port,
     router: apiRouter,
     logger,
+    logsStream: {
+      path: '/api/v1/logs/stream',
+      logs: logsService,
+      sessionProvider,
+      sessionConfig,
+    },
     cors: {
       nodeEnv: appConfig.env.nodeEnv,
       allowedOrigin: appConfig.dashboard?.allowedOrigin ?? new URL(appConfig.dashboard?.url ?? 'http://localhost:5173').origin,

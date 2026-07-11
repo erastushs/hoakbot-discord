@@ -1,4 +1,4 @@
-import { ChevronDown, Home, LogOut } from 'lucide-react';
+import { ChevronDown, Home, Logs, LogOut } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 
 import { GuildSwitcher } from '../guilds/GuildSwitcher.js';
@@ -139,8 +139,9 @@ export function Sidebar({
       </a>
 
       <nav aria-label="Primary" className="mt-6 space-y-5 overflow-y-auto pr-1">
-          <SidebarGroup expanded={expandedGroups.dashboard} groupKey="dashboard" onToggle={toggleGroup} title="Dashboard">
+        <SidebarGroup expanded={expandedGroups.dashboard} groupKey="dashboard" onToggle={toggleGroup} title="Dashboard">
           <SidebarLink active={currentPath === '/'} href="/" icon={<Home className="h-4 w-4" />} label="Dashboard" onNavigate={onNavigate} />
+          <SidebarLink active={currentPath === '/logs'} href="/logs" icon={<Logs className="h-4 w-4" />} label="Logs" onNavigate={onNavigate} />
         </SidebarGroup>
 
         {showModuleSkeletons || moduleGroups.length > 0 ? (

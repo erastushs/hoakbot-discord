@@ -12,6 +12,8 @@ dist-dashboard/
 # Logs
 logs/
 *.log
+!src/core/logs/
+!src/core/logs/logs.service.ts
 
 # Database
 data/

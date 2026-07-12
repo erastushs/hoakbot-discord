@@ -22,6 +22,8 @@ const LAYOUT = {
     size: 144,
     y: 44,
     borderWidth: 6,
+    accentRingWidth: 2,
+    accentRingColor: 'rgba(255, 193, 7, 0.9)',
     shadow: {
       color: 'rgba(0, 0, 0, 0.4)',
       offsetX: 0,
@@ -30,26 +32,35 @@ const LAYOUT = {
     },
   },
   title: {
-    y: 240,
+    y: 244,
     fontSize: 52,
+    fontWeight: 900,
     color: '#ffffff',
   },
   username: {
-    y: 300,
+    y: 309,
     fontSize: 36,
     minFontSize: 14,
     color: '#FFC107',
   },
   subtitle: {
-    y: 348,
-    fontSize: 22,
+    y: 365,
+    fontSize: 24,
     color: '#ffffff',
   },
   textShadow: {
-    color: 'rgba(0, 0, 0, 0.7)',
+    color: 'rgba(0, 0, 0, 0.95)',
     offsetX: 0,
     offsetY: 3,
-    blur: 8,
+    blur: 12,
+  },
+  textGlow: {
+    color: 'rgba(255, 255, 255, 0.18)',
+    blur: 4,
+  },
+  textStroke: {
+    color: 'rgba(0, 0, 0, 0.65)',
+    width: 1.5,
   },
   placeholderAvatarBg: '#4a5568',
   placeholderAvatarInitials: '#ffffff',
@@ -63,6 +74,7 @@ export class MemberCardBuilder {
     const ctx = canvas.getContext('2d');
 
     await this.drawBackground(ctx, input.backgroundUrl);
+    this.drawBackgroundTreatment(ctx);
 
     await this.drawAvatar(ctx, input.avatarUrl, input.username);
 
@@ -100,6 +112,31 @@ export class MemberCardBuilder {
     }
   }
 
+  private drawBackgroundTreatment(
+    ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
+  ): void {
+    const overlay = ctx.createLinearGradient(0, 0, 0, LAYOUT.height);
+    overlay.addColorStop(0, 'rgba(4, 8, 18, 0.28)');
+    overlay.addColorStop(0.45, 'rgba(4, 8, 18, 0.38)');
+    overlay.addColorStop(1, 'rgba(4, 8, 18, 0.62)');
+    ctx.fillStyle = overlay;
+    ctx.fillRect(0, 0, LAYOUT.width, LAYOUT.height);
+
+    const vignette = ctx.createRadialGradient(
+      LAYOUT.width / 2,
+      LAYOUT.height / 2,
+      LAYOUT.height * 0.18,
+      LAYOUT.width / 2,
+      LAYOUT.height / 2,
+      LAYOUT.width * 0.58,
+    );
+    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vignette.addColorStop(0.7, 'rgba(0, 0, 0, 0.06)');
+    vignette.addColorStop(1, 'rgba(0, 0, 0, 0.48)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, LAYOUT.width, LAYOUT.height);
+  }
+
   private async drawAvatar(
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
     avatarUrl: string,
@@ -117,7 +154,14 @@ export class MemberCardBuilder {
     ctx.shadowBlur = LAYOUT.avatar.shadow.blur;
 
     ctx.beginPath();
-    ctx.arc(cx, cy, radius + LAYOUT.avatar.borderWidth, 0, Math.PI * 2);
+    ctx.arc(cx, cy, radius + LAYOUT.avatar.borderWidth + LAYOUT.avatar.accentRingWidth, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.strokeStyle = LAYOUT.avatar.accentRingColor;
+    ctx.lineWidth = LAYOUT.avatar.accentRingWidth;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius + LAYOUT.avatar.borderWidth / 2, 0, Math.PI * 2);
     ctx.closePath();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = LAYOUT.avatar.borderWidth;
@@ -155,10 +199,10 @@ export class MemberCardBuilder {
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
     title: string,
   ): void {
-    this.imageService.drawText(
+    this.drawReadableText(
       ctx,
       title,
-      canvasFont(LAYOUT.title.fontSize),
+      canvasFont(LAYOUT.title.fontSize, LAYOUT.title.fontWeight),
       LAYOUT.width / 2,
       LAYOUT.title.y,
       LAYOUT.width - 80,
@@ -184,7 +228,7 @@ export class MemberCardBuilder {
     const adaptedFont = ctx.font;
     ctx.restore();
 
-    this.imageService.drawText(
+    this.drawReadableText(
       ctx,
       username,
       adaptedFont,
@@ -201,7 +245,7 @@ export class MemberCardBuilder {
     ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
     subtitle: string,
   ): void {
-    this.imageService.drawText(
+    this.drawReadableText(
       ctx,
       subtitle.toUpperCase(),
       canvasFont(LAYOUT.subtitle.fontSize),
@@ -212,6 +256,35 @@ export class MemberCardBuilder {
       LAYOUT.subtitle.color,
       LAYOUT.textShadow,
     );
+  }
+
+  private drawReadableText(
+    ctx: ReturnType<ReturnType<ImageService['createCanvas']>['getContext']>,
+    text: string,
+    font: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    align: 'center' | 'left' | 'right',
+    color: string,
+    shadow: typeof LAYOUT.textShadow,
+  ): void {
+    ctx.save();
+    ctx.font = font;
+    ctx.textAlign = align;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = LAYOUT.textStroke.color;
+    ctx.lineWidth = LAYOUT.textStroke.width;
+    ctx.strokeText(text, x, y, maxWidth);
+    ctx.shadowColor = LAYOUT.textGlow.color;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.shadowBlur = LAYOUT.textGlow.blur;
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y, maxWidth);
+    ctx.restore();
+
+    this.imageService.drawText(ctx, text, font, x, y, maxWidth, align, color, shadow);
   }
 
   private deriveInitial(username?: string): string {

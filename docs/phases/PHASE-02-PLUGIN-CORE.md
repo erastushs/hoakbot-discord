@@ -1,5 +1,8 @@
 # Phase 02 — Plugin Core
 
+## Status
+Complete. Evidence: plugin-core contract tests, generated built-in catalog and compatibility projection tests, bootstrap flag rollback, and the mandated Build → Typecheck → Tests → Lint pipeline.
+
 ## Goal
 Implement the core plugin platform behind a reversible runtime flag while preserving all module-facing behavior.
 

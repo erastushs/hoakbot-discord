@@ -1,4 +1,5 @@
 {
+  "pluginCoreBootstrap": false,
   "modules": {
     "general": true,
     "voice": true,

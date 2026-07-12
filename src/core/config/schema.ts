@@ -119,6 +119,7 @@ const permissionsSchema = z.object({
 
 const featureFlagsSchema = z.object({
   modules: z.record(z.string(), z.boolean()),
+  pluginCoreBootstrap: z.boolean().default(false),
 });
 
 export const envSchema = z.object({

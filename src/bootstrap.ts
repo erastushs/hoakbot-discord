@@ -57,6 +57,10 @@ import { GoodbyeModule } from './modules/goodbye/goodbye.module.js';
 import { ShrineModule } from './modules/shrine/shrine.module.js';
 import { CommandRegistry } from './shared/command-registry.js';
 import type { HealthReport } from './core/health/types.js';
+import { generatedBuiltInPluginCatalog } from './modules/built-in-plugin-catalog.js';
+import { projectPluginModules } from './modules/plugin-compatibility.js';
+import { loadPluginCatalog, PluginRegistry } from './plugin-core/index.js';
+import type { IModule } from './modules/module.interface.js';
 
 const bootstrapLogger = pino({
   level: 'info',
@@ -180,34 +184,29 @@ try {
   container.registerSingleton(TOKENS.SessionProvider, () => sessionProvider);
   container.registerSingleton(TOKENS.AuthorizationProvider, () => authorizationProvider);
 
-  const generalModule = new GeneralModule();
-  const voiceModule = new VoiceModule();
-  const moderationModule = new ModerationModule();
-  const loggingModule = new LoggingModule();
-  const welcomeModule = new WelcomeModule();
-  const goodbyeModule = new GoodbyeModule();
-  const shrineModule = new ShrineModule();
-  manifestRegistry.register(generalModule.manifest);
-  manifestRegistry.register(voiceModule.manifest);
-  manifestRegistry.register(moderationModule.manifest);
-  manifestRegistry.register(loggingModule.manifest);
-  manifestRegistry.register(welcomeModule.manifest);
-  manifestRegistry.register(goodbyeModule.manifest);
-  manifestRegistry.register(shrineModule.manifest);
-  moduleRegistry.register(generalModule);
-  moduleRegistry.register(voiceModule);
-  moduleRegistry.register(moderationModule);
-  moduleRegistry.register(loggingModule);
-  moduleRegistry.register(welcomeModule);
-  moduleRegistry.register(goodbyeModule);
-  moduleRegistry.register(shrineModule);
-  moduleLoader.registerModule(generalModule);
-  moduleLoader.registerModule(voiceModule);
-  moduleLoader.registerModule(moderationModule);
-  moduleLoader.registerModule(loggingModule);
-  moduleLoader.registerModule(welcomeModule);
-  moduleLoader.registerModule(goodbyeModule);
-  moduleLoader.registerModule(shrineModule);
+  let builtInModules: IModule[];
+  if (appConfig.featureFlags.pluginCoreBootstrap) {
+    const pluginRegistry = new PluginRegistry();
+    const snapshot = await loadPluginCatalog(generatedBuiltInPluginCatalog, pluginRegistry);
+    builtInModules = projectPluginModules(snapshot);
+    logger.info({ pluginIds: [...snapshot.keys()] }, 'Built-in modules selected through plugin-core bootstrap');
+  } else {
+    builtInModules = [
+      new GeneralModule(),
+      new VoiceModule(),
+      new ModerationModule(),
+      new LoggingModule(),
+      new WelcomeModule(),
+      new GoodbyeModule(),
+      new ShrineModule(),
+    ];
+  }
+  for (const module of builtInModules) {
+    if (!module.manifest) throw new Error(`Built-in module "${module.name}" has no manifest.`);
+    manifestRegistry.register(module.manifest);
+    moduleRegistry.register(module);
+    moduleLoader.registerModule(module);
+  }
 
   await moduleLoader.loadAll(container);
   apiRouter.use(createSecurityHeadersMiddleware());

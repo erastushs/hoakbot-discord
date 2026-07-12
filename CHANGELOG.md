@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added the Phase 02 plugin core: static validated catalogs, dependency and collision diagnostics, atomic immutable registry snapshots, scoped capability context, secret-free metadata serialization, deterministic lifecycle coordination, and legacy module projections.
+- Added a disabled-by-default `pluginCoreBootstrap` flag providing reversible old/new bootstrap selection.
+
 ### Changed
 - Polished the 3.2.3 user-facing Discord presentation baseline across general commands, Welcome, Goodbye, Shrine, moderation, and logging while preserving public behavior.
 - Standardized safe Discord content truncation and mention escaping and recorded the approved Phase 01 surface inventory, presentation matrix, and golden regression map.

@@ -2,8 +2,8 @@
 
 Every item is mandatory unless explicitly marked not applicable with a reason.
 
-- [x] **Phase:** Work matches the active [phase](phases/PHASE-01-UX-POLISH.md), its scope, deliverables, acceptance criteria, testing, and rollback plan; no later phase was started.
-- [x] **Acceptance criteria:** Every acceptance criterion in the active phase is demonstrably satisfied; evidence is indexed in the [presentation baseline](phases/PHASE-01-PRESENTATION-BASELINE.md).
+- [x] **Phase:** Work matches [Phase 02](phases/PHASE-02-PLUGIN-CORE.md), its scope, deliverables, acceptance criteria, testing, and rollback plan; Phase 03 and later helper APIs were not started.
+- [x] **Acceptance criteria:** Phase 02 criteria are covered by `tests/unit/plugin-core.test.ts`, `tests/unit/built-in-plugin-catalog.test.ts`, and `tests/unit/module-index.test.ts`: no factory on invalid catalog; deterministic dependency order/path diagnostics; complete collision rejection; atomic immutable/concurrency-safe registry snapshots; scoped context denial and redaction; lifecycle timeout/abort/cleanup/reverse/repeated-stop traces; 3.2.3 projections; and disabled-flag legacy rollback.
 - [x] **Architecture and ADRs:** Architecture is unchanged unless the phase requires a change and a human approved it; changes comply with [ARCHITECTURE](ARCHITECTURE.md) and relevant [ADR-011](adr/ADR-011-Plugin-System.md), [ADR-012](adr/ADR-012-Configuration.md), [ADR-013](adr/ADR-013-Dashboard.md), and [ADR-014](adr/ADR-014-Command-Discovery.md).
 - [x] **Correctness:** Success, empty, denied, missing-data, boundary, and failure paths are correct and deterministic.
 - [x] **Compatibility:** Existing commands, permissions, settings, IDs, database data, API envelopes/routes, dashboard behavior, and module compatibility remain intact unless approved.

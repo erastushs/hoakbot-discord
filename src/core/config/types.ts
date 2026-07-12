@@ -127,6 +127,7 @@ export interface PermissionsConfig {
 
 export interface FeatureFlagsConfig {
   modules: Record<string, boolean>;
+  pluginCoreBootstrap: boolean;
 }
 
 export interface AppConfig {

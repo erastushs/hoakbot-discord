@@ -1,9 +1,9 @@
-import { resolve } from 'node:path';
 import type { IModule } from '../module.interface.js';
 import type { IContainer } from '../../core/container/types.js';
 import { TOKENS } from '../../core/container/tokens.js';
 import { ConnectionManager } from './services/ConnectionManager.js';
 import { AudioManager } from './services/AudioManager.js';
+import { resolveVoiceSound } from './services/voice-sound.js';
 import type { ILogger } from '../../core/logger/logger.service.js';
 import type { IEventBus } from '../../core/event-bus/types.js';
 import type { IMetrics } from '../../core/metrics/types.js';
@@ -141,12 +141,16 @@ export class VoiceModule implements IModule {
     if (this.isShuttingDown || (this.state as string) !== VoiceStateEnum.WAITING) return;
 
     const connection = this.connectionManager.getConnection();
-    const soundPath = resolve('assets', 'sounds', `${this.defaultSound}.mp3`);
 
     this.transition(VoiceStateEnum.PLAYING, logger);
 
     try {
-      await this.audioManager.play(connection, soundPath, this.volume);
+      const sound = await resolveVoiceSound(this.defaultSound);
+      try {
+        await this.audioManager.play(connection, sound.path, this.volume);
+      } finally {
+        sound.release();
+      }
       this.metrics?.counter('voice_playback_total').increment();
       logger.info({ sound: this.defaultSound }, 'Playback finished');
     } catch (err) {

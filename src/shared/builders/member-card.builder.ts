@@ -1,11 +1,13 @@
 import { fileURLToPath } from 'node:url';
 import { resolve, dirname } from 'node:path';
+import { AssetResolver, assetManifest } from '../../plugin-core/assets/index.js';
 import { canvasFont } from '../canvas/fonts.js';
 import type { ImageService } from '../image/image.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DEFAULT_BG_PATH = resolve(__dirname, '../../../assets/images/default-welcome-bg.png');
+const assetResolver = new AssetResolver(assetManifest);
 
 export interface MemberCardInput {
   username: string;
@@ -99,16 +101,20 @@ export class MemberCardBuilder {
       this.imageService.warn({ url: backgroundUrl }, 'Failed to load background image, trying bundled default');
     }
 
+    const fallbackHandle = process.env.HOAKBOT_ASSET_RESOLVER === '0' ? undefined : await assetResolver.resolve('welcome', 'welcome:default-background');
+    const fallbackPath = process.env.HOAKBOT_ASSET_RESOLVER === '0' ? DEFAULT_BG_PATH : fallbackHandle!.path;
     try {
-      const fallback = await this.imageService.loadAsset(DEFAULT_BG_PATH);
+      const fallback = await this.imageService.loadAsset(fallbackPath);
       ctx.drawImage(fallback, 0, 0, LAYOUT.width, LAYOUT.height);
     } catch {
-      this.imageService.warn({ path: DEFAULT_BG_PATH }, 'Bundled default background also failed, rendering solid color');
+      this.imageService.warn({ path: fallbackPath }, 'Bundled default background also failed, rendering solid color');
       const gradient = ctx.createLinearGradient(0, 0, 0, LAYOUT.height);
       gradient.addColorStop(0, '#1a1a2e');
       gradient.addColorStop(1, '#16213e');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, LAYOUT.width, LAYOUT.height);
+    } finally {
+      fallbackHandle?.release();
     }
   }
 

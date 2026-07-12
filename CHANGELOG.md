@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Phase 06 typed command definitions, deterministic generated command discovery and catalog hashing, atomic registry projections, shared permission visibility, bounded authorized autocomplete, registry-backed Help/list/deploy workflows, deployment drift detection, 3.2.3 payload fixtures, and explicit rollback adapters.
 
 ### Changed
+- Added deterministic asset generation to the production build and migrated Shrine textures, the default Welcome background, and Voice sounds to validated namespaced resolution with a direct-path compatibility rollback.
 - Polished the 3.2.3 user-facing Discord presentation baseline across general commands, Welcome, Goodbye, Shrine, moderation, and logging while preserving public behavior.
 - Standardized safe Discord content truncation and mention escaping and recorded the approved Phase 01 surface inventory, presentation matrix, and golden regression map.
 

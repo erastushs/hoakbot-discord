@@ -1,4 +1,3 @@
-import { resolve } from 'node:path';
 import { Events, type Client, type VoiceState as DiscordVoiceState } from 'discord.js';
 import { TOKENS } from '../../core/container/tokens.js';
 import type { ILogger } from '../../core/logger/logger.service.js';
@@ -10,6 +9,7 @@ import { voiceManifest } from './manifest.js';
 import { createVoiceSettings } from './settings.js';
 import { ConnectionManager } from './services/ConnectionManager.js';
 import { AudioManager } from './services/AudioManager.js';
+import { resolveVoiceSound } from './services/voice-sound.js';
 
 enum VoiceState { IDLE = 'IDLE', MOVING = 'MOVING', WAITING = 'WAITING', PLAYING = 'PLAYING', RETURNING = 'RETURNING', COOLDOWN = 'COOLDOWN' }
 
@@ -75,7 +75,7 @@ export const createVoicePlugin: PluginFactory = (context) => {
           transition(VoiceState.WAITING, logger); await wait(joinDelayMs);
           if (run !== generation || (state as VoiceState) !== VoiceState.WAITING) return;
           transition(VoiceState.PLAYING, logger);
-          try { await audio.play(connection.getConnection(), resolve('assets', 'sounds', `${defaultSound}.mp3`), volume); if (run !== generation) return; metrics.counter('voice_playback_total').increment(); }
+          try { const sound = await resolveVoiceSound(defaultSound); try { await audio.play(connection.getConnection(), sound.path, volume); } finally { sound.release(); } if (run !== generation) return; metrics.counter('voice_playback_total').increment(); }
           catch (error) { if (run !== generation) return; metrics.counter('voice_error_total').increment(); logger.error({ error }, 'Playback error'); }
           if (run !== generation) return;
           transition(VoiceState.RETURNING, logger); connection.returnToStandby(); transition(VoiceState.COOLDOWN, logger);

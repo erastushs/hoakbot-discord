@@ -1,17 +1,10 @@
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import type { Image } from '@napi-rs/canvas';
+import { AssetResolver, assetManifest } from '../../../plugin-core/assets/index.js';
 import type { ImageService } from '../../../shared/image/image.service.js';
 import type { Context2D } from './canvas-types.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const textureRootCandidates = [
-  resolve(process.cwd(), 'src/modules/shrine/assets/textures'),
-  resolve(__dirname, '../assets/textures'),
-  resolve(__dirname, '../../src/modules/shrine/assets/textures'),
-];
+const assetResolver = new AssetResolver(assetManifest);
 
 export type ShrineTexture = 'noise' | 'purple-fog' | 'scratches' | 'vignette';
 
@@ -31,18 +24,20 @@ export class TextureRenderer {
     const cached = this.textureCache.get(texture);
     if (cached) return cached;
 
-    let lastError: unknown;
-    for (const root of textureRootCandidates) {
+    if (process.env.HOAKBOT_ASSET_RESOLVER !== '0') {
+      const handle = await assetResolver.resolve('shrine', `shrine:${texture}`);
       try {
-        const image = await this.imageService.loadAsset(resolve(root, textureFiles[texture]));
+        const image = await this.imageService.loadAsset(handle.path);
         this.textureCache.set(texture, image);
         return image;
-      } catch (error) {
-        lastError = error;
+      } finally {
+        handle.release();
       }
     }
 
-    throw lastError instanceof Error ? lastError : new Error(`Failed to load Shrine texture: ${texture}`);
+    const image = await this.imageService.loadAsset(resolve(process.cwd(), 'src/modules/shrine/assets/textures', textureFiles[texture]));
+    this.textureCache.set(texture, image);
+    return image;
   }
 
   drawCover(ctx: Context2D, image: Image, opacity: number, width: number, height: number): void {

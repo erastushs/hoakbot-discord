@@ -10,7 +10,7 @@
 
 ## Current Phase
 
-Phase 06 — Commands is complete with typed command descriptors, deterministic generated discovery, one canonical registry, permission-consistent projections, bounded autocomplete, deployment drift detection, and explicit rollback adapters. No Phase 06 commit has been created; commit pending authorization.
+Phase 08 — Assets is complete with validated ownership and licensing metadata, deterministic generated build assets, safe namespaced resolution, bounded handle caching and disposal, migrated Shrine, Welcome, and Voice consumers, and direct-path compatibility rollback. Phase 07 was explicitly skipped for this authorized task and remains incomplete. No Phase 08 commit has been created; commit pending authorization. Phase 09 has not started.
 
 ## Completed Phases
 
@@ -21,10 +21,11 @@ Phase 06 — Commands is complete with typed command descriptors, deterministic 
 - Phase 04 — Dashboard. Safe compatibility projections, normalized metadata-driven UI, dependency-aware guild state controls, persistence, audit, and authenticated live updates are implemented under [PHASE-04-DASHBOARD](phases/PHASE-04-DASHBOARD.md).
 - Phase 05 — Config. Plugin-owned validated settings, compatibility reads, deterministic value hot reload, redacted diagnostics, namespaced checksummed migrations, and reversible feature flags are implemented under [PHASE-05-CONFIG](phases/PHASE-05-CONFIG.md).
 - Phase 06 — Commands. Typed command descriptors, generated deterministic catalogs and hashes, atomic registry projections, shared permission visibility, authorized bounded autocomplete, explicit list/deploy workflows, drift detection, 3.2.3 payload fixtures, and rollback adapters are implemented under [PHASE-06-COMMANDS](phases/PHASE-06-COMMANDS.md). No commit has been created; commit pending authorization.
+- Phase 08 — Assets. Validated ownership and licensing inventory, namespaced descriptors, deterministic generated maps and build copying, safe resolver boundaries, bounded handle caching and disposal, font registration support, migrated Shrine, Welcome, and Voice consumers, compatibility adapters, and focused regressions are implemented under [PHASE-08-ASSETS](phases/PHASE-08-ASSETS.md). Phase 07 was explicitly skipped and remains incomplete. No Phase 08 commit has been created; commit pending authorization.
 
 ## Current Objective
 
-Preserve the approved 3.2.3 command payload, permission, scope, routing, Help, and explicit deployment behavior through the completed Phase 06 compatibility controls. Do not begin Phase 07 without separate authorization.
+Preserve existing Shrine rendering, Welcome fallback, Voice playback, and source-path rollback behavior through the completed Phase 08 asset controls. Phase 07 remains incomplete after its authorized skip; do not begin Phase 09.
 
 ## Known Issues
 
@@ -42,12 +43,13 @@ None recorded. Human approval remains required for scope changes, contract/ADR c
 - Keep Phase 04 dashboard compatibility, security, dependency-state, and live-update regressions green.
 - Keep Phase 05 ownership, validation, hot-reload, migration, rollback, and compatibility regressions green.
 - Keep Phase 06 command catalog, payload, permission, Help, autocomplete, deployment-drift, and rollback regressions green.
-- Create the Phase 06 commit only with explicit authorization.
-- Begin Phase 07 only under its phase contract and normal approval gates.
+- Keep Phase 08 manifest, generator, containment, integrity, ownership, cache/disposal, build integration, consumer compatibility, and rollback regressions green.
+- Create the Phase 08 commit only with explicit authorization.
+- Keep Phase 07 recorded as skipped and incomplete; do not begin Phase 09 without separate authorization.
 
 ## Next Recommended Task
 
-Review and authorize the pending Phase 06 commit separately; do not begin Phase 07.
+Review and authorize the pending Phase 08 commit separately; do not begin Phase 09.
 
 ## Relevant ADRs
 
@@ -60,8 +62,8 @@ Phase 02 implements ADR-011 core behavior without changing later-phase contracts
 
 ## Relevant Phase Documents
 
-[Phase 06 — Commands](phases/PHASE-06-COMMANDS.md), [Phase 05 — Config](phases/PHASE-05-CONFIG.md), [Phase 04 — Dashboard](phases/PHASE-04-DASHBOARD.md), [Phase 03 — Plugin Migration](phases/PHASE-03-PLUGIN-MIGRATION.md), and [Phase 02 — Plugin Core](phases/PHASE-02-PLUGIN-CORE.md).
+[Phase 08 — Assets](phases/PHASE-08-ASSETS.md), [Phase 06 — Commands](phases/PHASE-06-COMMANDS.md), [Phase 05 — Config](phases/PHASE-05-CONFIG.md), [Phase 04 — Dashboard](phases/PHASE-04-DASHBOARD.md), [Phase 03 — Plugin Migration](phases/PHASE-03-PLUGIN-MIGRATION.md), and [Phase 02 — Plugin Core](phases/PHASE-02-PLUGIN-CORE.md). Phase 07 remains skipped and incomplete.
 
 ## Files Recently Changed
 
-Phase 06 added typed command authoring and metadata validation, generated deterministic discovery and catalog hashing, atomic immutable registry projections, shared permission visibility, bounded authorized autocomplete, registry-backed Help/list/deploy behavior, deployment drift state, 3.2.3 payload fixtures, rollback adapters, and focused regressions. The full build, typecheck, test, and lint pipeline passes; no commit has been created and the commit remains pending authorization.
+Phase 08 added a validated asset inventory and schema, deterministic generated deployment maps and copying, path and integrity validation, namespaced owner-isolated resolution, bounded handle caching and disposal, deterministic font registration support, resolver-backed Shrine textures, Welcome fallback imagery, and Voice sounds, direct-path rollback adapters, and focused regressions. The full build, typecheck, test, and lint pipeline passes; Phase 07 was explicitly skipped for this authorized task, Phase 09 has not started, and no Phase 08 commit has been created.

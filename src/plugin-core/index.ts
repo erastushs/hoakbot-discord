@@ -1,3 +1,4 @@
+export * from './assets/index.js';
 export * from './catalog-validator.js';
 export * from './contracts.js';
 export * from './context.js';

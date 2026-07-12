@@ -7,7 +7,7 @@
 4.0.0: compatibility-first plugin platform with migrated built-ins and a supported plugin SDK.
 
 ## Current Phase
-Phase 06 — Commands is complete with typed descriptors, deterministic generated discovery, canonical registry projections, permission-consistent Help/runtime behavior, bounded autocomplete, drift detection, and explicit rollback adapters; Phase 07 has not started.
+Phase 08 — Assets is complete with a validated ownership and licensing inventory, deterministic generated build assets, safe namespaced resolution, bounded handle caching and disposal, migrated Shrine, Welcome, and Voice consumers, and compatibility rollback; Phase 07 was explicitly skipped for this authorized task and remains incomplete, and Phase 09 has not started.
 
 ## Completed Milestones
 - Existing module manifests, registries, dependency graph, and loader

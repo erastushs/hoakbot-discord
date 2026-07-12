@@ -5,7 +5,8 @@
   "private": true,
   "main": "dist/bootstrap.js",
   "scripts": {
-    "build": "tsc && npm run dashboard:build",
+    "build": "tsc && npm run generate:assets && npm run dashboard:build",
+    "generate:assets": "tsx scripts/generate-assets.ts",
     "dev": "tsx watch src/bootstrap.ts",
     "start": "node dist/bootstrap.js",
     "lint": "eslint src/ dashboard/",

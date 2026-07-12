@@ -13,12 +13,17 @@ const mockContext = {
   textAlign: 'left' as CanvasTextAlign,
   textBaseline: 'alphabetic' as CanvasTextBaseline,
   fillText: vi.fn(),
+  strokeText: vi.fn(),
+  lineJoin: 'miter' as CanvasLineJoin,
   drawImage: vi.fn(),
   beginPath: vi.fn(),
   arc: vi.fn(),
   closePath: vi.fn(),
   clip: vi.fn(),
-  stroke: vi.fn(),
+  stroke: vi.fn(() => {
+    mockContext.strokeCalls.push({ strokeStyle: mockContext.strokeStyle, lineWidth: mockContext.lineWidth });
+  }),
+  strokeCalls: [] as Array<{ strokeStyle: string; lineWidth: number }>,
   shadowColor: '',
   shadowOffsetX: 0,
   shadowOffsetY: 0,
@@ -27,6 +32,9 @@ const mockContext = {
   lineWidth: 1,
   measureText: vi.fn(() => ({ width: 100 })),
   createLinearGradient: vi.fn(() => ({
+    addColorStop: vi.fn(),
+  })),
+  createRadialGradient: vi.fn(() => ({
     addColorStop: vi.fn(),
   })),
 };
@@ -72,7 +80,7 @@ function makeInput(overrides?: Partial<WelcomeImageInput>): WelcomeImageInput {
   };
 }
 
-function fontString(size: number, weight: 'bold' | 'normal' = 'bold'): string {
+function fontString(size: number, weight: number | 'bold' | 'normal' = 'bold'): string {
   return `${weight} ${size}px ${FONT_FAMILY}`;
 }
 
@@ -84,6 +92,7 @@ describe('WelcomeImageBuilder', () => {
     imageService = makeImageService();
     builder = new WelcomeImageBuilder(imageService as never);
     vi.clearAllMocks();
+    mockContext.strokeCalls.length = 0;
   });
 
   afterEach(() => {
@@ -114,18 +123,22 @@ describe('WelcomeImageBuilder', () => {
     expect(mockContext.drawImage).toHaveBeenCalledWith(mockImage, 0, 0, 800, 450);
   });
 
-  it('does NOT draw a dark overlay (full colors shown)', async () => {
+  it('draws a dark gradient overlay and edge vignette', async () => {
     await builder.build(makeInput());
 
-    expect(mockContext.fillRect).not.toHaveBeenCalled();
+    expect(mockContext.createLinearGradient).toHaveBeenCalled();
+    expect(mockContext.createRadialGradient).toHaveBeenCalled();
+    expect(mockContext.fillRect).toHaveBeenCalledTimes(2);
   });
 
   it('draws white border around avatar (6px)', async () => {
     await builder.build(makeInput());
 
-    expect(mockContext.stroke).toHaveBeenCalled();
-    expect(mockContext.strokeStyle).toBe('#ffffff');
-    expect(mockContext.lineWidth).toBe(6);
+    expect(mockContext.strokeCalls).toContainEqual({ strokeStyle: '#ffffff', lineWidth: 6 });
+    expect(mockContext.strokeCalls).toContainEqual({
+      strokeStyle: 'rgba(255, 193, 7, 0.9)',
+      lineWidth: 2,
+    });
   });
 
   it('draws avatar at increased size (144px)', async () => {
@@ -148,9 +161,9 @@ describe('WelcomeImageBuilder', () => {
       (c: unknown[]) => c[1] === 'WELCOME',
     );
     expect(titleCall).toBeDefined();
-    expect(titleCall[2]).toBe(fontString(52));
+    expect(titleCall[2]).toBe(fontString(52, 900));
     expect(titleCall[7]).toBe('#ffffff');
-    expect(titleCall[8]).toEqual({ color: 'rgba(0, 0, 0, 0.7)', offsetX: 0, offsetY: 3, blur: 8 });
+    expect(titleCall[8]).toEqual({ color: 'rgba(0, 0, 0, 0.95)', offsetX: 0, offsetY: 3, blur: 12 });
   });
 
   it('draws username at 36px bold gold with strong shadow (Noto Sans)', async () => {
@@ -164,14 +177,14 @@ describe('WelcomeImageBuilder', () => {
     expect(userCall[7]).toBe('#FFC107');
   });
 
-  it('draws subtitle at 22px bold white, uppercased (Noto Sans)', async () => {
+  it('draws subtitle at 24px bold white, uppercased (Noto Sans)', async () => {
     await builder.build(makeInput());
 
     const subCall = imageService.drawText.mock.calls.find(
       (c: unknown[]) => c[1] === 'TO TEST GUILD',
     );
     expect(subCall).toBeDefined();
-    expect(subCall[2]).toBe(fontString(22));
+    expect(subCall[2]).toBe(fontString(24));
     expect(subCall[7]).toBe('#ffffff');
   });
 
@@ -180,10 +193,10 @@ describe('WelcomeImageBuilder', () => {
 
     for (const call of imageService.drawText.mock.calls) {
       expect(call[8]).toEqual({
-        color: 'rgba(0, 0, 0, 0.7)',
+        color: 'rgba(0, 0, 0, 0.95)',
         offsetX: 0,
         offsetY: 3,
-        blur: 8,
+        blur: 12,
       });
     }
   });

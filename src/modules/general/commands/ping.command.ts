@@ -10,7 +10,7 @@ export class PingCommand extends BaseCommand {
   readonly prefixAliases = ['p'];
 
   async execute(ctx: CommandContext): Promise<void> {
-    const latency = Date.now() - ctx.createdAt.getTime();
+    const latency = Math.max(0, Date.now() - ctx.createdAt.getTime());
     await ctx.reply(`Pong! \`${latency}ms\``);
   }
 }

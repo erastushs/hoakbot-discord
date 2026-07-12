@@ -1,5 +1,5 @@
 import type { Context2D } from './canvas-types.js';
-import { TextureRenderer } from './TextureRenderer.js';
+import type { TextureRenderer } from './TextureRenderer.js';
 
 export class BackgroundRenderer {
   constructor(private readonly textures: TextureRenderer) {}

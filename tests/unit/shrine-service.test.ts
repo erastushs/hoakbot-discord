@@ -214,6 +214,25 @@ describe('ShrineService', () => {
     expect(logger.info).toHaveBeenCalledWith({ week: 606 }, '[Shrine] Announcement delivered. Week 606 marked as announced.');
   });
 
+  it('sends an embed-only fallback when artwork rendering fails', async () => {
+    const { service, send, cardRenderer, logger, metrics, eventBus } = createService([]);
+    cardRenderer.render.mockRejectedValueOnce(new Error('artwork failed'));
+
+    const announced = await service.announce('guild-1', shrineConfig, makeRotation(605));
+
+    expect(announced).toBe(true);
+    expect(send).toHaveBeenCalledTimes(1);
+    const payload = send.mock.calls[0]?.[0];
+    expect(payload.files).toEqual([]);
+    expect(payload.embeds[0].toJSON().image).toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ guildId: 'guild-1', channelId: 'shrine-channel', week: 605 }),
+      'Failed to render Shrine artwork, sending fallback announcement',
+    );
+    expect(metrics.increments.get('shrine_announcement_sent_total')).toHaveBeenCalledTimes(1);
+    expect(eventBus.emit).toHaveBeenCalledWith('shrine.updated', expect.any(Object));
+  });
+
   it('keeps failed announcements pending and retries the same week', async () => {
     const send = vi.fn()
       .mockRejectedValueOnce(new Error('discord failed'))

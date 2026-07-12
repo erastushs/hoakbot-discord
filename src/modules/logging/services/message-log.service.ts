@@ -7,8 +7,7 @@ import type { IEventBus } from '../../../core/event-bus/types.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 import { AttachmentArchiveService } from '../../../shared/attachment/attachment-archive.service.js';
 import { COLORS } from '../../../shared/constants/colors.js';
-
-const CONTENT_MAX = 1024;
+import { discordLogContent } from '../../../shared/builders/discord-content.js';
 const DELETE_FOOTER = 'Message Delete';
 
 interface BulkMessageCollection {
@@ -435,10 +434,6 @@ export class MessageLogService {
   private formatContent(content: string): string {
     if (!content) return '*(No content)*';
 
-    if (content.length > CONTENT_MAX) {
-      return content.slice(0, CONTENT_MAX - 3) + '...';
-    }
-
-    return content;
+    return discordLogContent(content);
   }
 }

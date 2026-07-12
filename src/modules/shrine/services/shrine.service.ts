@@ -151,14 +151,24 @@ export class ShrineService {
     }
 
     try {
-      const embed = this.buildEmbed(rotation);
-      const card = await this.cardRenderer.render(rotation, {
-        imageCdnUrl: config.imageCdnUrl,
-        portraitFolder: config.portraitFolder,
-        perkFolder: config.perkFolder,
-        iridescentShardIcon: config.iridescentShardIcon,
-      });
-      await channel.send({ embeds: [embed], files: [{ attachment: card, name: ShrineCardRenderer.fileName }] });
+      let embed = this.buildEmbed(rotation);
+      let files: Array<{ attachment: Buffer; name: string }> = [];
+      try {
+        const card = await this.cardRenderer.render(rotation, {
+          imageCdnUrl: config.imageCdnUrl,
+          portraitFolder: config.portraitFolder,
+          perkFolder: config.perkFolder,
+          iridescentShardIcon: config.iridescentShardIcon,
+        });
+        files = [{ attachment: card, name: ShrineCardRenderer.fileName }];
+      } catch (error) {
+        this.logger.warn(
+          { error: serializeError(error), guildId, channelId: config.channelId, week: rotation.week },
+          'Failed to render Shrine artwork, sending fallback announcement',
+        );
+        embed = this.buildEmbed(rotation, false);
+      }
+      await channel.send({ embeds: [embed], files });
       this.metrics.counter('shrine_announcement_sent_total').increment();
       this.logger.info({ guildId, channelId: config.channelId, week: rotation.week }, 'Shrine announcement sent');
       this.eventBus.emit('shrine.updated', { guildId, channelId: config.channelId, rotation });
@@ -173,7 +183,7 @@ export class ShrineService {
     }
   }
 
-  buildEmbed(rotation: ShrineRotation) {
+  buildEmbed(rotation: ShrineRotation, includeArtwork = true) {
     const highestUsagePerk = [...rotation.perks].sort((a, b) => tierRank[b.usageTier] - tierRank[a.usageTier])[0];
     const resetDate = this.parseApiEndAsUtc(rotation.end);
     const resetTimestamp = Math.floor(resetDate.getTime() / 1000);
@@ -192,7 +202,7 @@ export class ShrineService {
       title: '✨ Shrine of Secrets Updated',
       description: `Week #${rotation.week}\n\n🕒 Resets ${discordTimestamp}`,
       color: this.colorForTier(highestUsagePerk?.usageTier ?? 'unknown'),
-      image: ShrineCardRenderer.attachmentUrl,
+      image: includeArtwork ? ShrineCardRenderer.attachmentUrl : undefined,
       footer: 'Dead by Daylight • Powered by NightLight',
       timestamp: false,
     });

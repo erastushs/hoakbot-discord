@@ -188,6 +188,29 @@ describe('WelcomeService', () => {
       expect((call.files as Array<Record<string, unknown>>)[0]?.name).toBe('welcome.png');
     });
 
+    it('bounds content, neutralizes mass mentions, and allows only the joining member mention', async () => {
+      const send = vi.fn().mockResolvedValue(undefined);
+      const client = makeClient(send);
+      const config = {
+        ...defaultConfig,
+        message: { title: '@everyone 歓迎', body: [`<@user-1> @here ${'界'.repeat(2100)}`] },
+      };
+      const member = makeGuildMember();
+      member.guild.channels.cache.set('welcome-channel', { send, isTextBased: () => true } as never);
+
+      createService(client, config);
+      client.emit('guildMemberAdd', member);
+
+      await vi.waitFor(() => expect(send).toHaveBeenCalled());
+      const call = send.mock.calls[0]?.[0] as { content: string; allowedMentions: unknown };
+      expect(call.content).toHaveLength(2000);
+      expect(call.content).toContain('@\u200beveryone');
+      expect(call.content).toContain('@\u200bhere');
+      expect(call.content).toContain('<@user-1>');
+      expect(call.content.endsWith('…')).toBe(true);
+      expect(call.allowedMentions).toEqual({ users: ['user-1'] });
+    });
+
     it('renders message title and body via TemplateService', async () => {
       const send = vi.fn().mockResolvedValue(undefined);
       const client = makeClient(send);

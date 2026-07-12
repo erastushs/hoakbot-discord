@@ -20,11 +20,17 @@ export class ServerInfoCommand extends BaseCommand {
     }
 
     const guild = ctx.guild;
-    const owner = await guild.fetchOwner();
+    let owner;
+    try {
+      owner = await guild.fetchOwner();
+      await guild.members.fetch();
+    } catch (error) {
+      ctx.logger.warn({ error, command: this.name }, 'Failed to fetch server information');
+      await ctx.reply('Server information is currently unavailable.');
+      return;
+    }
 
     const totalMembers = guild.memberCount;
-
-    await guild.members.fetch();
 
     const humans = guild.members.cache.filter((m) => !m.user.bot).size;
     const bots = totalMembers - humans;

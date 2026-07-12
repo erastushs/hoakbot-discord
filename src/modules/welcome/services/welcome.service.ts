@@ -9,6 +9,7 @@ import type { TemplateService } from '../../../shared/template/template.service.
 import type { TemplateContext } from '../../../shared/template/template.service.js';
 import type { ImageService } from '../../../shared/image/image.service.js';
 import { serializeError } from '../../../shared/utils/error.js';
+import { DISCORD_MESSAGE_LIMIT, neutralizeMassMentions, truncateDiscordText } from '../../../shared/builders/discord-content.js';
 
 const WELCOME_SETTING_KEYS = [
   'welcome.enabled',
@@ -82,9 +83,14 @@ export class WelcomeService {
       });
 
       const bodyText = renderedBody.join('\n');
+      const content = truncateDiscordText(
+        neutralizeMassMentions(`## ${renderedTitle}\n${bodyText}`),
+        DISCORD_MESSAGE_LIMIT,
+      );
       await channel.send({
-        content: `## ${renderedTitle}\n${bodyText}`,
+        content,
         files: [{ attachment: imageBuffer, name: 'welcome.png' }],
+        allowedMentions: { users: [member.id] },
       });
 
       this.metrics.counter('welcome_total').increment();

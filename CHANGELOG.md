@@ -5,6 +5,15 @@ All notable changes to Hoak Bot are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Polished the 3.2.3 user-facing Discord presentation baseline across general commands, Welcome, Goodbye, Shrine, moderation, and logging while preserving public behavior.
+- Standardized safe Discord content truncation and mention escaping and recorded the approved Phase 01 surface inventory, presentation matrix, and golden regression map.
+
+### Security
+- Verified dashboard accessibility presentation and existing authenticated, authorized, guild-isolated, CSRF, CORS, rate-limit, audit, and WebSocket security regressions.
+
 ## [2.0.0] — 2025-07-03
 
 ### Added

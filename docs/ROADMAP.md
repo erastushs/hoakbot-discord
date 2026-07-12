@@ -7,13 +7,14 @@
 4.0.0: compatibility-first plugin platform with migrated built-ins and a supported plugin SDK.
 
 ## Current Phase
-Phase 00 — Documentation. Architecture, ADRs, phase contracts, and templates are established before implementation.
+Phase 01 — UX Polish is complete. Its approved 3.2.3 presentation baseline precedes Phase 02 plugin-core work.
 
 ## Completed Milestones
 - Existing module manifests, registries, dependency graph, and loader
 - Secure API with authenticated and guild-scoped controls
 - Metadata-driven dashboard and configuration platform
 - V4 documentation plan and terminology baseline
+- Phase 01 user-facing surface inventory, presentation baseline, golden regressions, and accessibility/security verification
 
 ## Upcoming Phases
 1. UX Polish

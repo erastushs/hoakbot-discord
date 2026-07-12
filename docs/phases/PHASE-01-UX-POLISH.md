@@ -33,5 +33,9 @@ Unit-test each named surface and boundary-length/Unicode/mention cases. Snapshot
 ## Rollback Plan
 Keep changes separable by surface. Revert a failing surface to its captured 3.2.3 formatter without changing commands, settings, or data. If a shared primitive causes broad regressions, restore local formatters and rerun all golden fixtures.
 
+## Status
+
+Complete. The approved inventory, matrix, fixtures, and regression rules are recorded in [PHASE-01-PRESENTATION-BASELINE](PHASE-01-PRESENTATION-BASELINE.md).
+
 ## Notes
 This phase establishes presentation baselines; it does not introduce production plugin contracts.

@@ -44,6 +44,38 @@ describe('ModulePage', () => {
     expect(screen.getByRole('spinbutton', { name: /Count/ })).toHaveValue(3);
   });
 
+  it('presents accessible validation without exposing security credentials', () => {
+    const secureSettings: ModuleManifest = {
+      ...generalManifest,
+      dashboard: {
+        navigation: { sidebarPriority: 1, sidebarSection: 'Utility' },
+        homePage: { featured: true, priority: 1 },
+        settings: { groups: [{ key: 'security', label: 'Security', order: 10 }] },
+      },
+    };
+
+    render(
+      <ModulePage
+        manifest={secureSettings}
+        settings={[{
+          key: 'security.redirectUri',
+          type: 'string',
+          category: 'security',
+          defaultValue: '',
+          label: 'Redirect URI',
+          description: 'Public OAuth callback address.',
+          group: 'security',
+        }]}
+        values={{ 'security.redirectUri': '' }}
+      />,
+    );
+
+    const control = screen.getByRole('textbox', { name: /Redirect URI/ });
+    expect(control).toHaveAccessibleDescription('Public OAuth callback address.');
+    expect(screen.queryByText(/client secret|session token|csrf token/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Protected configuration')).toBeInTheDocument();
+  });
+
   it('renders non-General modules with the shared module template', () => {
     const manifest = manifests[0]!;
 

@@ -2,6 +2,7 @@ import type { ColorResolvable } from 'discord.js';
 import type { CommandContext } from '../types/command.js';
 import { EmbedFactory } from '../builders/embed.factory.js';
 import type { EmbedBuilder } from 'discord.js';
+import { DISCORD_EMBED_LIMITS, neutralizeMassMentions, truncateDiscordText } from '../builders/discord-content.js';
 
 export interface ResponseOptions {
   title?: string;
@@ -47,10 +48,14 @@ export class Response {
 
 function applyOptions(embed: EmbedBuilder, opts?: ResponseOptions): void {
   if (!opts) return;
-  if (opts.title) embed.setTitle(opts.title);
-  if (opts.description !== undefined) embed.setDescription(opts.description);
-  if (opts.fields) embed.addFields(...opts.fields);
+  if (opts.title) embed.setTitle(truncateDiscordText(neutralizeMassMentions(opts.title), DISCORD_EMBED_LIMITS.title));
+  if (opts.description !== undefined) embed.setDescription(opts.description === null ? null : truncateDiscordText(neutralizeMassMentions(opts.description), DISCORD_EMBED_LIMITS.description));
+  if (opts.fields) embed.addFields(...opts.fields.map((field) => ({
+    ...field,
+    name: truncateDiscordText(neutralizeMassMentions(field.name), DISCORD_EMBED_LIMITS.fieldName),
+    value: truncateDiscordText(neutralizeMassMentions(field.value), DISCORD_EMBED_LIMITS.fieldValue),
+  })));
   if (opts.thumbnail) embed.setThumbnail(opts.thumbnail);
   if (opts.image) embed.setImage(opts.image);
-  if (opts.footer) embed.setFooter({ text: opts.footer });
+  if (opts.footer) embed.setFooter({ text: truncateDiscordText(neutralizeMassMentions(opts.footer), DISCORD_EMBED_LIMITS.footer) });
 }

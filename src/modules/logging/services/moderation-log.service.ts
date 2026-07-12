@@ -6,6 +6,7 @@ import type { IEventBus } from '../../../core/event-bus/types.js';
 import type { ModerationActionEvent, WarningIssuedEvent } from '../../../core/event-bus/events.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
+import { discordLogContent } from '../../../shared/builders/discord-content.js';
 
 const MODERATION_COLORS: Record<string, number> = {
   kick: COLORS.MODERATION.KICK,
@@ -208,7 +209,7 @@ export class ModerationLogService {
     const fields: Array<{ name: string; value: string; inline?: boolean }> = [
       {
         name: 'Reason',
-        value: reason || 'No reason provided.',
+        value: reason ? discordLogContent(reason) : 'No reason provided.',
         inline: false,
       },
     ];

@@ -1,5 +1,10 @@
 import { Collection } from '@discordjs/collection';
-import { ApplicationCommandOptionType, type AutocompleteInteraction, type ChatInputCommandInteraction, type Message } from 'discord.js';
+import {
+  ApplicationCommandOptionType,
+  type AutocompleteInteraction,
+  type ChatInputCommandInteraction,
+  type Message,
+} from 'discord.js';
 import type { ICommand, CommandContext } from '../shared/types/command.js';
 import type { CommandRegistry } from '../shared/command-registry.js';
 import type { ILogger } from '../core/logger/logger.service.js';
@@ -7,7 +12,7 @@ import type { IEventBus } from '../core/event-bus/types.js';
 import type { IMetrics } from '../core/metrics/types.js';
 import type { AppConfig } from '../core/config/types.js';
 import { PermissionMiddleware } from '../shared/middleware/permission.middleware.js';
-import type { CommandMetadata } from '../shared/command/define-command.js';
+import type { CommandMetadata, CommandOptionMetadata } from '../shared/command/define-command.js';
 
 export class CommandRouter {
   private readonly cooldowns = new Collection<string, number>();
@@ -52,15 +57,35 @@ export class CommandRouter {
       await interaction.respond([]);
       return;
     }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1_500);
     try {
       const choices = await Promise.race([
-        descriptor.autocomplete({ interaction, command: descriptor.command, option: focused.name, value: String(focused.value) }),
-        new Promise<readonly never[]>((resolve) => setTimeout(() => resolve([]), 1_500)),
+        descriptor.autocomplete({
+          ...ctx,
+          interaction,
+          command: descriptor.command,
+          option: focused.name,
+          value: String(focused.value),
+          signal: controller.signal,
+        }),
+        new Promise<readonly never[]>((resolve) =>
+          controller.signal.addEventListener('abort', () => resolve([]), { once: true }),
+        ),
       ]);
-      const normalized = choices.filter((choice) => typeof choice.name === 'string' && choice.name.length >= 1 && choice.name.length <= 100 && ((typeof choice.value === 'string' && choice.value.length >= 1 && choice.value.length <= 100) || (typeof choice.value === 'number' && Number.isFinite(choice.value)))).filter((choice, index, all) => all.findIndex((candidate) => candidate.name === choice.name && candidate.value === choice.value) === index).slice(0, 25);
+      const option = this.findOption(descriptor.metadata.payload?.options ?? [], focused.name);
+      const normalized = choices
+        .filter((choice) => this.validAutocompleteChoice(choice, option?.type))
+        .filter(
+          (choice, index, all) =>
+            all.findIndex((candidate) => candidate.name === choice.name && candidate.value === choice.value) === index,
+        )
+        .slice(0, 25);
       await interaction.respond(normalized);
     } catch {
       await interaction.respond([]).catch(() => undefined);
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -157,10 +182,7 @@ export class CommandRouter {
             await interaction.reply({ ...response, ephemeral: true });
           }
         } catch (responseErr) {
-          this.logger.warn(
-            { command: command.name, error: responseErr },
-            'Failed to send command failure response',
-          );
+          this.logger.warn({ command: command.name, error: responseErr }, 'Failed to send command failure response');
         }
       }
     }
@@ -193,11 +215,45 @@ export class CommandRouter {
   }
 
   private createAutocompleteContext(interaction: AutocompleteInteraction): CommandContext {
+    const args = new Map<string, unknown>();
+    for (const option of interaction.options.data ?? []) args.set(option.name, option.value);
     return {
-      source: 'slash', user: interaction.user, member: interaction.member as never, guild: interaction.guild,
-      channel: interaction.channel as never, args: new Map(), logger: this.logger, eventBus: this.eventBus,
-      createdAt: interaction.createdAt, reply: async () => undefined, deferReply: async () => undefined,
+      source: 'slash',
+      user: interaction.user,
+      member: interaction.member as never,
+      guild: interaction.guild,
+      channel: interaction.channel as never,
+      args,
+      logger: this.logger,
+      eventBus: this.eventBus,
+      createdAt: interaction.createdAt,
+      reply: async () => undefined,
+      deferReply: async () => undefined,
     };
+  }
+
+  private findOption(options: readonly CommandOptionMetadata[], name: string): CommandOptionMetadata | undefined {
+    for (const option of options) {
+      if (option.name === name) return option;
+      const nested = this.findOption(option.options ?? [], name);
+      if (nested) return nested;
+    }
+    return undefined;
+  }
+
+  private validAutocompleteChoice(choice: { name: string; value: string | number }, optionType?: number): boolean {
+    if (typeof choice.name !== 'string' || choice.name.length < 1 || choice.name.length > 100) return false;
+    if (optionType === ApplicationCommandOptionType.String)
+      return typeof choice.value === 'string' && choice.value.length >= 1 && choice.value.length <= 100;
+    if (optionType === ApplicationCommandOptionType.Integer)
+      return (
+        typeof choice.value === 'number' &&
+        Number.isSafeInteger(choice.value) &&
+        Math.abs(choice.value) <= 9_007_199_254_740_991
+      );
+    if (optionType === ApplicationCommandOptionType.Number)
+      return typeof choice.value === 'number' && Number.isFinite(choice.value);
+    return false;
   }
 
   private createPrefixContext(message: Message, suffix: string): CommandContext {

@@ -2,8 +2,8 @@
 
 Every item is mandatory unless explicitly marked not applicable with a reason.
 
-- [x] **Phase:** Work matches [Phase 05](phases/PHASE-05-CONFIG.md), its scope, deliverables, acceptance criteria, testing, and rollback plan; Phase 06 was not started.
-- [x] **Acceptance criteria:** Phase 05 criteria are covered by focused configuration tests and the full regression pipeline: unique ownership and schema-validated defaults; boundary validation, guild isolation, fallback, audit/cache/delivery behavior, deterministic coalescing, timeout/failure/reconciliation diagnostics, secret redaction, retained data on disable/rollback, migration replay/checksums, and readable 3.2.3 fixtures.
+- [x] **Phase:** Work matches [Phase 06](phases/PHASE-06-COMMANDS.md), its scope, deliverables, acceptance criteria, testing, and rollback plan; Phase 07 was not started.
+- [x] **Acceptance criteria:** Phase 06 criteria are covered by focused command tests and the full regression pipeline: typed inference; generated deterministic discovery and stale detection; descriptor, collision, permission, scope, and autocomplete validation; atomic immutable projections; runtime/Help visibility parity; bounded authorized autocomplete; registry-backed list/deploy dry runs and drift state; startup validation; 3.2.3 payload compatibility; and switchable rollback adapters.
 - [x] **Architecture and ADRs:** Architecture is unchanged unless the phase requires a change and a human approved it; changes comply with [ARCHITECTURE](ARCHITECTURE.md) and relevant [ADR-011](adr/ADR-011-Plugin-System.md), [ADR-012](adr/ADR-012-Configuration.md), [ADR-013](adr/ADR-013-Dashboard.md), and [ADR-014](adr/ADR-014-Command-Discovery.md).
 - [x] **Correctness:** Success, empty, denied, missing-data, boundary, and failure paths are correct and deterministic.
 - [x] **Compatibility:** Existing commands, permissions, settings, IDs, database data, API envelopes/routes, dashboard behavior, and module compatibility remain intact unless approved.

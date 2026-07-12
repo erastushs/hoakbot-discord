@@ -7,7 +7,7 @@
 4.0.0: compatibility-first plugin platform with migrated built-ins and a supported plugin SDK.
 
 ## Current Phase
-Phase 05 — Config is complete behind disabled-by-default ownership and hot-reload flags with an explicit compatibility rollback flag; Phase 06 has not started.
+Phase 06 — Commands is complete with typed descriptors, deterministic generated discovery, canonical registry projections, permission-consistent Help/runtime behavior, bounded autocomplete, drift detection, and explicit rollback adapters; Phase 07 has not started.
 
 ## Completed Milestones
 - Existing module manifests, registries, dependency graph, and loader
@@ -17,6 +17,9 @@ Phase 05 — Config is complete behind disabled-by-default ownership and hot-rel
 - Phase 01 user-facing surface inventory, presentation baseline, golden regressions, and accessibility/security verification
 - Phase 02 validated plugin contracts, generated built-in catalog, deterministic loader/registry/context/lifecycle, compatibility projections, and reversible bootstrap flag
 - Phase 03 migrated all seven built-ins in required order with parity evidence, independent rollback flags, single lifecycle ownership, and clean resource shutdown
+- Phase 04 delivered metadata-driven dashboard projections, dependency-aware state controls, persistence, audit, and authenticated live updates
+- Phase 05 delivered plugin-owned validated settings, deterministic hot reload, migration checksums, diagnostics, and rollback controls
+- Phase 06 delivered typed command definitions, generated deterministic discovery, canonical registry projections, permission and autocomplete metadata, explicit deployment drift detection, and compatibility rollback adapters
 
 ## Upcoming Phases
 1. UX Polish

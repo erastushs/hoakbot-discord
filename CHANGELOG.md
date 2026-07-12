@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Phase 03 plugin factories, parity fixtures, lifecycle cleanup, and independent migration flags for General, Logging, Welcome, Goodbye, Voice, Moderation, and Shrine.
 - Added the Phase 04 metadata-driven dashboard projection, normalized guild module state, generic metadata and state controls, dependency-aware audited enable/disable persistence, authenticated live state updates, and a disabled-by-default `pluginDashboard` rollback flag.
 - Added Phase 05 plugin-owned, schema-validated configuration, deterministic value hot reload with health diagnostics and reconciliation, namespaced checksummed migrations, secret-redacted change delivery, and disabled-by-default ownership/hot-reload flags with an explicit compatibility rollback flag.
+- Added Phase 06 typed command definitions, deterministic generated command discovery and catalog hashing, atomic registry projections, shared permission visibility, bounded authorized autocomplete, registry-backed Help/list/deploy workflows, deployment drift detection, 3.2.3 payload fixtures, and explicit rollback adapters.
 
 ### Changed
 - Polished the 3.2.3 user-facing Discord presentation baseline across general commands, Welcome, Goodbye, Shrine, moderation, and logging while preserving public behavior.

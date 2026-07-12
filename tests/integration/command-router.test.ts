@@ -66,9 +66,18 @@ function makeConfig(ownerIds: string[] = []): Readonly<AppConfig> {
 
 describe('CommandRouter', () => {
   let registry: CommandRegistry;
-  let logger: { debug: ReturnType<typeof vi.fn>; info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
+  let logger: {
+    debug: ReturnType<typeof vi.fn>;
+    info: ReturnType<typeof vi.fn>;
+    warn: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+  };
   let eventBus: { emit: ReturnType<typeof vi.fn> };
-  let metrics: { counter: ReturnType<typeof vi.fn>; gauge: ReturnType<typeof vi.fn>; incrementFn: ReturnType<typeof vi.fn> };
+  let metrics: {
+    counter: ReturnType<typeof vi.fn>;
+    gauge: ReturnType<typeof vi.fn>;
+    incrementFn: ReturnType<typeof vi.fn>;
+  };
   let router: CommandRouter;
 
   beforeEach(() => {
@@ -76,7 +85,11 @@ describe('CommandRouter', () => {
     logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
     eventBus = { emit: vi.fn() };
     const incrementFn = vi.fn();
-    metrics = { counter: vi.fn(() => ({ increment: incrementFn })), gauge: vi.fn(() => ({ set: vi.fn() })), incrementFn };
+    metrics = {
+      counter: vi.fn(() => ({ increment: incrementFn })),
+      gauge: vi.fn(() => ({ set: vi.fn() })),
+      incrementFn,
+    };
     router = new CommandRouter(registry, makeConfig(), logger as never, eventBus as never, metrics as never);
   });
 
@@ -135,11 +148,14 @@ describe('CommandRouter', () => {
 
       expect(interaction.deferReply).toHaveBeenCalled();
       expect(execute).toHaveBeenCalledOnce();
-      expect(eventBus.emit).toHaveBeenCalledWith('command.executed', expect.objectContaining({
-        command: 'ping',
-        source: 'slash',
-        userId: 'user-1',
-      }));
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        'command.executed',
+        expect.objectContaining({
+          command: 'ping',
+          source: 'slash',
+          userId: 'user-1',
+        }),
+      );
     });
 
     it('logs warning for unknown slash command', async () => {
@@ -147,10 +163,7 @@ describe('CommandRouter', () => {
 
       await router.handleSlash(interaction as never);
 
-      expect(logger.warn).toHaveBeenCalledWith(
-        { command: 'nonexistent' },
-        'Unknown slash command',
-      );
+      expect(logger.warn).toHaveBeenCalledWith({ command: 'nonexistent' }, 'Unknown slash command');
       expect(interaction.deferReply).not.toHaveBeenCalled();
     });
 
@@ -191,11 +204,14 @@ describe('CommandRouter', () => {
       await router.handlePrefix(message as never);
 
       expect(execute).toHaveBeenCalledOnce();
-      expect(eventBus.emit).toHaveBeenCalledWith('command.executed', expect.objectContaining({
-        command: 'ping',
-        source: 'prefix',
-        userId: 'user-1',
-      }));
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        'command.executed',
+        expect.objectContaining({
+          command: 'ping',
+          source: 'prefix',
+          userId: 'user-1',
+        }),
+      );
     });
 
     it('ignores unknown command', async () => {
@@ -288,17 +304,35 @@ describe('CommandRouter', () => {
 
   describe('autocomplete', () => {
     function autocomplete(overrides: Record<string, unknown> = {}) {
-      return { ...makeInteraction(), commandName: 'search', options: { getFocused: () => ({ name: 'query', value: 'a' }) }, respond: vi.fn().mockResolvedValue(undefined), ...overrides };
+      return {
+        ...makeInteraction(),
+        commandName: 'search',
+        options: { getFocused: () => ({ name: 'query', value: 'a' }) },
+        respond: vi.fn().mockResolvedValue(undefined),
+        ...overrides,
+      };
     }
 
-    function registerAutocomplete(handler: () => Promise<readonly { name: string; value: string }[]>, permissions?: bigint[]) {
-      const command = makeCommand({ name: 'search', requiredPermissions: permissions, slashOptions: new SlashCommandBuilder().setName('search').setDescription('search').addStringOption((option) => option.setName('query').setDescription('query').setAutocomplete(true)) });
+    function registerAutocomplete(
+      handler: (context?: never) => Promise<readonly { name: string; value: string | number }[]>,
+      permissions?: bigint[],
+    ) {
+      const command = makeCommand({
+        name: 'search',
+        requiredPermissions: permissions,
+        slashOptions: new SlashCommandBuilder()
+          .setName('search')
+          .setDescription('search')
+          .addStringOption((option) => option.setName('query').setDescription('query').setAutocomplete(true)),
+      });
       registry.register(defineCommand({ owner: 'test', command, autocomplete: { query: handler } }));
       return handler;
     }
 
     it('authorizes, bounds choices, and routes option ownership', async () => {
-      const handler = vi.fn(async () => Array.from({ length: 30 }, (_, index) => ({ name: `choice-${index}`, value: `${index}` })));
+      const handler = vi.fn(async () =>
+        Array.from({ length: 30 }, (_, index) => ({ name: `choice-${index}`, value: `${index}` })),
+      );
       registerAutocomplete(handler);
       const interaction = autocomplete();
       await router.handleAutocomplete(interaction as never);
@@ -316,18 +350,25 @@ describe('CommandRouter', () => {
       expect(interaction.respond).toHaveBeenCalledWith([]);
     });
 
-    it('times out and fails safely', async () => {
+    it('times out, aborts, and fails safely', async () => {
       vi.useFakeTimers();
-      registerAutocomplete(() => new Promise(() => undefined));
+      let signal: AbortSignal | undefined;
+      registerAutocomplete(async (context) => {
+        signal = (context as unknown as { signal: AbortSignal }).signal;
+        return new Promise(() => undefined);
+      });
       const interaction = autocomplete();
       const pending = router.handleAutocomplete(interaction as never);
       await vi.advanceTimersByTimeAsync(1_500);
       await pending;
       expect(interaction.respond).toHaveBeenCalledWith([]);
+      expect(signal?.aborted).toBe(true);
       vi.useRealTimers();
 
       registry.unregister('search');
-      registerAutocomplete(async () => { throw new Error('failed'); });
+      registerAutocomplete(async () => {
+        throw new Error('failed');
+      });
       const failed = autocomplete();
       await router.handleAutocomplete(failed as never);
       expect(failed.respond).toHaveBeenCalledWith([]);

@@ -31,7 +31,9 @@ export class CommandRegistry {
   }
 
   registerMany(commands: readonly (ICommand | CommandDescriptor)[]): void {
-    const descriptors = commands.map((command) => 'metadata' in command ? command : defineCommand({ owner: 'legacy', command }));
+    const descriptors = commands.map((command) =>
+      'metadata' in command ? command : defineCommand({ owner: 'legacy', command }),
+    );
     validateCommandDescriptors([...this.descriptors.values(), ...descriptors]);
     const nextCommands = new Map(this.commands);
     const nextAliases = new Map(this.aliasMap);
@@ -55,11 +57,20 @@ export class CommandRegistry {
   }
 
   catalog(): readonly CommandDescriptor[] {
-    return immutable([...this.descriptors.values()].sort((a, b) => a.metadata.name.localeCompare(b.metadata.name)).map((descriptor) => ({ ...descriptor, metadata: structuredClone(descriptor.metadata) } as CommandDescriptor)));
+    return immutable(
+      [...this.descriptors.values()]
+        .sort((a, b) => a.metadata.name.localeCompare(b.metadata.name))
+        .map((descriptor) => ({ ...descriptor, metadata: structuredClone(descriptor.metadata) }) as CommandDescriptor),
+    );
   }
 
   deployment(scope: 'guild' | 'global' = 'guild'): readonly Readonly<Record<string, unknown>>[] {
-    return immutable(this.catalog().filter(({ metadata }) => metadata.scope === scope && metadata.payload).map(({ metadata }) => structuredClone(metadata.payload!)));
+    const descriptors = scope === 'guild' ? this.catalog() : [];
+    return immutable(
+      descriptors
+        .filter(({ metadata }) => metadata.payload)
+        .map(({ metadata }) => structuredClone(metadata.payload) as Readonly<Record<string, unknown>>),
+    );
   }
 
   unregister(name: string): void {

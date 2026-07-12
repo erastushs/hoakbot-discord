@@ -61,7 +61,13 @@ import { CommandRegistry } from './shared/command-registry.js';
 import type { HealthReport } from './core/health/types.js';
 import { createBuiltInRuntimeCatalog, generatedBuiltInPluginCatalog } from './modules/built-in-plugin-catalog.js';
 import { projectPluginModules } from './modules/plugin-compatibility.js';
-import { loadAndStartPluginCatalog, PluginMigrationRunner, PluginRegistry, PostgresMigrationStore, type PluginLifecycleCoordinator } from './plugin-core/index.js';
+import {
+  loadAndStartPluginCatalog,
+  PluginMigrationRunner,
+  PluginRegistry,
+  PostgresMigrationStore,
+  type PluginLifecycleCoordinator,
+} from './plugin-core/index.js';
 import { ConfigurationHotReloadCoordinator } from './core/config/hot-reload.coordinator.js';
 import type { IModule } from './modules/module.interface.js';
 import { createGeneralSettings } from './modules/general/settings.js';
@@ -170,17 +176,40 @@ try {
     new JsonConfigProvider(),
     settingsRegistry,
   );
-  const hotReload = new ConfigurationHotReloadCoordinator({ enabled: appConfig.featureFlags.pluginConfigHotReload && !compatibilityRollback });
+  const hotReload = new ConfigurationHotReloadCoordinator({
+    enabled: appConfig.featureFlags.pluginConfigHotReload && !compatibilityRollback,
+  });
   healthService.registerCheck(hotReload.createHealthCheck());
-  const configurationService = new ConfigurationService(configProvider, settingsRegistry, eventBus, appConfig, hotReload, appConfig.featureFlags.pluginConfigOwnership && !compatibilityRollback);
+  const configurationService = new ConfigurationService(
+    configProvider,
+    settingsRegistry,
+    eventBus,
+    appConfig,
+    hotReload,
+    appConfig.featureFlags.pluginConfigOwnership && !compatibilityRollback,
+  );
   const pluginContextServices = {
-    logger: () => ({ log: (level: string, message: string, metadata?: unknown) => logger.info({ level, metadata }, message) }),
+    logger: () => ({
+      log: (level: string, message: string, metadata?: unknown) => logger.info({ level, metadata }, message),
+    }),
     config: (ownerId: string, key: string, guildId?: string) => configurationService.getOwned(ownerId, key, guildId),
-    event: () => { throw new Error('Event capability is unavailable.'); },
-    command: () => { throw new Error('Command capability is unavailable.'); },
-    api: () => { throw new Error('API capability is unavailable.'); },
-    health: () => { throw new Error('Health capability is unavailable.'); },
-    hotReload: (ownerId: string, handler: Parameters<ConfigurationHotReloadCoordinator['register']>[1], guildId?: string) => hotReload.register(ownerId, handler, guildId),
+    event: () => {
+      throw new Error('Event capability is unavailable.');
+    },
+    command: () => {
+      throw new Error('Command capability is unavailable.');
+    },
+    api: () => {
+      throw new Error('API capability is unavailable.');
+    },
+    health: () => {
+      throw new Error('Health capability is unavailable.');
+    },
+    hotReload: (
+      ownerId: string,
+      handler: Parameters<ConfigurationHotReloadCoordinator['register']>[1],
+      guildId?: string,
+    ) => hotReload.register(ownerId, handler, guildId),
   };
   const discordOAuthConfig = {
     clientId: appConfig.discord.oauth?.clientId ?? appConfig.discord.clientId,
@@ -195,11 +224,9 @@ try {
   const oauthStateService = new OAuthStateService();
   const sessionRepository = new SessionRepository(databaseAdapter);
   const sessionProvider = new DatabaseSessionProvider(sessionRepository, sessionConfig);
-  const sessionCleanupScheduler = new SessionCleanupScheduler(
-    new SessionCleanupService(sessionRepository),
-    logger,
-    { intervalMs: appConfig.session?.cleanupIntervalMs ?? 1000 * 60 * 60 },
-  );
+  const sessionCleanupScheduler = new SessionCleanupScheduler(new SessionCleanupService(sessionRepository), logger, {
+    intervalMs: appConfig.session?.cleanupIntervalMs ?? 1000 * 60 * 60,
+  });
   const csrfService = new CsrfService({ tokenTtlMs: sessionConfig.durationMs });
   const rateLimiter = new RateLimiter();
   const securityAudit = new SecurityAuditService(logger);
@@ -225,16 +252,32 @@ try {
   const pluginRegistry = new PluginRegistry();
   const migrationRunner = new PluginMigrationRunner(new PostgresMigrationStore(databaseAdapter.getClient()));
   if (appConfig.featureFlags.pluginCoreBootstrap) {
-    const started = await loadAndStartPluginCatalog(generatedBuiltInPluginCatalog, pluginRegistry, { container, migrationRunner, services: pluginContextServices });
+    const started = await loadAndStartPluginCatalog(generatedBuiltInPluginCatalog, pluginRegistry, {
+      container,
+      migrationRunner,
+      services: pluginContextServices,
+    });
     pluginLifecycle = started.lifecycle;
     builtInModules = projectPluginModules(started.snapshot);
     logger.info({ pluginIds: [...started.snapshot.keys()] }, 'Built-in modules selected through plugin-core bootstrap');
   } else if (Object.entries(appConfig.featureFlags).some(([key, enabled]) => key.endsWith('Plugin') && enabled)) {
-    const started = await loadAndStartPluginCatalog(createBuiltInRuntimeCatalog(appConfig.featureFlags), pluginRegistry, { container, migrationRunner, services: pluginContextServices });
+    const started = await loadAndStartPluginCatalog(
+      createBuiltInRuntimeCatalog(appConfig.featureFlags),
+      pluginRegistry,
+      { container, migrationRunner, services: pluginContextServices },
+    );
     pluginLifecycle = started.lifecycle;
     builtInModules = projectPluginModules(started.snapshot);
   } else {
-    builtInModules = [new GeneralModule(), new VoiceModule(), new ModerationModule(), new LoggingModule(), new WelcomeModule(), new GoodbyeModule(), new ShrineModule()];
+    builtInModules = [
+      new GeneralModule(),
+      new VoiceModule(),
+      new ModerationModule(),
+      new LoggingModule(),
+      new WelcomeModule(),
+      new GoodbyeModule(),
+      new ShrineModule(),
+    ];
   }
   for (const module of builtInModules) {
     if (!module.manifest) throw new Error(`Built-in module "${module.name}" has no manifest.`);
@@ -282,7 +325,14 @@ try {
   }
   await moduleLoader.startAll();
   metricsService.gauge('module_count').set(moduleLoader.getLoadedModules().length);
-  if (sharedRegistry.catalog().length !== 14) throw new Error(`Built-in command validation failed: expected 14 commands, found ${sharedRegistry.catalog().length}.`);
+  const { builtinCommandCatalog } = await import('./generated/command-catalog.js');
+  const { validateCompleteCommandCatalog } = await import('./shared/command/validate-catalog.js');
+  const completeCatalog = sharedRegistry.catalog();
+  if (completeCatalog.length !== builtinCommandCatalog.length)
+    throw new Error(
+      `Built-in command validation failed: expected ${builtinCommandCatalog.length} commands, found ${completeCatalog.length}.`,
+    );
+  validateCompleteCommandCatalog(completeCatalog, []);
 
   logger.info('Running health checks...');
   const healthTimer = metricsService.timer('health');
@@ -304,12 +354,14 @@ try {
     port: appConfig.api.port,
     router: apiRouter,
     logger,
-    dashboardStateStream: appConfig.featureFlags.pluginDashboard ? {
-      path: '/api/v1/dashboard/state/stream',
-      events: dashboardStateEvents,
-      sessionProvider,
-      sessionConfig,
-    } : undefined,
+    dashboardStateStream: appConfig.featureFlags.pluginDashboard
+      ? {
+          path: '/api/v1/dashboard/state/stream',
+          events: dashboardStateEvents,
+          sessionProvider,
+          sessionConfig,
+        }
+      : undefined,
     logsStream: {
       path: '/api/v1/logs/stream',
       logs: logsService,
@@ -318,14 +370,24 @@ try {
     },
     cors: {
       nodeEnv: appConfig.env.nodeEnv,
-      allowedOrigin: appConfig.dashboard?.allowedOrigin ?? new URL(appConfig.dashboard?.url ?? 'http://localhost:5173').origin,
+      allowedOrigin:
+        appConfig.dashboard?.allowedOrigin ?? new URL(appConfig.dashboard?.url ?? 'http://localhost:5173').origin,
     },
     trustProxy: appConfig.trustProxy,
   });
   await apiServer.start();
   sessionCleanupScheduler.start();
 
-  const shutdown = registerShutdownHandlers(logger, client, moduleLoader, databaseAdapter, eventBus, apiServer, sessionCleanupScheduler, pluginLifecycle);
+  const shutdown = registerShutdownHandlers(
+    logger,
+    client,
+    moduleLoader,
+    databaseAdapter,
+    eventBus,
+    apiServer,
+    sessionCleanupScheduler,
+    pluginLifecycle,
+  );
   registerCrashHanders(logger, shutdown);
 
   logger.info('Logging in to Discord...');
@@ -421,8 +483,12 @@ function registerShutdownHandlers(
     logger.info('Shutdown complete');
   };
 
-  process.on('SIGINT', () => { void shutdown().then(() => process.exit(0)); });
-  process.on('SIGTERM', () => { void shutdown().then(() => process.exit(0)); });
+  process.on('SIGINT', () => {
+    void shutdown().then(() => process.exit(0));
+  });
+  process.on('SIGTERM', () => {
+    void shutdown().then(() => process.exit(0));
+  });
 
   return shutdown;
 }

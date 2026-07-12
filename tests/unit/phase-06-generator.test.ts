@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -11,8 +11,12 @@ describe('Phase 06 generated catalog', () => {
     expect(generateCommandCatalog(root)).toBe(generateCommandCatalog(root));
     expect(commandCatalogIsCurrent(root)).toBe(true);
     const output = generateCommandCatalog(root);
-    expect(output.match(/\.command\.ts/g)).toHaveLength(14);
-    const files = [...output.matchAll(/"(src\/[^\"]+\.command\.ts)"/g)].map((match) => match[1]);
+    const discovered = ['general', 'moderation'].flatMap((owner) =>
+      readdirSync(join(root, `src/modules/${owner}/commands`)).filter((file) => file.endsWith('.command.ts')),
+    );
+    expect(output.match(/source: 'src\/modules\/[^']+\.command\.ts'/g)).toHaveLength(discovered.length);
+    expect(output.match(/export const createCommand\d+/g)).toHaveLength(discovered.length);
+    const files = [...output.matchAll(/source: '(src\/[^']+\.command\.ts)'/g)].map((match) => match[1]);
     expect(files).toEqual([...files].sort());
   });
 

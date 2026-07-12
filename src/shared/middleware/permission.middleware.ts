@@ -21,12 +21,21 @@ export class PermissionMiddleware {
   ) {}
 
   async check(command: ICommand, ctx: CommandContext, metadata?: CommandMetadata): Promise<PermissionResult> {
-    const resolved = metadata ?? {
-      owner: 'legacy', name: command.name, description: command.description, category: command.category,
-      aliases: command.prefixAliases ?? [], scope: 'guild', permissionAction: `legacy.${command.name}`,
-      requiredPermissions: (command.requiredPermissions ?? []).map(String), visibility: command.hidden ? 'hidden' : 'public',
-      autocompleteOptions: [], payload: null,
-    } satisfies CommandMetadata;
+    const resolved =
+      metadata ??
+      ({
+        owner: 'legacy',
+        name: command.name,
+        description: command.description,
+        category: command.category,
+        aliases: command.prefixAliases ?? [],
+        scope: command.guildOnly ? 'guild' : 'global',
+        permissionAction: command.requiredPermissions?.length ? 'discord-permissions' : 'public',
+        requiredPermissions: (command.requiredPermissions ?? []).map(String),
+        visibility: command.hidden ? 'hidden' : command.requiredPermissions?.length ? 'authorized' : 'public',
+        autocompleteOptions: [],
+        payload: null,
+      } satisfies CommandMetadata);
     const authorization = evaluateCommandAuthorization(resolved, command, ctx, this.config.ownerIds);
     if (authorization.ok) return authorization;
 

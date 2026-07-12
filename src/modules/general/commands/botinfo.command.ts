@@ -53,56 +53,44 @@ export class BotInfoCommand extends BaseCommand {
       ? `<@${this.config.ownerIds[0]}>`
       : 'Not set';
 
-    const loadedModules = [
-      this.config.featureFlags.modules.general ? 'general' : null,
-      this.config.featureFlags.modules.voice ? 'voice' : null,
-      this.config.featureFlags.modules.moderation ? 'moderation' : null,
-      this.config.featureFlags.modules.metrics ? 'metrics' : null,
+    const moduleStatus = [
+      ['General', this.config.featureFlags.modules.general],
+      ['Voice', this.config.featureFlags.modules.voice],
+      ['Moderation', this.config.featureFlags.modules.moderation],
+      ['Metrics', this.config.featureFlags.modules.metrics],
     ]
-      .filter(Boolean)
-      .join(', ') || 'None';
+      .map(([name, enabled]) => `${enabled ? '✅' : '❌'} ${name}`)
+      .join('\n');
 
     await this.custom(ctx, {
-      title: botUser.username,
+      title: `🤖 ${botUser.username}`,
+      description: `\`${botUser.id}\` • v${pkg.version}`,
       thumbnail: botUser.displayAvatarURL(),
       fields: [
         {
-          name: 'General',
-          value: [
-            `**Bot Name:** ${botUser.username}`,
-            `**Bot ID:** \`${botUser.id}\``,
-            `**Version:** ${pkg.version}`,
-            `**Developer:** ${developer}`,
-          ].join('\n'),
-        },
-        {
-          name: 'Runtime',
-          value: [
-            `**Node.js:** ${process.version}`,
-            `**discord.js:** ${djsVersion}`,
-            `**Uptime:** ${uptimeFormatted}`,
-            `**WebSocket Ping:** ${wsPing}ms`,
-            `**Memory:** ${rssMb} MB`,
-          ].join('\n'),
-        },
-        {
-          name: 'Discord',
-          value: [
-            `**Guilds:** ${guildCount}`,
-            `**Cached Users:** ${cachedUsers}`,
-          ].join('\n'),
+          name: '⚡ System',
+          value: [`**Uptime**  ${uptimeFormatted}`, `**Memory**  ${rssMb} MB`, `**Ping**  ${wsPing} ms`].join('\n'),
           inline: true,
         },
         {
-          name: 'Voice',
-          value: [
-            `**Standby:** ${voiceStatus}`,
-          ].join('\n'),
+          name: '📦 Runtime',
+          value: [`**Node.js**  ${process.version}`, `**discord.js**  v${djsVersion}`].join('\n'),
           inline: true,
         },
         {
-          name: 'Modules',
-          value: loadedModules,
+          name: '🌐 Discord',
+          value: [`**Servers**  ${guildCount}`, `**Users**  ${cachedUsers}`, `**Voice**  ${voiceStatus}`].join('\n'),
+          inline: true,
+        },
+        {
+          name: '🧩 Modules',
+          value: moduleStatus,
+          inline: true,
+        },
+        {
+          name: '👨 Developer',
+          value: developer,
+          inline: true,
         },
       ],
     });

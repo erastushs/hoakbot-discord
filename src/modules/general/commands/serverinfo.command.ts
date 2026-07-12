@@ -43,47 +43,30 @@ export class ServerInfoCommand extends BaseCommand {
 
     await this.custom(ctx, {
       color,
-      title: guild.name,
-      description: guild.description ? `*${guild.description}*` : null,
+      title: `🏠 ${guild.name}`,
+      description: guild.description ? `${guild.description}\n\`${guild.id}\`` : `\`${guild.id}\``,
       thumbnail: iconURL ?? undefined,
       image: bannerURL ?? undefined,
       fields: [
         {
-          name: 'General',
-          value: [
-            `**Server Name:** ${guild.name}`,
-            `**Server ID:** \`${guild.id}\``,
-            `**Owner:** ${owner.user.displayName}`,
-            `**Created:** ${time(guild.createdAt, 'F')} (${time(guild.createdAt, 'R')})`,
-          ].join('\n'),
-        },
-        {
-          name: 'Members',
-          value: [
-            `**Total Members:** ${totalMembers}`,
-            `**Humans:** ${humans}`,
-            `**Bots:** ${bots}`,
-          ].join('\n'),
+          name: '👑 Server',
+          value: [`**Owner**  ${owner.user.displayName}`, `**Created**  ${time(guild.createdAt, 'R')}`, `**Roles**  ${roleCount}`].join('\n'),
           inline: true,
         },
         {
-          name: 'Channels',
-          value: [
-            `**Text:** ${textChannels}`,
-            `**Voice:** ${voiceChannels}`,
-            `**Categories:** ${categories}`,
-          ].join('\n'),
+          name: '👥 Members',
+          value: [`**Total**  ${totalMembers}`, `**Humans**  ${humans}`, `**Bots**  ${bots}`].join('\n'),
           inline: true,
         },
         {
-          name: 'Server',
-          value: [
-            `**Role Count:** ${roleCount}`,
-            `**Boost Tier:** ${boostTier}`,
-            `**Boost Count:** ${boostCount}`,
-            `**Emoji Count:** ${emojiCount}`,
-            `**Sticker Count:** ${stickerCount}`,
-          ].join('\n'),
+          name: '💬 Channels',
+          value: [`**Text**  ${textChannels}`, `**Voice**  ${voiceChannels}`, `**Categories**  ${categories}`].join('\n'),
+          inline: true,
+        },
+        {
+          name: '✨ Community',
+          value: [`**Boosts**  ${boostCount} • Tier ${boostTier}`, `**Emojis**  ${emojiCount}`, `**Stickers**  ${stickerCount}`].join('\n'),
+          inline: true,
         },
       ],
     });

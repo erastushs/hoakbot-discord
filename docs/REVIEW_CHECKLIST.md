@@ -2,8 +2,8 @@
 
 Every item is mandatory unless explicitly marked not applicable with a reason.
 
-- [x] **Phase:** Work matches [Phase 08](phases/PHASE-08-ASSETS.md), its scope, deliverables, acceptance criteria, testing, and rollback plan; Phase 07 was explicitly skipped for this authorized task, was not completed, and Phase 09 was not started.
-- [x] **Acceptance criteria:** Phase 08 criteria are covered by focused asset tests and the full regression pipeline: complete ownership, logical-ID, source, licensing, and consumer inventory; schema validation; deterministic generated maps and clean build copying; package-root, traversal, symlink, undeclared, cross-owner, missing, corrupt, hash, MIME, size, dimension, and duration rejection; bounded LRU handles and disposal; deterministic font registration support; resolver-backed Shrine, Welcome, and Voice consumers; source-path compatibility rollback; and preserved Shrine/voice behavior.
+- [x] **Phase:** Work matches [Phase 10](phases/PHASE-10-PLUGIN-SDK.md), its approved scope, deliverables, acceptance criteria, testing, and rollback plan; Phase 07 remains explicitly skipped and incomplete.
+- [x] **Acceptance criteria:** Phase 10 criteria are covered by canonical runtime/SDK schema identity, exact reviewed exports, safe atomic generation with overwrite refusal, generated and example consumer builds/tests, static malformed/incompatible/collision validation without factory execution, recursively redacted inspection, bounded fixed-stage preflight, export/asset/integrity package checks, compiled documentation workflow, ESM compatibility declaration, and prerelease rollback evidence documented in [Phase 10 evidence](phases/PHASE-10-EVIDENCE.md).
 - [x] **Architecture and ADRs:** Architecture is unchanged unless the phase requires a change and a human approved it; changes comply with [ARCHITECTURE](ARCHITECTURE.md) and relevant [ADR-011](adr/ADR-011-Plugin-System.md), [ADR-012](adr/ADR-012-Configuration.md), [ADR-013](adr/ADR-013-Dashboard.md), and [ADR-014](adr/ADR-014-Command-Discovery.md).
 - [x] **Correctness:** Success, empty, denied, missing-data, boundary, and failure paths are correct and deterministic.
 - [x] **Compatibility:** Existing commands, permissions, settings, IDs, database data, API envelopes/routes, dashboard behavior, and module compatibility remain intact unless approved.
@@ -17,7 +17,7 @@ Every item is mandatory unless explicitly marked not applicable with a reason.
 - [x] **Maintainability:** No duplicated code was introduced; shared behavior uses an existing or justified narrowly scoped primitive.
 - [x] **Configuration and constants:** No hardcoded configuration or magic numbers were introduced; environment-specific values are validated configuration and domain limits are named constants.
 - [x] **Scope:** Diff contains only task-related files; unrelated dirty files are untouched; dependency/generated-file changes are justified.
-- [x] **Validation:** Build (`npm run build`), typecheck (`npm run typecheck`), tests (`npm test`), and lint (`npm run lint`) all pass in that order after final code changes.
+- [x] **Validation:** Phase 10 SDK API generation/check, SDK typecheck/build/tests, example consumer build/tests, CLI acceptance tests, repository build/typecheck/tests/lint, and Node matrix declaration passed; Node 26 executed locally, while declared executable Node 22/24 matrix entries were unavailable locally.
 - [x] **Documentation/state:** Documentation is updated; links resolve; [ROADMAP](ROADMAP.md), [PROJECT_STATE](PROJECT_STATE.md), phase docs, ADRs, and changelog reflect every applicable trigger.
 - [x] **Rollback:** The active phase or change documents a specific, feasible rollback, and implementation changes remain reversible as described.
 - [x] **Commit readiness:** Message follows [COMMIT_RULES](COMMIT_RULES.md); commit occurs only with explicit authorization.

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "{{PLUGIN_ID}}",
+  "name": "Example plugin",
+  "description": "{{DESCRIPTION}}",
+  "version": "0.1.0",
+  "dependencies": [{ "id": "hoakbot:core", "range": "^4.0.0" }],
+  "capabilities": { "settings": ["greeting"], "commands": ["hello", "hello:autocomplete"], "events": ["ready:priority:100"], "routes": [], "permissions": [] },
+  "contracts": {
+    "config": [{ "key": "greeting", "secret": false }],
+    "commands": [{ "id": "hello", "autocomplete": true }],
+    "events": [{ "id": "ready", "priority": 100 }],
+    "assets": [{ "path": "assets/icon.txt" }]
+  },
+  "metadata": {}
+}

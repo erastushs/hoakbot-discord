@@ -1,0 +1,23 @@
+{
+  "name": "@hoakbot/plugin-sdk",
+  "version": "4.0.0-next.0",
+  "description": "Supported contracts, tools, and test harness for Hoakbot plugins",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "bin": { "hoak-plugin": "./dist/cli.js" },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./testing": { "types": "./dist/testing.d.ts", "import": "./dist/testing.js" },
+    "./manifest-schema": { "types": "./dist/manifest-schema.d.ts", "import": "./dist/manifest-schema.js" }
+  },
+  "files": ["dist", "templates", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test dist/**/*.test.js",
+    "prepack": "npm run build"
+  },
+  "dependencies": { "@hoakbot/plugin-contracts": "4.0.0-next.0", "zod": "^3.25.76" },
+  "devDependencies": { "@types/node": "^26.1.0", "typescript": "^6.0.3" },
+  "license": "MIT"
+}

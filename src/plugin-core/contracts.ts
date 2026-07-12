@@ -1,12 +1,11 @@
-import type { z } from 'zod';
-import type { pluginManifestSchema } from './schema.js';
+import type { PluginManifest as CanonicalPluginManifest } from '@hoakbot/plugin-contracts';
 import type { PluginContext } from './context.js';
 import type { PluginMigration } from './migrations.js';
 
 export const capabilityKinds = ['settings', 'commands', 'events', 'routes', 'permissions'] as const;
 
 export type CapabilityKind = (typeof capabilityKinds)[number];
-export type PluginManifest = z.infer<typeof pluginManifestSchema>;
+export type PluginManifest = CanonicalPluginManifest;
 export type PluginFactory = (context: PluginContext) => PluginInstance | Promise<PluginInstance>;
 export interface PluginInstance {
   readonly id: string;

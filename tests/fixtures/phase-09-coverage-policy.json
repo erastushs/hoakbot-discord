@@ -1,0 +1,20 @@
+{
+  "phase": "09",
+  "tolerance": 0,
+  "reviewedExclusions": [
+    { "pattern": "src/**/*.interface.ts", "reason": "type-only production contracts emit no executable behavior" },
+    { "pattern": "src/**/*.d.ts", "reason": "generated or ambient type declarations emit no executable behavior" },
+    { "pattern": "dashboard/src/**/*.d.ts", "reason": "ambient dashboard type declarations emit no executable behavior" }
+  ],
+  "root": { "statements": 58.55, "branches": 54.61, "functions": 63.62, "lines": 60.55 },
+  "dashboard": { "statements": 53.82, "branches": 49.93, "functions": 57.09, "lines": 56.56 },
+  "criticalGates": {
+    "pluginCore": { "branches": 73.29 },
+    "lifecycle": { "branches": 80.76 },
+    "config": { "branches": 60.9 },
+    "securityApi": { "branches": 64.64 },
+    "builtInProjection": { "branches": 70 }
+  },
+  "gate": "Absolute measured floors with zero tolerance; scripts/check-phase-09-evidence.ts fails regressions.",
+  "artifacts": ["artifacts/coverage/root/coverage-final.json", "artifacts/coverage/root/coverage-summary.json", "artifacts/coverage/dashboard/coverage-final.json", "artifacts/coverage/dashboard/coverage-summary.json"]
+}

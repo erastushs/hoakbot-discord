@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "hoakbot:example",
+  "name": "Example plugin",
+  "description": "Generated Hoakbot plugin",
+  "version": "0.1.0",
+  "dependencies": [{ "id": "hoakbot:core", "range": "^4.0.0" }],
+  "capabilities": { "settings": ["greeting"], "commands": ["hello", "hello:autocomplete"], "events": ["ready:priority:100"], "routes": [], "permissions": [] },
+  "metadata": { "assets": ["assets/icon.txt"] }
+}

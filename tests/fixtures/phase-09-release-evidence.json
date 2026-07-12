@@ -1,0 +1,11 @@
+{
+  "sourceVersion": "3.2.3",
+  "targetVersion": "4.0.0",
+  "normalization": "sorted stable JSON values with no timestamps or credentials",
+  "builtIns": ["general", "logging", "welcome", "goodbye", "voice", "moderation", "shrine"],
+  "boundaries": ["lifecycle", "commands", "events", "config", "api", "dashboard", "assets"],
+  "upgrade": { "commands": "preserved", "data": "preserved", "api": "preserved", "dashboard": "preserved" },
+  "rollback": { "strategy": "independent feature flag per built-in", "order": "preserved", "data": "unchanged", "commands": "preserved" },
+  "security": ["undeclared capability denied", "guild config isolated", "no credentials required"],
+  "releaseChecks": ["lint", "typecheck", "build", "test", "test:coverage", "failure cleanup", "PM2-style shutdown", "upgrade and rollback parity"]
+}

@@ -1,0 +1,2 @@
+export { capabilityKinds, defineManifest, definePlugin, parseManifest, pluginAssetSchema, pluginCommandSchema, pluginConfigSchema, pluginDependencySchema, pluginEventSchema, pluginManifestSchema, semverSchema } from '@hoakbot/plugin-contracts';
+export type { CapabilityKind, PluginContext, PluginDiagnostic, PluginFactory, PluginInstance, PluginLogger, PluginManifest } from '@hoakbot/plugin-contracts';

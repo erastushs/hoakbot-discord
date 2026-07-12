@@ -30,6 +30,19 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       setupFiles: [resolve(dashboardRoot, 'tests/setup.ts')],
       include: ['./tests/**/*.test.tsx'],
+      coverage: {
+        provider: 'v8',
+        include: ['./src/**/*.{ts,tsx}'],
+        exclude: ['./src/**/*.d.ts'],
+        reportsDirectory: '../artifacts/coverage/dashboard',
+        reporter: ['text', 'json', 'json-summary'],
+        thresholds: {
+          branches: 49.93,
+          functions: 57.09,
+          lines: 56.56,
+          statements: 53.82,
+        },
+      },
     },
   };
 });

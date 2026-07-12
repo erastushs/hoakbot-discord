@@ -1,0 +1,9 @@
+{
+  "version": "3.2.3",
+  "normalized": true,
+  "data": { "guildId": "100000000000000001", "warnings": [{ "id": "warning-1", "userId": "100000000000000004", "reason": "fixture" }] },
+  "config": { "prefix": "!", "modules": { "general": true, "logging": true, "welcome": true, "goodbye": true, "voice": true, "moderation": true, "shrine": true } },
+  "api": { "guildScope": "100000000000000001", "routes": ["configuration", "logging", "welcome", "goodbye", "voice", "moderation"] },
+  "dashboard": { "authenticated": true, "guildIsolation": true, "modules": ["general", "logging", "welcome", "goodbye", "voice", "moderation", "shrine"] },
+  "commandsFixture": "commands-3.2.3.json"
+}

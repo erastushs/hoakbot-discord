@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "source": "3.2.3",
+  "target": "4.0.0",
+  "status": "approved",
+  "builtIns": {
+    "general": { "lifecycle": "parity", "commands": "parity", "events": "parity", "config": "parity", "api": "parity", "dashboard": "parity", "assets": "not-applicable" },
+    "logging": { "lifecycle": "parity", "commands": "not-applicable", "events": "parity", "config": "parity", "api": "parity", "dashboard": "parity", "assets": "not-applicable" },
+    "welcome": { "lifecycle": "parity", "commands": "not-applicable", "events": "parity", "config": "parity", "api": "parity", "dashboard": "parity", "assets": "not-applicable" },
+    "goodbye": { "lifecycle": "parity", "commands": "not-applicable", "events": "parity", "config": "parity", "api": "parity", "dashboard": "parity", "assets": "not-applicable" },
+    "voice": { "lifecycle": "parity", "commands": "parity", "events": "parity", "config": "parity", "api": "parity", "dashboard": "parity", "assets": "parity" },
+    "moderation": { "lifecycle": "parity", "commands": "parity", "events": "parity", "config": "parity", "api": "parity", "dashboard": "parity", "assets": "not-applicable" },
+    "shrine": { "lifecycle": "parity", "commands": "parity", "events": "parity", "config": "parity", "api": "not-applicable", "dashboard": "parity", "assets": "parity" }
+  },
+  "upgrade": { "result": "pass", "preserved": ["data", "config", "commands", "api", "dashboard"] },
+  "rollback": { "result": "pass", "preserved": ["data", "config", "commands", "api", "dashboard"] }
+}

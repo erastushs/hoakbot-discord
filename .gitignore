@@ -36,3 +36,6 @@ Thumbs.db
 
 # Debug
 npm-debug.log*
+
+# Generated coverage reports
+artifacts/coverage/

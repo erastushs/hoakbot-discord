@@ -4,6 +4,8 @@ import type { IEventBus } from '../../core/event-bus/types.js';
 import type { IMetrics } from '../../core/metrics/types.js';
 import type { AppConfig } from '../../core/config/types.js';
 import { Errors } from '../errors/errors.js';
+import type { CommandMetadata } from '../command/define-command.js';
+import { evaluateCommandAuthorization } from '../command/authorize-command.js';
 
 export interface PermissionResult {
   ok: boolean;
@@ -18,13 +20,17 @@ export class PermissionMiddleware {
     private readonly metrics: IMetrics,
   ) {}
 
-  async check(command: ICommand, ctx: CommandContext): Promise<PermissionResult> {
-    const isOwner = this.config.ownerIds.includes(ctx.user.id);
-    if (isOwner) {
-      return { ok: true };
-    }
+  async check(command: ICommand, ctx: CommandContext, metadata?: CommandMetadata): Promise<PermissionResult> {
+    const resolved = metadata ?? {
+      owner: 'legacy', name: command.name, description: command.description, category: command.category,
+      aliases: command.prefixAliases ?? [], scope: 'guild', permissionAction: `legacy.${command.name}`,
+      requiredPermissions: (command.requiredPermissions ?? []).map(String), visibility: command.hidden ? 'hidden' : 'public',
+      autocompleteOptions: [], payload: null,
+    } satisfies CommandMetadata;
+    const authorization = evaluateCommandAuthorization(resolved, command, ctx, this.config.ownerIds);
+    if (authorization.ok) return authorization;
 
-    if (command.guildOnly && !ctx.guild) {
+    if (authorization.reason === 'guildOnly') {
       await ctx.reply(Errors.guildOnly());
 
       this.emitDenied(ctx, command.name, 'guildOnly');

@@ -17,7 +17,7 @@ export class HelpService {
     if (query) {
       const command = this.indexer.find(query);
       await ctx.reply({
-        embeds: [command && !command.hidden ? this.embeds.command(command) : this.embeds.notFound(query)],
+        embeds: [command && this.indexer.visible(command, ctx) ? this.embeds.command(command) : this.embeds.notFound(query)],
         components: this.components.navigation(command?.category ?? ''),
       });
       return;

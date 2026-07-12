@@ -1,86 +1,19 @@
 import { REST, Routes } from 'discord.js';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { ConfigService } from '../src/core/config/config.service.js';
-import { CommandRegistry } from '../src/shared/command-registry.js';
-import { PingCommand } from '../src/modules/general/commands/ping.command.js';
-import { HelpCommand } from '../src/modules/general/commands/help.command.js';
-import { AvatarCommand } from '../src/modules/general/commands/avatar.command.js';
-import { UserInfoCommand } from '../src/modules/general/commands/userinfo.command.js';
-import { ServerInfoCommand } from '../src/modules/general/commands/serverinfo.command.js';
-import { BotInfoCommand } from '../src/modules/general/commands/botinfo.command.js';
-import { CleanCommand } from '../src/modules/moderation/commands/clean.command.js';
-import { KickCommand } from '../src/modules/moderation/commands/kick.command.js';
-import { BanCommand } from '../src/modules/moderation/commands/ban.command.js';
-import { TimeoutCommand } from '../src/modules/moderation/commands/timeout.command.js';
-import { WarnCommand } from '../src/modules/moderation/commands/warn.command.js';
-import { WarningsCommand } from '../src/modules/moderation/commands/warnings.command.js';
-import { WarnRemoveCommand } from '../src/modules/moderation/commands/warn-remove.command.js';
-import { WarnClearCommand } from '../src/modules/moderation/commands/warn-clear.command.js';
-import type { WarningService } from '../src/modules/moderation/services/warning.service.js';
-import { MetricsService } from '../src/core/metrics/metrics.service.js';
+import { builtinCommandCatalogHash } from '../src/generated/command-catalog.js';
+import { createScriptRegistry } from './command-registry.js';
 
-async function main(): Promise<void> {
-  const configService = new ConfigService();
-  const config = configService.load();
-
+export async function deployCommands(options: { dryRun?: boolean; rollback?: boolean } = {}): Promise<void> {
+  const config = new ConfigService().load();
+  const registry = createScriptRegistry();
+  const commandData = options.rollback ? JSON.parse(readFileSync(resolve(import.meta.dirname, '../tests/fixtures/commands-3.2.3.json'), 'utf8')) as readonly Record<string, unknown>[] : registry.deployment('guild');
+  console.log(`${options.dryRun ? 'Dry-run' : 'Deploying'} ${commandData.length} guild commands; catalog hash ${builtinCommandCatalogHash}${options.rollback ? '; rollback 3.2.3 input' : ''}.`);
+  if (options.dryRun) return;
   const { token, clientId } = config.discord;
-  const guildId = config.guildId;
-
-  if (!token || !clientId) {
-    console.error('Missing BOT_TOKEN or CLIENT_ID in environment');
-    process.exit(1);
-  }
-
-  if (!guildId) {
-    console.error('Missing GUILD_ID — cannot deploy guild commands');
-    process.exit(1);
-  }
-
-  const registry = new CommandRegistry();
-  const metricsStub = new MetricsService();
-  const warningServiceStub = {
-    warn: async () => ({ id: '', guild_id: '', user_id: '', moderator_id: '', reason: '', created_at: new Date() }),
-    count: async () => 0,
-    history: async () => [] as never[],
-    remove: async () => false,
-    clear: async () => 0,
-  } satisfies WarningService;
-  const commands = [new PingCommand(), new HelpCommand(registry, config), new AvatarCommand(), new UserInfoCommand(), new ServerInfoCommand(), new BotInfoCommand(config), new CleanCommand(), new KickCommand(metricsStub), new BanCommand(metricsStub), new TimeoutCommand(metricsStub), new WarnCommand(warningServiceStub), new WarningsCommand(warningServiceStub), new WarnRemoveCommand(warningServiceStub), new WarnClearCommand(warningServiceStub)];
-
-  for (const cmd of commands) {
-    if (cmd.slashOptions) {
-      registry.register(cmd);
-    }
-  }
-
-  const commandData = registry
-    .all()
-    .filter((cmd) => cmd.slashOptions)
-    .map((cmd) => cmd.slashOptions!.toJSON());
-
-  console.log(`Deploying ${commandData.length} guild commands to guild ${guildId}...`);
-
-  const rest = new REST({ version: '10' }).setToken(token);
-
-  try {
-    await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commandData });
-
-    for (const cmd of commandData) {
-      console.log(`  /${(cmd as Record<string, unknown>)['name']} — ${(cmd as Record<string, unknown>)['description']}`);
-    }
-    console.log(`\nGuild commands deployed successfully.\n`);
-
-    const globalCommands = (await rest.get(Routes.applicationCommands(clientId))) as unknown[];
-    if (globalCommands.length > 0) {
-      console.log('⚠ Warning: Found global commands that may conflict:');
-      for (const cmd of globalCommands) {
-        console.log(`  /${(cmd as Record<string, unknown>)['name']} — ${(cmd as Record<string, unknown>)['description']}`);
-      }
-      console.log(`\nRun: npm run clear:global-commands\n`);
-    }
-  } catch (err) {
-    console.error('Failed to deploy commands:', err);
-    process.exit(1);
-  }
+  if (!token || !clientId || !config.guildId) throw new Error('Missing BOT_TOKEN, CLIENT_ID, or GUILD_ID');
+  await new REST({ version: '10' }).setToken(token).put(Routes.applicationGuildCommands(clientId, config.guildId), { body: commandData });
 }
 
-void main();
+if (process.argv[1] && import.meta.filename.endsWith(process.argv[1])) void deployCommands({ dryRun: process.argv.includes('--dry-run'), rollback: process.argv.includes('--rollback-3.2.3') }).catch((error) => { console.error(error); process.exitCode = 1; });

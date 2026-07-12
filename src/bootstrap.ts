@@ -282,6 +282,7 @@ try {
   }
   await moduleLoader.startAll();
   metricsService.gauge('module_count').set(moduleLoader.getLoadedModules().length);
+  if (sharedRegistry.catalog().length !== 14) throw new Error(`Built-in command validation failed: expected 14 commands, found ${sharedRegistry.catalog().length}.`);
 
   logger.info('Running health checks...');
   const healthTimer = metricsService.timer('health');

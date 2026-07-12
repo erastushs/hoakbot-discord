@@ -6,12 +6,7 @@ import { CommandRouter } from '../../adapters/command-router.js';
 import { TOKENS } from '../../core/container/tokens.js';
 import { pluginInternalCapabilities, type PluginFactory } from '../../plugin-core/index.js';
 import type { IModule } from '../module.interface.js';
-import { AvatarCommand } from './commands/avatar.command.js';
-import { BotInfoCommand } from './commands/botinfo.command.js';
-import { HelpCommand } from './commands/help.command.js';
-import { PingCommand } from './commands/ping.command.js';
-import { ServerInfoCommand } from './commands/serverinfo.command.js';
-import { UserInfoCommand } from './commands/userinfo.command.js';
+import { createGeneralCommandDescriptors } from '../../shared/command/builtin-commands.js';
 import { CommandIndexer } from './help/command-indexer.js';
 import { HelpInteractionHandler } from './help/help-interaction-handler.js';
 import { HelpService } from './help/help-service.js';
@@ -42,12 +37,13 @@ export const createGeneralPlugin: PluginFactory = (context) => {
   const eventBus = container.resolve(TOKENS.EventBus);
   const metrics = container.resolve(TOKENS.MetricsService);
   const client = container.resolve(TOKENS.DiscordClient);
-  const helpService = new HelpService(new CommandIndexer(registry), config.bot.prefix, packageVersion);
+  const helpService = new HelpService(new CommandIndexer(registry, config.ownerIds), config.bot.prefix, packageVersion);
   const helpInteractionHandler = new HelpInteractionHandler(helpService);
-  const commands = [new PingCommand(), new HelpCommand(helpService), new AvatarCommand(), new UserInfoCommand(), new ServerInfoCommand(), new BotInfoCommand(config)];
+  const commands = createGeneralCommandDescriptors({ config, helpService });
   const router = new CommandRouter(registry, config, logger, eventBus, metrics);
   const interactionHandler = (interaction: Interaction) => {
     if (interaction.isChatInputCommand()) router.handleSlash(interaction).catch((error) => logger.error({ error }, 'Slash command handler failed'));
+    else if (interaction.isAutocomplete()) router.handleAutocomplete(interaction).catch((error) => logger.error({ error }, 'Autocomplete handler failed'));
     else if ((interaction.isButton() || interaction.isStringSelectMenu()) && helpInteractionHandler.owns(interaction.customId)) helpInteractionHandler.handle(interaction).catch((error) => logger.error({ error }, 'Help interaction handler failed'));
   };
   const messageHandler = (message: Message) => {
@@ -60,7 +56,7 @@ export const createGeneralPlugin: PluginFactory = (context) => {
     start: () => {
       if (started) return;
       settings?.register('general', createGeneralSettings(config));
-      for (const command of commands) registry.register(command);
+      registry.registerMany(commands);
       client.on(Events.InteractionCreate, interactionHandler);
       client.on(Events.MessageCreate, messageHandler);
       started = true;
@@ -70,7 +66,7 @@ export const createGeneralPlugin: PluginFactory = (context) => {
       if (!started) return;
       client.off(Events.InteractionCreate, interactionHandler);
       client.off(Events.MessageCreate, messageHandler);
-      for (const command of commands) registry.unregister(command.name);
+      for (const descriptor of commands) registry.unregister(descriptor.metadata.name);
       settings?.unregister('general');
       started = false;
     },

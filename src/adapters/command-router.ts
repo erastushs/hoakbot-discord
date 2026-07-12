@@ -1,5 +1,5 @@
 import { Collection } from '@discordjs/collection';
-import { ApplicationCommandOptionType, type ChatInputCommandInteraction, type Message } from 'discord.js';
+import { ApplicationCommandOptionType, type AutocompleteInteraction, type ChatInputCommandInteraction, type Message } from 'discord.js';
 import type { ICommand, CommandContext } from '../shared/types/command.js';
 import type { CommandRegistry } from '../shared/command-registry.js';
 import type { ILogger } from '../core/logger/logger.service.js';
@@ -7,6 +7,7 @@ import type { IEventBus } from '../core/event-bus/types.js';
 import type { IMetrics } from '../core/metrics/types.js';
 import type { AppConfig } from '../core/config/types.js';
 import { PermissionMiddleware } from '../shared/middleware/permission.middleware.js';
+import type { CommandMetadata } from '../shared/command/define-command.js';
 
 export class CommandRouter {
   private readonly cooldowns = new Collection<string, number>();
@@ -23,7 +24,8 @@ export class CommandRouter {
   }
 
   async handleSlash(interaction: ChatInputCommandInteraction): Promise<void> {
-    const command = this.registry.find(interaction.commandName);
+    const descriptor = this.registry.descriptor(interaction.commandName);
+    const command = descriptor?.command;
     if (!command) {
       this.logger.warn({ command: interaction.commandName }, 'Unknown slash command');
       return;
@@ -34,7 +36,32 @@ export class CommandRouter {
     }
 
     const ctx = this.createSlashContext(interaction);
-    await this.executeCommand(command, ctx, interaction.commandName, interaction);
+    await this.executeCommand(command, ctx, interaction.commandName, interaction, descriptor.metadata);
+  }
+
+  async handleAutocomplete(interaction: AutocompleteInteraction): Promise<void> {
+    const descriptor = this.registry.descriptor(interaction.commandName);
+    const focused = interaction.options.getFocused(true);
+    if (!descriptor?.autocomplete || !descriptor.metadata.autocompleteOptions.includes(focused.name)) {
+      await interaction.respond([]);
+      return;
+    }
+    const ctx = this.createAutocompleteContext(interaction);
+    const permission = await this.permissionMiddleware.check(descriptor.command, ctx, descriptor.metadata);
+    if (!permission.ok) {
+      await interaction.respond([]);
+      return;
+    }
+    try {
+      const choices = await Promise.race([
+        descriptor.autocomplete({ interaction, command: descriptor.command, option: focused.name, value: String(focused.value) }),
+        new Promise<readonly never[]>((resolve) => setTimeout(() => resolve([]), 1_500)),
+      ]);
+      const normalized = choices.filter((choice) => typeof choice.name === 'string' && choice.name.length >= 1 && choice.name.length <= 100 && ((typeof choice.value === 'string' && choice.value.length >= 1 && choice.value.length <= 100) || (typeof choice.value === 'number' && Number.isFinite(choice.value)))).filter((choice, index, all) => all.findIndex((candidate) => candidate.name === choice.name && candidate.value === choice.value) === index).slice(0, 25);
+      await interaction.respond(normalized);
+    } catch {
+      await interaction.respond([]).catch(() => undefined);
+    }
   }
 
   async handlePrefix(message: Message): Promise<void> {
@@ -60,10 +87,11 @@ export class CommandRouter {
     ctx: CommandContext,
     _commandName: string,
     interaction?: ChatInputCommandInteraction,
+    metadata?: CommandMetadata,
   ): Promise<void> {
     const start = performance.now();
 
-    const permissionResult = await this.permissionMiddleware.check(command, ctx);
+    const permissionResult = await this.permissionMiddleware.check(command, ctx, metadata);
     if (!permissionResult.ok) {
       return;
     }
@@ -161,6 +189,14 @@ export class CommandRouter {
       createdAt: interaction.createdAt,
       reply: (content) => interaction.editReply(content as never),
       deferReply: () => interaction.deferReply(),
+    };
+  }
+
+  private createAutocompleteContext(interaction: AutocompleteInteraction): CommandContext {
+    return {
+      source: 'slash', user: interaction.user, member: interaction.member as never, guild: interaction.guild,
+      channel: interaction.channel as never, args: new Map(), logger: this.logger, eventBus: this.eventBus,
+      createdAt: interaction.createdAt, reply: async () => undefined, deferReply: async () => undefined,
     };
   }
 

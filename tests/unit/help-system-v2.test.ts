@@ -54,6 +54,17 @@ describe('CommandIndexer', () => {
     expect(indexer.categories().map((entry) => entry.name)).toEqual(['Admin', 'Audio', 'General']);
   });
 
+  it('matches runtime permission visibility for Help', () => {
+    const restricted = command({ name: 'ban', guildOnly: true, requiredPermissions: [PermissionFlagsBits.BanMembers] });
+    const { indexer } = setup([restricted]);
+    const allowed = { user: { id: 'user' }, guild: {}, member: { permissions: { has: () => true } } } as never;
+    const denied = { user: { id: 'user' }, guild: {}, member: { permissions: { has: () => false } } } as never;
+    const direct = { user: { id: 'user' }, guild: null, member: null } as never;
+    expect(indexer.commands(allowed)).toEqual([restricted]);
+    expect(indexer.commands(denied)).toEqual([]);
+    expect(indexer.commands(direct)).toEqual([]);
+  });
+
   it('finds commands by trimmed case-insensitive names and aliases', () => {
     const target = command({ name: 'Ban', prefixAliases: ['B', 'remove'] });
     const { indexer } = setup([target]);

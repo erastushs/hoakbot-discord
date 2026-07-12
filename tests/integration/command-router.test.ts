@@ -3,6 +3,8 @@ import { CommandRouter } from '../../src/adapters/command-router.js';
 import { CommandRegistry } from '../../src/shared/command-registry.js';
 import type { ICommand } from '../../src/shared/types/command.js';
 import type { AppConfig } from '../../src/core/config/types.js';
+import { defineCommand } from '../../src/shared/command/define-command.js';
+import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 
 function makeCommand(overrides: Partial<ICommand> = {}): ICommand {
   return {
@@ -281,6 +283,54 @@ describe('CommandRouter', () => {
 
       expect(execute).not.toHaveBeenCalled();
       expect(eventBus.emit).not.toHaveBeenCalledWith('command.executed', expect.anything());
+    });
+  });
+
+  describe('autocomplete', () => {
+    function autocomplete(overrides: Record<string, unknown> = {}) {
+      return { ...makeInteraction(), commandName: 'search', options: { getFocused: () => ({ name: 'query', value: 'a' }) }, respond: vi.fn().mockResolvedValue(undefined), ...overrides };
+    }
+
+    function registerAutocomplete(handler: () => Promise<readonly { name: string; value: string }[]>, permissions?: bigint[]) {
+      const command = makeCommand({ name: 'search', requiredPermissions: permissions, slashOptions: new SlashCommandBuilder().setName('search').setDescription('search').addStringOption((option) => option.setName('query').setDescription('query').setAutocomplete(true)) });
+      registry.register(defineCommand({ owner: 'test', command, autocomplete: { query: handler } }));
+      return handler;
+    }
+
+    it('authorizes, bounds choices, and routes option ownership', async () => {
+      const handler = vi.fn(async () => Array.from({ length: 30 }, (_, index) => ({ name: `choice-${index}`, value: `${index}` })));
+      registerAutocomplete(handler);
+      const interaction = autocomplete();
+      await router.handleAutocomplete(interaction as never);
+      expect(handler).toHaveBeenCalledOnce();
+      expect(interaction.respond).toHaveBeenCalledWith(expect.arrayContaining([{ name: 'choice-0', value: '0' }]));
+      expect((interaction.respond as ReturnType<typeof vi.fn>).mock.calls[0][0]).toHaveLength(25);
+    });
+
+    it('denies unauthorized autocomplete without invoking its handler', async () => {
+      const handler = vi.fn(async () => []);
+      registerAutocomplete(handler, [PermissionFlagsBits.BanMembers]);
+      const interaction = autocomplete({ member: { permissions: { has: () => false } } });
+      await router.handleAutocomplete(interaction as never);
+      expect(handler).not.toHaveBeenCalled();
+      expect(interaction.respond).toHaveBeenCalledWith([]);
+    });
+
+    it('times out and fails safely', async () => {
+      vi.useFakeTimers();
+      registerAutocomplete(() => new Promise(() => undefined));
+      const interaction = autocomplete();
+      const pending = router.handleAutocomplete(interaction as never);
+      await vi.advanceTimersByTimeAsync(1_500);
+      await pending;
+      expect(interaction.respond).toHaveBeenCalledWith([]);
+      vi.useRealTimers();
+
+      registry.unregister('search');
+      registerAutocomplete(async () => { throw new Error('failed'); });
+      const failed = autocomplete();
+      await router.handleAutocomplete(failed as never);
+      expect(failed.respond).toHaveBeenCalledWith([]);
     });
   });
 

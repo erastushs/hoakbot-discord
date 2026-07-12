@@ -17,6 +17,9 @@ const SHRINE_SETTING_KEYS = [
   'shrine.channelId',
   'shrine.nightLightBaseUrl',
   'shrine.imageCdnUrl',
+  'shrine.portraitFolder',
+  'shrine.perkFolder',
+  'shrine.iridescentShardIcon',
   'shrine.polling.pollIntervalMs',
   'shrine.polling.preResetWindowMs',
   'shrine.polling.delayedUpdateWindowMs',
@@ -148,8 +151,13 @@ export class ShrineService {
     }
 
     try {
-      const embed = this.buildEmbed(rotation, config.imageCdnUrl);
-      const card = await this.cardRenderer.render(rotation, config.imageCdnUrl);
+      const embed = this.buildEmbed(rotation);
+      const card = await this.cardRenderer.render(rotation, {
+        imageCdnUrl: config.imageCdnUrl,
+        portraitFolder: config.portraitFolder,
+        perkFolder: config.perkFolder,
+        iridescentShardIcon: config.iridescentShardIcon,
+      });
       await channel.send({ embeds: [embed], files: [{ attachment: card, name: ShrineCardRenderer.fileName }] });
       this.metrics.counter('shrine_announcement_sent_total').increment();
       this.logger.info({ guildId, channelId: config.channelId, week: rotation.week }, 'Shrine announcement sent');
@@ -165,7 +173,7 @@ export class ShrineService {
     }
   }
 
-  buildEmbed(rotation: ShrineRotation, imageCdnUrl: string) {
+  buildEmbed(rotation: ShrineRotation) {
     const highestUsagePerk = [...rotation.perks].sort((a, b) => tierRank[b.usageTier] - tierRank[a.usageTier])[0];
     const resetDate = this.parseApiEndAsUtc(rotation.end);
     const resetTimestamp = Math.floor(resetDate.getTime() / 1000);
@@ -186,6 +194,7 @@ export class ShrineService {
       color: this.colorForTier(highestUsagePerk?.usageTier ?? 'unknown'),
       image: ShrineCardRenderer.attachmentUrl,
       footer: 'Dead by Daylight • Powered by NightLight',
+      timestamp: false,
     });
   }
 
@@ -228,6 +237,9 @@ export class ShrineService {
       channelId: values['shrine.channelId'] as ShrineConfig['channelId'],
       nightLightBaseUrl: values['shrine.nightLightBaseUrl'] as ShrineConfig['nightLightBaseUrl'],
       imageCdnUrl: values['shrine.imageCdnUrl'] as ShrineConfig['imageCdnUrl'],
+      portraitFolder: values['shrine.portraitFolder'] as ShrineConfig['portraitFolder'],
+      perkFolder: values['shrine.perkFolder'] as ShrineConfig['perkFolder'],
+      iridescentShardIcon: values['shrine.iridescentShardIcon'] as ShrineConfig['iridescentShardIcon'],
       polling: {
         pollIntervalMs: values['shrine.polling.pollIntervalMs'] as ShrineConfig['polling']['pollIntervalMs'],
         preResetWindowMs: values['shrine.polling.preResetWindowMs'] as ShrineConfig['polling']['preResetWindowMs'],

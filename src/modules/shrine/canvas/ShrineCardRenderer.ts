@@ -12,7 +12,16 @@ const HEIGHT = 1000;
 const OUTER_MARGIN = 24;
 const PANEL_RADIUS = 24;
 const GRID_PADDING = 14;
-const CELL_GAP = 8;
+const CELL_GAP = 12;
+
+const portraitSlugOverrides: Readonly<Record<string, string>> = {};
+
+export interface ShrineCardAssets {
+  imageCdnUrl: string;
+  portraitFolder: string;
+  perkFolder: string;
+  iridescentShardIcon: string;
+}
 
 export class ShrineCardRenderer {
   static readonly fileName = 'shrine-card.png';
@@ -27,11 +36,17 @@ export class ShrineCardRenderer {
     this.backgroundRenderer = new BackgroundRenderer(new TextureRenderer(imageService));
   }
 
-  async render(rotation: ShrineRotation, imageCdnUrl: string): Promise<Buffer> {
+  async render(rotation: ShrineRotation, config: ShrineCardAssets): Promise<Buffer> {
     const canvas = this.imageService.createCanvas(WIDTH, HEIGHT);
     const ctx = canvas.getContext('2d');
     const perks = rotation.perks.slice(0, 4);
-    const icons = await Promise.all(perks.map((perk) => this.loadIcon(imageCdnUrl, perk.image)));
+    const [shardIcon, ...assets] = await Promise.all([
+      this.loadAsset(this.assetUrl(config.imageCdnUrl, config.iridescentShardIcon), 'Iridescent Shard icon'),
+      ...perks.map(async (perk) => ({
+        icon: await this.loadAsset(this.perkUrl(config, perk.image), 'Shrine perk icon'),
+        portrait: await this.loadAsset(this.portraitUrl(config, perk.character), 'Shrine character portrait'),
+      })),
+    ]);
 
     await this.backgroundRenderer.render(ctx, WIDTH, HEIGHT);
     this.drawMainPanel(ctx);
@@ -39,7 +54,8 @@ export class ShrineCardRenderer {
     const cells = this.gridCells();
     perks.forEach((perk, index) => {
       const cell = cells[index];
-      if (cell) this.perkPanelRenderer.render(ctx, perk, icons[index], cell);
+      const perkAssets = assets[index];
+      if (cell) this.perkPanelRenderer.render(ctx, perk, perkAssets?.icon, perkAssets?.portrait, shardIcon as Image | undefined, cell);
     });
 
     return canvas.encode('png');
@@ -82,17 +98,42 @@ export class ShrineCardRenderer {
     ];
   }
 
-  private async loadIcon(baseUrl: string, image: string): Promise<Image | undefined> {
+  private async loadAsset(url: string, asset: string): Promise<Image | undefined> {
     try {
-      return await this.imageService.loadAsset(this.iconUrl(baseUrl, image));
+      return await this.imageService.loadAsset(url);
     } catch {
-      this.imageService.warn({ image }, 'Failed to load Shrine perk icon');
+      this.imageService.warn({ url }, `Failed to load ${asset}`);
       return undefined;
     }
   }
 
-  private iconUrl(baseUrl: string, image: string): string {
+  private portraitUrl(config: ShrineCardAssets, character: string): string {
+    return this.assetUrl(config.imageCdnUrl, config.portraitFolder, `${this.characterSlug(character)}.png`);
+  }
+
+  private perkUrl(config: ShrineCardAssets, image: string): string {
+    const imagePath = this.removeFolderPrefix(image, config.perkFolder);
+    return this.assetUrl(config.imageCdnUrl, config.perkFolder, imagePath);
+  }
+
+  private characterSlug(character: string): string {
+    const normalizedName = character.trim().toLowerCase();
+    return portraitSlugOverrides[normalizedName] ?? normalizedName
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  private removeFolderPrefix(path: string, folder: string): string {
+    const normalizedPath = path.replace(/^\/+/, '');
+    const normalizedFolder = folder.replace(/^\/+|\/+$/g, '');
+    return normalizedPath.startsWith(`${normalizedFolder}/`) ? normalizedPath.slice(normalizedFolder.length + 1) : normalizedPath;
+  }
+
+  private assetUrl(baseUrl: string, ...parts: string[]): string {
     const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-    return new URL(image, normalizedBase).toString();
+    const path = parts.map((part) => part.replace(/^\/+|\/+$/g, '')).filter(Boolean).join('/');
+    return new URL(path, normalizedBase).toString();
   }
 }

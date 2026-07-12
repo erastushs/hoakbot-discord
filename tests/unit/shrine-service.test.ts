@@ -11,6 +11,9 @@ const shrineConfig = {
   channelId: 'shrine-channel',
   nightLightBaseUrl: 'https://api.nightlight.gg/v1',
   imageCdnUrl: 'https://cdn.nightlight.gg/img/',
+  portraitFolder: 'portraits',
+  perkFolder: 'perks',
+  iridescentShardIcon: 'iridescentshard.png',
   polling: {
     pollIntervalMs: 30000,
     preResetWindowMs: 120000,
@@ -103,6 +106,9 @@ function makeConfig(config = shrineConfig) {
       'shrine.channelId': config.channelId,
       'shrine.nightLightBaseUrl': config.nightLightBaseUrl,
       'shrine.imageCdnUrl': config.imageCdnUrl,
+      'shrine.portraitFolder': config.portraitFolder,
+      'shrine.perkFolder': config.perkFolder,
+      'shrine.iridescentShardIcon': config.iridescentShardIcon,
       'shrine.polling.pollIntervalMs': config.polling.pollIntervalMs,
       'shrine.polling.preResetWindowMs': config.polling.preResetWindowMs,
       'shrine.polling.delayedUpdateWindowMs': config.polling.delayedUpdateWindowMs,
@@ -191,7 +197,12 @@ describe('ShrineService', () => {
     await service.pollAndAnnounce();
 
     expect(send).toHaveBeenCalledTimes(1);
-    expect(cardRenderer.render).toHaveBeenCalledWith(makeRotation(606), 'https://cdn.nightlight.gg/img/');
+    expect(cardRenderer.render).toHaveBeenCalledWith(makeRotation(606), {
+      imageCdnUrl: 'https://cdn.nightlight.gg/img/',
+      portraitFolder: 'portraits',
+      perkFolder: 'perks',
+      iridescentShardIcon: 'iridescentshard.png',
+    });
     expect(send).toHaveBeenCalledWith(expect.objectContaining({
       embeds: expect.any(Array),
       files: [{ attachment: Buffer.from('shrine-card'), name: ShrineCardRenderer.fileName }],
@@ -227,7 +238,7 @@ describe('ShrineService', () => {
   it('builds the minimal Shrine embed with attached canvas image', () => {
     const { service } = createService([]);
 
-    const embed = service.buildEmbed(makeRotation(605, new Date(2026, 6, 11, 14, 59, 59)), 'https://cdn.nightlight.gg/img/').toJSON();
+    const embed = service.buildEmbed(makeRotation(605, new Date(2026, 6, 11, 14, 59, 59))).toJSON();
 
     expect(embed.title).toBe('✨ Shrine of Secrets Updated');
     expect(embed.description).toContain('Week #605');
@@ -236,13 +247,15 @@ describe('ShrineService', () => {
     expect(embed.thumbnail).toBeUndefined();
     expect(embed.image?.url).toBe(ShrineCardRenderer.attachmentUrl);
     expect(embed.fields).toBeUndefined();
+    expect(embed.footer?.text).toBe('Dead by Daylight • Powered by NightLight');
+    expect(embed.timestamp).toBeUndefined();
   });
 
   it('treats timezone-less NightLight end timestamps as UTC for Discord countdowns', () => {
     const { service, logger } = createService([]);
     const localParsedEnd = new Date(2026, 6, 11, 14, 59, 59);
 
-    const embed = service.buildEmbed(makeRotation(605, localParsedEnd), 'https://cdn.nightlight.gg/img/').toJSON();
+    const embed = service.buildEmbed(makeRotation(605, localParsedEnd)).toJSON();
 
     expect(embed.description).toContain('🕒 Resets <t:1783781999:R>');
     expect(logger.debug).toHaveBeenCalledWith(

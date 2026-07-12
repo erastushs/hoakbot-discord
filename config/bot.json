@@ -79,6 +79,9 @@
     "channelId": "1471550778882785492",
     "nightLightBaseUrl": "https://api.nightlight.gg/v1",
     "imageCdnUrl": "https://cdn.nightlight.gg/img/",
+    "portraitFolder": "portraits",
+    "perkFolder": "perks",
+    "iridescentShardIcon": "iridescentshard.png",
     "polling": {
       "pollIntervalMs": 30000,
       "preResetWindowMs": 120000,

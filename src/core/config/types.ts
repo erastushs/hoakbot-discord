@@ -96,6 +96,9 @@ export interface ShrineConfig {
   channelId: string;
   nightLightBaseUrl: string;
   imageCdnUrl: string;
+  portraitFolder: string;
+  perkFolder: string;
+  iridescentShardIcon: string;
   polling: ShrinePollingConfig;
   dev: ShrineDevConfig;
 }

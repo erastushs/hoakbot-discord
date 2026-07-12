@@ -11,6 +11,7 @@ interface EmbedOptions {
   thumbnail?: string;
   image?: string;
   footer?: string;
+  timestamp?: boolean;
 }
 
 export class EmbedFactory {
@@ -21,7 +22,8 @@ export class EmbedFactory {
   }
 
   static build(opts: EmbedOptions): EmbedBuilder {
-    const embed = new EmbedBuilder().setTimestamp();
+    const embed = new EmbedBuilder();
+    if (opts.timestamp !== false) embed.setTimestamp();
     if (opts.color) embed.setColor(opts.color);
     if (opts.title) embed.setTitle(opts.title);
     if (opts.description !== undefined) embed.setDescription(opts.description);

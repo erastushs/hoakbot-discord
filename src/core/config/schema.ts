@@ -81,6 +81,9 @@ const shrineSchema = z.object({
   channelId: z.string(),
   nightLightBaseUrl: z.string().url(),
   imageCdnUrl: z.string().url(),
+  portraitFolder: z.string().trim().min(1),
+  perkFolder: z.string().trim().min(1),
+  iridescentShardIcon: z.string().trim().min(1),
   polling: z.object({
     pollIntervalMs: z.number().int().positive(),
     preResetWindowMs: z.number().int().positive(),

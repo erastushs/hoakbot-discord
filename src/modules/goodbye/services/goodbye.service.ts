@@ -19,6 +19,11 @@ const GOODBYE_SETTING_KEYS = [
 ] as const;
 
 export class GoodbyeService {
+  private active = false;
+  private readonly listener = (member: GuildMember | PartialGuildMember): void => {
+    void this.handleMemberLeave(member);
+  };
+
   constructor(
     private readonly client: Client,
     private readonly config: ConfigurationService,
@@ -29,16 +34,23 @@ export class GoodbyeService {
   ) {}
 
   register(): void {
-    this.client.on(Events.GuildMemberRemove, (member: GuildMember | PartialGuildMember) => {
-      void this.handleMemberLeave(member as GuildMember);
-    });
+    if (this.active) return;
+    this.active = true;
+    this.client.on(Events.GuildMemberRemove, this.listener);
   }
 
-  async handleMemberLeave(member: GuildMember): Promise<void> {
+  dispose(): void {
+    if (!this.active) return;
+    this.active = false;
+    this.client.off(Events.GuildMemberRemove, this.listener);
+  }
+
+  async handleMemberLeave(member: GuildMember | PartialGuildMember): Promise<void> {
+    if (!this.active) return;
     const guild = member.guild;
     const config = await this.loadConfig(guild.id);
 
-    if (!config.enabled) return;
+    if (!this.active || !config.enabled) return;
     if (member.user.bot) return;
 
     const channelId = config.channelId;

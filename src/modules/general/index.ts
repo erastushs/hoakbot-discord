@@ -1,4 +1,5 @@
 export { GeneralModule } from './general.module.js';
+export { createGeneralPlugin, generalPluginParity } from './general.plugin.js';
 export { generalManifest } from './manifest.js';
 export { createGeneralSettings } from './settings.js';
 export type {

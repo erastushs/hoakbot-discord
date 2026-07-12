@@ -22,6 +22,11 @@ const WELCOME_SETTING_KEYS = [
 ] as const;
 
 export class WelcomeService {
+  private active = false;
+  private readonly listener = (member: GuildMember) => {
+    if (this.active) void this.handleMemberJoin(member);
+  };
+
   constructor(
     private readonly client: Client,
     private readonly config: ConfigurationService,
@@ -32,9 +37,14 @@ export class WelcomeService {
   ) {}
 
   register(): void {
-    this.client.on(Events.GuildMemberAdd, (member: GuildMember) => {
-      void this.handleMemberJoin(member);
-    });
+    if (this.active) return;
+    this.active = true;
+    this.client.on(Events.GuildMemberAdd, this.listener);
+  }
+
+  dispose(): void {
+    this.active = false;
+    this.client.off(Events.GuildMemberAdd, this.listener);
   }
 
   async handleMemberJoin(member: GuildMember): Promise<void> {
@@ -87,6 +97,7 @@ export class WelcomeService {
         neutralizeMassMentions(`## ${renderedTitle}\n${bodyText}`),
         DISCORD_MESSAGE_LIMIT,
       );
+      if (!this.active) return;
       await channel.send({
         content,
         files: [{ attachment: imageBuffer, name: 'welcome.png' }],

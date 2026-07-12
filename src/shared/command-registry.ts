@@ -22,6 +22,15 @@ export class CommandRegistry {
     }
   }
 
+  unregister(name: string): void {
+    const command = this.commands.get(name.toLowerCase());
+    if (!command) return;
+    this.commands.delete(name.toLowerCase());
+    for (const [alias, registered] of this.aliasMap) {
+      if (registered === command) this.aliasMap.delete(alias);
+    }
+  }
+
   find(name: string): ICommand | null {
     return this.commands.get(name.toLowerCase()) ?? null;
   }

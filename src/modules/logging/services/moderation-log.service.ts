@@ -2,7 +2,7 @@ import type { Client, TextChannel, EmbedBuilder } from 'discord.js';
 import type { ILogger } from '../../../core/logger/logger.service.js';
 import type { IMetrics } from '../../../core/metrics/types.js';
 import type { ModerationLogConfig } from '../../../core/config/types.js';
-import type { IEventBus } from '../../../core/event-bus/types.js';
+import type { IEventBus, Subscription } from '../../../core/event-bus/types.js';
 import type { ModerationActionEvent, WarningIssuedEvent } from '../../../core/event-bus/events.js';
 import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
@@ -57,6 +57,9 @@ interface ModerationEmbedOptions {
 }
 
 export class ModerationLogService {
+  private active = false;
+  private subscriptions: Subscription[] = [];
+
   constructor(
     private readonly client: Client,
     private readonly config: ModerationLogConfig,
@@ -66,13 +69,18 @@ export class ModerationLogService {
   ) {}
 
   register(): void {
-    this.eventBus.subscribe('moderation.action', (payload: ModerationActionEvent) => {
-      void this.handleModerationAction(payload);
-    });
+    if (this.active) return;
+    this.active = true;
+    this.subscriptions = [
+      this.eventBus.subscribe('moderation.action', (payload: ModerationActionEvent) => { if (this.active) void this.handleModerationAction(payload); }),
+      this.eventBus.subscribe('moderation.warningIssued', (payload: WarningIssuedEvent) => { if (this.active) void this.handleWarningIssued(payload); }),
+    ];
+  }
 
-    this.eventBus.subscribe('moderation.warningIssued', (payload: WarningIssuedEvent) => {
-      void this.handleWarningIssued(payload);
-    });
+  dispose(): void {
+    this.active = false;
+    for (const subscription of this.subscriptions) subscription.unsubscribe();
+    this.subscriptions = [];
   }
 
   async handleModerationAction(event: ModerationActionEvent): Promise<void> {

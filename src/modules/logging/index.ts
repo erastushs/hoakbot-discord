@@ -1,4 +1,5 @@
 export { LoggingModule } from './logging.module.js';
+export { createLoggingPlugin, loggingPluginParity } from './logging.plugin.js';
 export { loggingManifest } from './manifest.js';
 export { createLoggingSettings } from './settings.js';
 export type {

@@ -17,6 +17,11 @@ interface BulkMessageCollection {
 }
 
 export class MessageLogService {
+  private active = false;
+  private readonly deleteListener = (message: Message | PartialMessage) => { if (this.active) void this.handleMessageDelete(message); };
+  private readonly updateListener = (oldMessage: Message | PartialMessage, newMessage: Message | PartialMessage) => { if (this.active) void this.handleMessageEdit(oldMessage, newMessage); };
+  private readonly bulkDeleteListener = (messages: unknown) => { if (this.active) void this.handleMessageBulkDelete(messages as BulkMessageCollection); };
+
   constructor(
     private readonly client: Client,
     private readonly config: MessageLogConfig,
@@ -26,17 +31,18 @@ export class MessageLogService {
   ) {}
 
   register(): void {
-    this.client.on(Events.MessageDelete, (message: Message | PartialMessage) => {
-      void this.handleMessageDelete(message);
-    });
+    if (this.active) return;
+    this.active = true;
+    this.client.on(Events.MessageDelete, this.deleteListener);
+    this.client.on(Events.MessageUpdate, this.updateListener);
+    this.client.on(Events.MessageBulkDelete, this.bulkDeleteListener);
+  }
 
-    this.client.on(Events.MessageUpdate, (oldMessage: Message | PartialMessage, newMessage: Message | PartialMessage) => {
-      void this.handleMessageEdit(oldMessage, newMessage);
-    });
-
-    this.client.on(Events.MessageBulkDelete, (messages, _channel) => {
-      void this.handleMessageBulkDelete(messages as unknown as BulkMessageCollection);
-    });
+  dispose(): void {
+    this.active = false;
+    this.client.off(Events.MessageDelete, this.deleteListener);
+    this.client.off(Events.MessageUpdate, this.updateListener);
+    this.client.off(Events.MessageBulkDelete, this.bulkDeleteListener);
   }
 
   async handleMessageDelete(message: Message | PartialMessage): Promise<void> {
@@ -286,6 +292,7 @@ export class MessageLogService {
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 750));
+      if (!this.active) return null;
     } catch {
       // Ignore timeout errors
     }

@@ -1,0 +1,62 @@
+import { TOKENS } from '../../core/container/tokens.js';
+import type { Subscription } from '../../core/event-bus/types.js';
+import { pluginInternalCapabilities, type PluginFactory } from '../../plugin-core/index.js';
+import { ImageService } from '../../shared/image/image.service.js';
+import type { IModule } from '../module.interface.js';
+import { ShrineCardRenderer } from './canvas/ShrineCardRenderer.js';
+import { shrineManifest } from './manifest.js';
+import { ShrineClient } from './services/shrine.client.js';
+import { ShrinePollingScheduler } from './services/shrine-polling.scheduler.js';
+import { ShrineService } from './services/shrine.service.js';
+import { createShrineSettings } from './settings.js';
+
+export const shrinePluginParity = Object.freeze({
+  id: shrineManifest.id,
+  settings: Object.freeze([...(shrineManifest.settings ?? [])]),
+  commands: Object.freeze([...(shrineManifest.commands ?? [])]),
+  events: Object.freeze([...(shrineManifest.events ?? [])]),
+  routes: Object.freeze([...(shrineManifest.routes ?? [])]),
+  permissions: Object.freeze([...(shrineManifest.permissions ?? [])]),
+  dashboard: shrineManifest.dashboard,
+});
+
+export const createShrinePlugin: PluginFactory = (context) => {
+  const container = context[pluginInternalCapabilities]?.container;
+  if (!container) throw new Error('Shrine plugin requires the built-in capability bridge.');
+  let started = false;
+  let generation = 0;
+  let readySubscription: Subscription | undefined;
+  let scheduler: ShrinePollingScheduler | undefined;
+  const module: IModule = Object.freeze({ name: 'shrine', version: '3.2.1', enabled: true, manifest: shrineManifest, register: () => undefined });
+  return {
+    id: shrineManifest.id,
+    module,
+    start: () => {
+      if (started) return;
+      const run = ++generation;
+      const configuration = container.resolve(TOKENS.ConfigurationService);
+      const config = configuration.current();
+      const logger = container.resolve(TOKENS.Logger);
+      const eventBus = container.resolve(TOKENS.EventBus);
+      if (container.has(TOKENS.SettingsRegistry)) container.resolve(TOKENS.SettingsRegistry).register('shrine', createShrineSettings(config));
+      const network = new ShrineClient({ baseUrl: config.bot.shrine.nightLightBaseUrl, retries: 2, retryDelayMs: 1000, timeoutMs: 10000 }, logger);
+      const service = new ShrineService(container.resolve(TOKENS.DiscordClient), configuration, network, new ShrineCardRenderer(new ImageService(logger)), logger, container.resolve(TOKENS.MetricsService), eventBus);
+      scheduler = new ShrinePollingScheduler(service, logger, config.bot.shrine);
+      readySubscription = eventBus.subscribe('bot.ready', () => { if (run === generation) scheduler?.start(); });
+      started = true;
+      if (container.resolve(TOKENS.DiscordClient).isReady()) scheduler.start();
+      container.resolve(TOKENS.MetricsService).counter('plugin_migration_shrine_cutover').increment();
+      logger.info({ enabled: config.bot.shrine.enabled }, 'Shrine plugin registered');
+    },
+    stop: () => {
+      if (!started) return;
+      started = false;
+      generation++;
+      readySubscription?.unsubscribe();
+      readySubscription = undefined;
+      scheduler?.stop();
+      scheduler = undefined;
+      if (container.has(TOKENS.SettingsRegistry)) container.resolve(TOKENS.SettingsRegistry).unregister('shrine');
+    },
+  };
+}

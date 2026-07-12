@@ -120,6 +120,13 @@ const permissionsSchema = z.object({
 const featureFlagsSchema = z.object({
   modules: z.record(z.string(), z.boolean()),
   pluginCoreBootstrap: z.boolean().default(false),
+  generalPlugin: z.boolean().default(false),
+  loggingPlugin: z.boolean().default(false),
+  welcomePlugin: z.boolean().default(false),
+  goodbyePlugin: z.boolean().default(false),
+  voicePlugin: z.boolean().default(false),
+  moderationPlugin: z.boolean().default(false),
+  shrinePlugin: z.boolean().default(false),
 });
 
 export const envSchema = z.object({

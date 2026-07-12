@@ -33,5 +33,15 @@ Per plugin: metadata snapshots, registrations, commands, events, config reload, 
 ## Rollback Plan
 Disable the newest plugin flag and restore its module path; roll back in reverse order without changing persisted data.
 
+## Migration Record
+
+Completed 2026-07-12 in the required order: General -> Logging -> Welcome -> Goodbye -> Voice -> Moderation -> Shrine. Each built-in has a plugin factory, compatibility module adapter, independent disabled-by-default migration flag, and parity projection preserving manifest IDs, settings/defaults, commands/options, permissions, events/aliases, routes, dashboard metadata, and service behavior.
+
+Evidence:
+- `tests/unit/built-in-plugin-catalog.test.ts` verifies exact migration order, complete API/dashboard projections, independent reverse rollback, incompatibility diagnostics, and single reverse-order lifecycle cleanup.
+- Per-plugin migration suites for General, Logging, Welcome, Goodbye, Voice, Moderation, and Shrine verify metadata parity, ownership, idempotent startup/shutdown, registration cleanup, service behavior, and rollback without dual subscriptions.
+- Voice migration coverage verifies audio/native cleanup; Shrine migration coverage verifies network/scheduler cleanup; Welcome migration coverage records the legacy behavior inventory.
+- Final pipeline on 2026-07-12 passed in exact order: `npm run build`; `npm run typecheck`; `npm test` (80 files/640 tests plus dashboard 7 files/28 tests); `npm run lint`.
+
 ## Notes
 Voice and Shrine require explicit native/audio/network/scheduler cleanup tests. Inventory Welcome before migration and preserve observed behavior.

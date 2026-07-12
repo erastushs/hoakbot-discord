@@ -57,9 +57,9 @@ import { GoodbyeModule } from './modules/goodbye/goodbye.module.js';
 import { ShrineModule } from './modules/shrine/shrine.module.js';
 import { CommandRegistry } from './shared/command-registry.js';
 import type { HealthReport } from './core/health/types.js';
-import { generatedBuiltInPluginCatalog } from './modules/built-in-plugin-catalog.js';
+import { createBuiltInRuntimeCatalog, generatedBuiltInPluginCatalog } from './modules/built-in-plugin-catalog.js';
 import { projectPluginModules } from './modules/plugin-compatibility.js';
-import { loadPluginCatalog, PluginRegistry } from './plugin-core/index.js';
+import { loadAndStartPluginCatalog, loadPluginCatalog, PluginRegistry, type PluginLifecycleCoordinator } from './plugin-core/index.js';
 import type { IModule } from './modules/module.interface.js';
 
 const bootstrapLogger = pino({
@@ -184,22 +184,19 @@ try {
   container.registerSingleton(TOKENS.SessionProvider, () => sessionProvider);
   container.registerSingleton(TOKENS.AuthorizationProvider, () => authorizationProvider);
 
+  let pluginLifecycle: PluginLifecycleCoordinator | undefined;
   let builtInModules: IModule[];
+  const pluginRegistry = new PluginRegistry();
   if (appConfig.featureFlags.pluginCoreBootstrap) {
-    const pluginRegistry = new PluginRegistry();
     const snapshot = await loadPluginCatalog(generatedBuiltInPluginCatalog, pluginRegistry);
     builtInModules = projectPluginModules(snapshot);
     logger.info({ pluginIds: [...snapshot.keys()] }, 'Built-in modules selected through plugin-core bootstrap');
+  } else if (Object.entries(appConfig.featureFlags).some(([key, enabled]) => key.endsWith('Plugin') && enabled)) {
+    const started = await loadAndStartPluginCatalog(createBuiltInRuntimeCatalog(appConfig.featureFlags), pluginRegistry, { container });
+    pluginLifecycle = started.lifecycle;
+    builtInModules = projectPluginModules(started.snapshot);
   } else {
-    builtInModules = [
-      new GeneralModule(),
-      new VoiceModule(),
-      new ModerationModule(),
-      new LoggingModule(),
-      new WelcomeModule(),
-      new GoodbyeModule(),
-      new ShrineModule(),
-    ];
+    builtInModules = [new GeneralModule(), new VoiceModule(), new ModerationModule(), new LoggingModule(), new WelcomeModule(), new GoodbyeModule(), new ShrineModule()];
   }
   for (const module of builtInModules) {
     if (!module.manifest) throw new Error(`Built-in module "${module.name}" has no manifest.`);
@@ -279,7 +276,7 @@ try {
   await apiServer.start();
   sessionCleanupScheduler.start();
 
-  const shutdown = registerShutdownHandlers(logger, client, moduleLoader, databaseAdapter, eventBus, apiServer, sessionCleanupScheduler);
+  const shutdown = registerShutdownHandlers(logger, client, moduleLoader, databaseAdapter, eventBus, apiServer, sessionCleanupScheduler, pluginLifecycle);
   registerCrashHanders(logger, shutdown);
 
   logger.info('Logging in to Discord...');
@@ -331,6 +328,7 @@ function registerShutdownHandlers(
   eventBus: EventBus,
   apiServer: ReturnType<typeof createAPIHttpServer>,
   sessionCleanupScheduler: SessionCleanupScheduler,
+  pluginLifecycle?: PluginLifecycleCoordinator,
 ): () => Promise<void> {
   const shutdown = async () => {
     if (shuttingDown) return;
@@ -340,6 +338,12 @@ function registerShutdownHandlers(
     eventBus.emit('system.shutdown');
 
     sessionCleanupScheduler.stop();
+
+    try {
+      await pluginLifecycle?.stop();
+    } catch (err) {
+      logger.error({ error: err }, 'Error stopping plugins');
+    }
 
     try {
       client.destroy();

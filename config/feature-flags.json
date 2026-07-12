@@ -1,5 +1,12 @@
 {
   "pluginCoreBootstrap": false,
+  "generalPlugin": false,
+  "loggingPlugin": false,
+  "welcomePlugin": false,
+  "goodbyePlugin": false,
+  "voicePlugin": false,
+  "moderationPlugin": false,
+  "shrinePlugin": false,
   "modules": {
     "general": true,
     "voice": true,

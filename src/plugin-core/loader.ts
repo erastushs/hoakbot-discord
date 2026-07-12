@@ -3,12 +3,14 @@ import { createPluginContext, type PluginContextServices } from './context.js';
 import { PluginLifecycleCoordinator, type LifecycleResult } from './lifecycle.js';
 import { validateCatalog } from './catalog-validator.js';
 import { resolveDependencies } from './dependency-resolver.js';
+import type { IContainer } from '../core/container/types.js';
 import type { PluginRegistry, PluginRegistrySnapshot } from './registry.js';
 
 export interface PluginLoadOptions {
   readonly services?: PluginContextServices;
   readonly lifecycle?: PluginLifecycleCoordinator;
   readonly signal?: AbortSignal;
+  readonly container?: IContainer;
 }
 
 export interface StartedPluginCatalog {
@@ -31,7 +33,7 @@ export async function loadPluginCatalog(catalog: readonly PluginCatalogEntry[], 
   const stage = registry.stage();
   try {
     for (const entry of ordered) {
-      const instance = await entry.factory(createPluginContext(entry.manifest, options.services ?? unavailableServices, { signal: options.signal }));
+      const instance = await entry.factory(createPluginContext(entry.manifest, options.services ?? unavailableServices, { signal: options.signal, container: options.container }));
       if (instance.id !== entry.manifest.id) throw new Error(`Factory for "${entry.manifest.id}" returned "${instance.id}".`);
       stage.register(Object.freeze({ manifest: entry.manifest, instance }) satisfies RegisteredPlugin);
     }

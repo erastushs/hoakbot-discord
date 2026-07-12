@@ -7,7 +7,7 @@
 4.0.0: compatibility-first plugin platform with migrated built-ins and a supported plugin SDK.
 
 ## Current Phase
-Phase 02 — Plugin Core is complete behind a disabled-by-default runtime flag; Phase 03 migration has not started.
+Phase 03 — Plugin Migration is complete behind independent disabled-by-default rollback flags; Phase 04 has not started.
 
 ## Completed Milestones
 - Existing module manifests, registries, dependency graph, and loader
@@ -16,6 +16,7 @@ Phase 02 — Plugin Core is complete behind a disabled-by-default runtime flag; 
 - V4 documentation plan and terminology baseline
 - Phase 01 user-facing surface inventory, presentation baseline, golden regressions, and accessibility/security verification
 - Phase 02 validated plugin contracts, generated built-in catalog, deterministic loader/registry/context/lifecycle, compatibility projections, and reversible bootstrap flag
+- Phase 03 migrated all seven built-ins in required order with parity evidence, independent rollback flags, single lifecycle ownership, and clean resource shutdown
 
 ## Upcoming Phases
 1. UX Polish

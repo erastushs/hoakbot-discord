@@ -66,6 +66,7 @@ export type SettingsChangeHandler = (key: string, value: unknown, guildId: strin
 
 export interface ISettingsRegistry {
   register(moduleId: string, settings: ISettingMetadata[]): void;
+  unregister(moduleId: string): void;
   getAll(): ISettingMetadata[];
   getByCategory(category: string): ISettingMetadata[];
   getByModule(moduleId: string): ISettingMetadata[];

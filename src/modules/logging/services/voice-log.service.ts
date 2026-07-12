@@ -20,6 +20,15 @@ interface VoiceLogEvent {
 }
 
 export class VoiceLogService {
+  private active = false;
+  private readonly listener = (oldState: VoiceState, newState: VoiceState) => {
+    if (!this.active) return;
+    const member = newState.member ?? oldState.member;
+    if (!member || member.user.bot || oldState.channelId === newState.channelId) return;
+    const action: VoiceLogAction = !oldState.channelId ? 'join' : !newState.channelId ? 'leave' : 'move';
+    void this.handleVoiceEvent({ action, userId: member.id, username: member.user.username, displayName: member.displayName, avatarURL: member.user.displayAvatarURL(), oldChannelName: oldState.channel?.name ?? null, newChannelName: newState.channel?.name ?? null, guildId: newState.guild.id });
+  };
+
   constructor(
     private readonly client: Client,
     private readonly config: VoiceLogConfig,
@@ -28,40 +37,14 @@ export class VoiceLogService {
   ) {}
 
   register(): void {
-    this.client.on(Events.VoiceStateUpdate, (oldState: VoiceState, newState: VoiceState) => {
-      const member = newState.member ?? oldState.member;
-      if (!member) return;
-      if (member.user.bot) return;
+    if (this.active) return;
+    this.active = true;
+    this.client.on(Events.VoiceStateUpdate, this.listener);
+  }
 
-      const oldChannelId = oldState.channelId;
-      const newChannelId = newState.channelId;
-
-      if (oldChannelId === newChannelId) return;
-
-      let action: VoiceLogAction;
-      if (!oldChannelId && newChannelId) {
-        action = 'join';
-      } else if (oldChannelId && !newChannelId) {
-        action = 'leave';
-      } else if (oldChannelId && newChannelId && oldChannelId !== newChannelId) {
-        action = 'move';
-      } else {
-        return;
-      }
-
-      const event: VoiceLogEvent = {
-        action,
-        userId: member.id,
-        username: member.user.username,
-        displayName: member.displayName,
-        avatarURL: member.user.displayAvatarURL(),
-        oldChannelName: oldState.channel?.name ?? null,
-        newChannelName: newState.channel?.name ?? null,
-        guildId: newState.guild.id,
-      };
-
-      void this.handleVoiceEvent(event);
-    });
+  dispose(): void {
+    this.active = false;
+    this.client.off(Events.VoiceStateUpdate, this.listener);
   }
 
   async handleVoiceEvent(event: VoiceLogEvent): Promise<void> {

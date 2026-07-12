@@ -40,6 +40,13 @@ export class SettingsRegistry implements ISettingsRegistry {
     }
   }
 
+  unregister(moduleId: string): void {
+    const settings = this.moduleSettings.get(moduleId);
+    if (!settings) return;
+    this.moduleSettings.delete(moduleId);
+    for (const setting of settings) this.settingsByKey.delete(setting.key);
+  }
+
   getAll(): ISettingMetadata[] {
     return [...this.settingsByKey.values()];
   }

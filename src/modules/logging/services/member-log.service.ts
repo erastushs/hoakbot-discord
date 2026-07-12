@@ -8,6 +8,11 @@ import { EmbedFactory } from '../../../shared/builders/embed.factory.js';
 import { COLORS } from '../../../shared/constants/colors.js';
 
 export class MemberLogService {
+  private active = false;
+  private readonly listener = (oldMember: GuildMember | PartialGuildMember, newMember: GuildMember) => {
+    if (this.active) void this.handleMemberUpdate(oldMember as GuildMember, newMember);
+  };
+
   constructor(
     private readonly client: Client,
     private readonly config: MemberLogConfig,
@@ -17,9 +22,14 @@ export class MemberLogService {
   ) {}
 
   register(): void {
-    this.client.on(Events.GuildMemberUpdate, (oldMember: GuildMember | PartialGuildMember, newMember: GuildMember) => {
-      void this.handleMemberUpdate(oldMember as GuildMember, newMember);
-    });
+    if (this.active) return;
+    this.active = true;
+    this.client.on(Events.GuildMemberUpdate, this.listener);
+  }
+
+  dispose(): void {
+    this.active = false;
+    this.client.off(Events.GuildMemberUpdate, this.listener);
   }
 
   async handleMemberUpdate(oldMember: GuildMember, newMember: GuildMember): Promise<void> {

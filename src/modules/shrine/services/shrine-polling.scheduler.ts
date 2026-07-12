@@ -7,6 +7,8 @@ export class ShrinePollingScheduler {
   private timer: NodeJS.Timeout | undefined;
   private delayedUpdateStartedAt: number | null = null;
   private running = false;
+  private stopped = true;
+  private controller: AbortController | undefined;
 
   constructor(
     private readonly service: ShrineService,
@@ -16,9 +18,8 @@ export class ShrinePollingScheduler {
   ) {}
 
   start(): void {
-    if (this.timer) {
-      return;
-    }
+    if (!this.stopped) return;
+    this.stopped = false;
 
     if (!this.config.enabled) {
       this.logger.info('Shrine polling scheduler disabled');
@@ -30,6 +31,10 @@ export class ShrinePollingScheduler {
   }
 
   stop(): void {
+    if (this.stopped) return;
+    this.stopped = true;
+    this.controller?.abort();
+    this.controller = undefined;
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = undefined;
@@ -43,19 +48,22 @@ export class ShrinePollingScheduler {
       return;
     }
 
+    if (this.stopped) return;
     this.running = true;
+    this.controller = new AbortController();
     let changed = false;
 
     try {
       const beforeWeek = this.service.nextResetTime()?.getTime() ?? null;
-      await this.service.pollAndAnnounce();
+      await this.service.pollAndAnnounce(this.controller.signal);
       const afterWeek = this.service.nextResetTime()?.getTime() ?? null;
       changed = beforeWeek !== null && afterWeek !== null && afterWeek !== beforeWeek;
     } catch (error) {
-      this.logger.error({ error: serializeError(error) }, 'Shrine scheduled poll failed');
+      if (!this.stopped) this.logger.error({ error: serializeError(error) }, 'Shrine scheduled poll failed');
     } finally {
       this.running = false;
-      this.scheduleNext(changed);
+      this.controller = undefined;
+      if (!this.stopped) this.scheduleNext(changed);
     }
   }
 

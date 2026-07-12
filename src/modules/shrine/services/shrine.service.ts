@@ -53,7 +53,7 @@ export class ShrineService {
     return this.currentRotation?.end ?? null;
   }
 
-  async pollAndAnnounce(): Promise<ShrineRotation | null> {
+  async pollAndAnnounce(signal?: AbortSignal): Promise<ShrineRotation | null> {
     const shrineConfig = await this.loadConfig();
     const guildId = this.resolveGuildId(shrineConfig);
 
@@ -65,7 +65,8 @@ export class ShrineService {
     this.metrics.counter('shrine_poll_total').increment();
 
     try {
-      const latest = await this.shrineClient.fetchShrine();
+      const latest = await this.shrineClient.fetchShrine(signal);
+      if (signal?.aborted) return this.currentRotation;
       const previousRotation = this.currentRotation;
 
       if (!previousRotation) {
@@ -74,7 +75,7 @@ export class ShrineService {
         if (shrineConfig.dev.forceAnnouncementOnStartup) {
           this.logger.info('[Shrine] Development mode enabled. Forcing Shrine announcement on startup.');
           this.logger.info({ week: latest.week }, '[Shrine] Sending Shrine announcement...');
-          const announced = await this.announce(guildId, shrineConfig, latest);
+          const announced = await this.announce(guildId, shrineConfig, latest, signal);
           if (announced) {
             this.announcedWeek = latest.week;
             this.logger.info({ week: latest.week }, '[Shrine] Announcement delivered. Week ' + latest.week + ' marked as announced.');
@@ -99,7 +100,7 @@ export class ShrineService {
       if (latest.week === previousRotation.week) {
         this.currentRotation = latest;
         this.logger.info({ week: latest.week }, '[Shrine] Sending Shrine announcement...');
-        const announced = await this.announce(guildId, shrineConfig, latest);
+        const announced = await this.announce(guildId, shrineConfig, latest, signal);
         if (announced) {
           this.announcedWeek = latest.week;
           this.logger.info({ week: latest.week }, '[Shrine] Announcement delivered. Week ' + latest.week + ' marked as announced.');
@@ -115,7 +116,7 @@ export class ShrineService {
       this.metrics.counter('shrine_rotation_detected_total').increment();
 
       this.logger.info({ week: latest.week }, '[Shrine] Sending Shrine announcement...');
-      const announced = await this.announce(guildId, shrineConfig, latest);
+      const announced = await this.announce(guildId, shrineConfig, latest, signal);
       if (announced) {
         this.announcedWeek = latest.week;
         this.logger.info({ week: latest.week }, '[Shrine] Announcement delivered. Week ' + latest.week + ' marked as announced.');
@@ -132,7 +133,8 @@ export class ShrineService {
     }
   }
 
-  async announce(guildId: string, config: ShrineConfig, rotation: ShrineRotation): Promise<boolean> {
+  async announce(guildId: string, config: ShrineConfig, rotation: ShrineRotation, signal?: AbortSignal): Promise<boolean> {
+    if (signal?.aborted) return false;
     if (!config.channelId) {
       this.logger.warn({ guildId, week: rotation.week }, 'Shrine channelId not configured');
       return false;
@@ -168,7 +170,9 @@ export class ShrineService {
         );
         embed = this.buildEmbed(rotation, false);
       }
+      if (signal?.aborted) return false;
       await channel.send({ embeds: [embed], files });
+      if (signal?.aborted) return false;
       this.metrics.counter('shrine_announcement_sent_total').increment();
       this.logger.info({ guildId, channelId: config.channelId, week: rotation.week }, 'Shrine announcement sent');
       this.eventBus.emit('shrine.updated', { guildId, channelId: config.channelId, rotation });

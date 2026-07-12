@@ -1,4 +1,5 @@
 export { ShrineModule } from './shrine.module.js';
+export { createShrinePlugin, shrinePluginParity } from './shrine.plugin.js';
 export { shrineManifest } from './manifest.js';
 export { createShrineSettings } from './settings.js';
 export { ShrineCardRenderer } from './canvas/ShrineCardRenderer.js';

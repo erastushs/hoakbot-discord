@@ -128,6 +128,13 @@ export interface PermissionsConfig {
 export interface FeatureFlagsConfig {
   modules: Record<string, boolean>;
   pluginCoreBootstrap: boolean;
+  generalPlugin: boolean;
+  loggingPlugin: boolean;
+  welcomePlugin: boolean;
+  goodbyePlugin: boolean;
+  voicePlugin: boolean;
+  moderationPlugin: boolean;
+  shrinePlugin: boolean;
 }
 
 export interface AppConfig {

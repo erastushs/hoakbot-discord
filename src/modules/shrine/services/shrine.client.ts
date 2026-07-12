@@ -37,16 +37,19 @@ export class ShrineClient {
     private readonly logger: Pick<ILogger, 'debug' | 'warn'>,
   ) {}
 
-  async fetchShrine(): Promise<ShrineRotation> {
+  async fetchShrine(signal?: AbortSignal): Promise<ShrineRotation> {
     const url = new URL('shrine', this.normalizedBaseUrl()).toString();
     let lastError: unknown;
 
     for (let attempt = 1; attempt <= this.options.retries + 1; attempt += 1) {
       const controller = new AbortController();
+      const abort = () => controller.abort(signal?.reason);
+      signal?.addEventListener('abort', abort, { once: true });
       const timeout = setTimeout(() => controller.abort(), this.options.timeoutMs);
       timeout.unref?.();
 
       try {
+        signal?.throwIfAborted();
         this.logger.debug({ url, attempt }, 'Fetching Shrine from NightLight');
         const response = await fetch(url, { signal: controller.signal });
 
@@ -59,6 +62,7 @@ export class ShrineClient {
         return this.parse(raw);
       } catch (error) {
         lastError = error;
+        if (signal?.aborted) throw signal.reason ?? error;
 
         if (attempt > this.options.retries) {
           break;
@@ -68,9 +72,10 @@ export class ShrineClient {
           { error: serializeError(error), attempt, nextAttempt: attempt + 1 },
           'NightLight Shrine request failed; retrying',
         );
-        await this.delay(this.options.retryDelayMs);
+        await this.delay(this.options.retryDelayMs, signal);
       } finally {
         clearTimeout(timeout);
+        signal?.removeEventListener('abort', abort);
       }
     }
 
@@ -110,7 +115,13 @@ export class ShrineClient {
     return this.options.baseUrl.endsWith('/') ? this.options.baseUrl : `${this.options.baseUrl}/`;
   }
 
-  private async delay(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
+  private async delay(ms: number, signal?: AbortSignal): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+      const cleanup = () => signal?.removeEventListener('abort', abort);
+      const timer = setTimeout(() => { cleanup(); resolve(); }, ms);
+      const abort = () => { clearTimeout(timer); cleanup(); reject(signal?.reason ?? new Error('Shrine request aborted')); };
+      signal?.addEventListener('abort', abort, { once: true });
+      if (signal?.aborted) abort();
+    });
   }
 }

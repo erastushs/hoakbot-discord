@@ -99,7 +99,11 @@ function createRouter(validSession: boolean, authorized: boolean): APIRouter {
   router.use(createSessionAuthMiddleware({ sessionProvider: sessionProvider(validSession), sessionConfig }));
   router.use(createAuthorizationMiddleware({ authorizationProvider: authorizationProvider(authorized) }));
   router.use(createCsrfMiddleware({ csrfService }));
-  for (const endpoint of createModuleConfigEndpoints({ manifests, settings, config })) {
+  const moduleStates = {
+    getMany: vi.fn(async () => new Map<string, boolean>()),
+    setMany: vi.fn(async () => true),
+  };
+  for (const endpoint of createModuleConfigEndpoints({ manifests, settings, config, dashboardProjections: true, moduleStates })) {
     router.register(endpoint);
   }
   return router;
@@ -138,6 +142,24 @@ describe('authenticated dashboard API integration', () => {
         headers: { cookie: 'hoak_session=valid-session' },
       }),
     ).resolves.toMatchObject({ success: true, data: { guildId: 'guild-1' } });
+  });
+
+  it('returns 403 for module state PATCH without CSRF', async () => {
+    await expect(createRouter(true, true).handle({
+      method: 'PATCH', path: '/api/v1/guilds/guild-1/modules/general', headers: { cookie: 'hoak_session=valid-session' }, body: { enabled: false },
+    })).resolves.toMatchObject({ success: false, status: 403, error: { code: 'INVALID_CSRF' } });
+  });
+
+  it('returns 403 for module state PATCH by a non-admin', async () => {
+    await expect(createRouter(true, false).handle({
+      method: 'PATCH', path: '/api/v1/guilds/guild-1/modules/general', headers: { cookie: 'hoak_session=valid-session', 'X-CSRF-Token': validCsrf.token }, body: { enabled: false },
+    })).resolves.toMatchObject({ success: false, status: 403, error: { code: 'FORBIDDEN' } });
+  });
+
+  it('rejects cross-guild module state writes', async () => {
+    await expect(createRouter(true, true).handle({
+      method: 'PATCH', path: '/api/v1/guilds/guild-2/modules/general', headers: { cookie: 'hoak_session=valid-session', 'X-CSRF-Token': validCsrf.token }, body: { enabled: false },
+    })).resolves.toMatchObject({ success: false, status: 404, error: { code: 'GUILD_NOT_FOUND' } });
   });
 
   it('returns 403 for PATCH without CSRF', async () => {

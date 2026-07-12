@@ -1,5 +1,6 @@
 {
   "pluginCoreBootstrap": false,
+  "pluginDashboard": false,
   "generalPlugin": false,
   "loggingPlugin": false,
   "welcomePlugin": false,

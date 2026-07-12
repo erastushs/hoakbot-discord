@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
 import type { ModuleManifest } from '../src/contracts.js';
@@ -74,6 +75,21 @@ describe('ModulePage', () => {
     expect(control).toHaveAccessibleDescription('Public OAuth callback address.');
     expect(screen.queryByText(/client secret|session token|csrf token/i)).not.toBeInTheDocument();
     expect(screen.getByText('Protected configuration')).toBeInTheDocument();
+  });
+
+  it('renders health and dependencies and disables active controls when disabled', () => {
+    render(<ModulePage manifest={{ ...generalManifest, enabled: false, health: 'disabled', dependencies: ['platform'] }} onSave={async () => undefined} settings={settings} />);
+    expect(screen.getByText('Disabled')).toBeInTheDocument();
+    expect(screen.getByText('platform')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /Title/ })).toBeDisabled();
+    expect(screen.getAllByRole('button', { name: 'Save changes' }).every((button) => button.hasAttribute('disabled'))).toBe(true);
+  });
+
+  it('shows loading and error states while changing module state', async () => {
+    const user = userEvent.setup();
+    render(<ModulePage manifest={{ ...generalManifest, enabled: true }} onSetEnabled={async () => { throw new Error('State conflict'); }} settings={[]} />);
+    await user.click(screen.getByRole('button', { name: 'Disable' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('State conflict');
   });
 
   it('renders non-General modules with the shared module template', () => {

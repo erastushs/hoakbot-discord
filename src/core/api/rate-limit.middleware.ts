@@ -49,6 +49,7 @@ export const dashboardRateLimitRules: readonly RateLimitRouteRule[] = [
   { name: 'me', method: 'GET', path: '/api/v1/me', limit: 120, windowMs: 60_000 },
   { name: 'logout', method: 'POST', path: '/api/v1/logout', limit: 60, windowMs: 60_000 },
   { name: 'config-write', method: 'PATCH', path: '/api/v1/guilds/:guildId/settings', limit: 30, windowMs: 60_000 },
+  { name: 'module-state-write', method: 'PATCH', path: '/api/v1/guilds/:guildId/modules/:moduleId', limit: 30, windowMs: 60_000 },
   { name: 'guild-post', method: 'POST', path: '/api/v1/guilds/:guildId/*', limit: 30, windowMs: 60_000 },
   { name: 'guild-put', method: 'PUT', path: '/api/v1/guilds/:guildId/*', limit: 30, windowMs: 60_000 },
   { name: 'guild-delete', method: 'DELETE', path: '/api/v1/guilds/:guildId/*', limit: 30, windowMs: 60_000 },

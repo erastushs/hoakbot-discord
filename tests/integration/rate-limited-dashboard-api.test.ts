@@ -33,6 +33,7 @@ const testRules: readonly RateLimitRouteRule[] = [
   { name: 'auth-callback', method: 'GET', path: '/api/v1/auth/callback', limit: 2, windowMs: 60_000 },
   { name: 'me', method: 'GET', path: '/api/v1/me', limit: 2, windowMs: 60_000 },
   { name: 'config-write', method: 'PATCH', path: '/api/v1/guilds/:guildId/settings', limit: 2, windowMs: 60_000 },
+  { name: 'module-state-write', method: 'PATCH', path: '/api/v1/guilds/:guildId/modules/:moduleId', limit: 2, windowMs: 60_000 },
 ];
 
 function appConfig(): Readonly<AppConfig> {
@@ -99,7 +100,7 @@ function authorizationProvider(): IAuthorizationProvider {
   return {
     canAccessDashboard: vi.fn(),
     canAccessGuild: vi.fn(async () => ({ allowed: true, source: 'discord:manage-guild', reason: 'allowed', guildId: 'guild-1', userId: 'user-1', action: 'guild' })),
-    canManageModule: vi.fn(),
+    canManageModule: vi.fn(async (_user, guildId) => ({ allowed: true, source: 'discord:manage-guild', reason: 'allowed', guildId, userId: 'user-1', action: 'module' })),
     canModifyConfiguration: vi.fn(async (_user, request) => ({
       allowed: true,
       source: 'discord:manage-guild',
@@ -145,7 +146,7 @@ function createRouter(): APIRouter {
   for (const endpoint of createCsrfEndpoints({ csrfService, sessionProvider: sessions })) {
     router.register(endpoint);
   }
-  for (const endpoint of createModuleConfigEndpoints({ manifests, settings, config })) {
+  for (const endpoint of createModuleConfigEndpoints({ manifests, settings, config, dashboardProjections: true, moduleStates: { getMany: vi.fn(async () => new Map()), setMany: vi.fn(async () => true) } })) {
     router.register(endpoint);
   }
 
@@ -182,6 +183,17 @@ describe('rate-limited dashboard API integration', () => {
       status: 429,
       error: { code: 'RATE_LIMITED' },
     });
+  });
+
+  it('rejects repeated module state PATCH requests', async () => {
+    const request = {
+      method: 'PATCH' as const,
+      path: '/api/v1/guilds/guild-1/modules/general',
+      headers: { cookie: 'hoak_session=valid-session', 'X-CSRF-Token': validCsrf.token },
+      body: { enabled: false },
+      ip: '10.0.0.5',
+    };
+    await expect(await exhaust(createRouter(), request)).toMatchObject({ success: false, status: 429, error: { code: 'RATE_LIMITED' } });
   });
 
   it('rejects repeated PATCH settings requests', async () => {

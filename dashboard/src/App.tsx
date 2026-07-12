@@ -17,6 +17,7 @@ interface DashboardState {
   manifests: ModuleManifest[];
   settings: SettingMetadata[];
   values: Record<string, unknown>;
+  pluginDashboard: boolean;
   error?: string;
 }
 
@@ -44,6 +45,7 @@ function DashboardShell({ api }: { api: APIClient }) {
     manifests: [],
     settings: [],
     values: {},
+    pluginDashboard: false,
   });
 
   const loadDashboard = useCallback(async () => {
@@ -62,6 +64,7 @@ function DashboardShell({ api }: { api: APIClient }) {
         manifests: [],
         settings: [],
         values: {},
+        pluginDashboard: false,
         error: 'No authorized guilds are available for this Discord account.',
       };
       debugDashboard('[dashboard-app] loadDashboard:missingGuild', {
@@ -143,6 +146,7 @@ function DashboardShell({ api }: { api: APIClient }) {
           manifests: modules,
           settings: [],
           values: {},
+          pluginDashboard: Boolean(modulesResponse.capabilities?.pluginDashboard),
           error: `Module "${moduleId}" was not found by the backend.`,
         };
         debugDashboard('[dashboard-app] loadDashboard:moduleNotFound', {
@@ -199,6 +203,7 @@ function DashboardShell({ api }: { api: APIClient }) {
         manifests: modules,
         settings,
         values: Object.fromEntries(valuesResponse?.settings.map((setting) => [setting.key, setting.value]) ?? []),
+        pluginDashboard: Boolean(modulesResponse.capabilities?.pluginDashboard),
       };
       logStateUpdate('ready', nextState, moduleId);
       setState(nextState);
@@ -213,6 +218,7 @@ function DashboardShell({ api }: { api: APIClient }) {
         manifests: [],
         settings: [],
         values: {},
+        pluginDashboard: false,
         error: toErrorMessage(error),
       };
       debugDashboardError('[dashboard-app] loadDashboard:failed', {
@@ -231,6 +237,17 @@ function DashboardShell({ api }: { api: APIClient }) {
     void loadDashboard();
   }, [loadDashboard]);
 
+  useEffect(() => {
+    if (!guild || !state.pluginDashboard || typeof EventSource === 'undefined') return;
+    const stream = new EventSource(api.dashboardStateStreamUrl(guild.id), { withCredentials: true });
+    const refresh = () => void loadDashboard();
+    stream.addEventListener('module-state', refresh);
+    return () => {
+      stream.removeEventListener('module-state', refresh);
+      stream.close();
+    };
+  }, [api, guild, loadDashboard, state.pluginDashboard]);
+
   const saveSettings = useCallback(
     async (settings: Record<string, unknown>) => {
       if (!guild) {
@@ -248,6 +265,17 @@ function DashboardShell({ api }: { api: APIClient }) {
     },
     [api, guild],
   );
+
+  const setModuleEnabled = useCallback(async (enabled: boolean) => {
+    if (!guild || !moduleId) return;
+    try {
+      await api.setGuildModuleEnabled(guild.id, moduleId, enabled);
+    } catch (error) {
+      if (!(error instanceof DashboardAPIError) || error.code !== 'CONFLICT' || enabled || !error.details?.['confirmationRequired'] || !globalThis.confirm('Disabling this module also disables its dependents. Continue?')) throw error;
+      await api.setGuildModuleEnabled(guild.id, moduleId, enabled, true);
+    }
+    await loadDashboard();
+  }, [api, guild, loadDashboard, moduleId]);
 
   const manifest = moduleId
     ? state.manifests.find((candidate) => candidate.id === moduleId)
@@ -271,7 +299,7 @@ function DashboardShell({ api }: { api: APIClient }) {
         ) : page === 'logs' ? (
           <LogsPage api={api} />
         ) : manifest ? (
-          <ModulePage manifest={manifest} onSave={saveSettings} settings={state.settings} values={state.values} />
+          <ModulePage manifest={manifest} onSave={manifest.enabled === false ? undefined : saveSettings} onSetEnabled={state.pluginDashboard ? setModuleEnabled : undefined} settings={state.settings} values={state.values} />
         ) : (
           <DashboardHome manifests={state.manifests} />
         )}

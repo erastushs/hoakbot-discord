@@ -33,8 +33,20 @@ export interface GetManifestsResponse {
   manifests: IModuleManifest[];
 }
 
+export interface DashboardModuleContract extends IModuleManifest {
+  enabled: boolean;
+  available: boolean;
+  health: 'available' | 'disabled' | 'unavailable';
+}
+
+export interface DashboardCapabilitiesContract {
+  pluginDashboard: true;
+  liveState: 'sse';
+}
+
 export interface GetModulesResponse {
-  modules: IModuleManifest[];
+  modules: readonly (IModuleManifest | DashboardModuleContract)[];
+  capabilities?: DashboardCapabilitiesContract;
 }
 
 export interface SettingMetadataContract extends Omit<ISettingMetadata, 'validation'> {

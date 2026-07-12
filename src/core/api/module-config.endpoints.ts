@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import type { IConfigProvider } from '../config/provider.types.js';
+import type { GuildModuleStateRepository } from '../config/guild-module-state.repository.js';
 import type { ISettingMetadata, ISettingsRegistry } from '../settings/types.js';
 import type { ManifestRegistry } from '../../modules/manifest-registry.js';
 import { ok, fail } from './responses.js';
@@ -14,8 +15,10 @@ import type {
   SettingMetadataContract,
   SettingValueContract,
 } from './contracts.js';
-import { getSettingsParamsSchema, patchSettingsBodySchema } from './contract.schemas.js';
+import { getSettingsParamsSchema, patchModuleStateBodySchema, patchSettingsBodySchema } from './contract.schemas.js';
 import type { APIEndpoint } from './types.js';
+import { serializeDashboardModules } from './dashboard-metadata.serializer.js';
+import type { DashboardStateEvents } from './dashboard-state.events.js';
 
 const moduleParamsSchema = z.object({
   id: z.string().min(1),
@@ -26,6 +29,10 @@ export interface ModuleConfigEndpointDependencies {
   settings: ISettingsRegistry;
   config: IConfigProvider;
   audit?: SecurityAuditService;
+  dashboardProjections?: boolean;
+  moduleStates?: GuildModuleStateRepository;
+  stateEvents?: DashboardStateEvents;
+  availableModuleIds?: () => ReadonlySet<string>;
 }
 
 export function createModuleConfigEndpoints({
@@ -33,8 +40,20 @@ export function createModuleConfigEndpoints({
   settings,
   config,
   audit,
+  dashboardProjections = false,
+  moduleStates,
+  stateEvents,
+  availableModuleIds,
 }: ModuleConfigEndpointDependencies): APIEndpoint[] {
-  return [
+  const guildModules = async (guildId: string) => {
+    const all = manifests.getAll();
+    const states = dashboardProjections && moduleStates
+      ? await moduleStates.getMany(guildId, all.map((manifest) => manifest.id))
+      : new Map<string, boolean>();
+    return serializeDashboardModules(all, states, availableModuleIds?.() ?? new Set(all.map((manifest) => manifest.id)));
+  };
+
+  const endpoints: APIEndpoint[] = [
     {
       module: 'platform',
       method: 'GET',
@@ -84,7 +103,9 @@ export function createModuleConfigEndpoints({
       auth: 'guild_member',
       params: getSettingsParamsSchema,
       metadata: { operationId: 'getGuildModules', tags: ['guilds', 'modules'] },
-      handler: async () => ok<GetModulesResponse>({ modules: manifests.getAll() }),
+      handler: async (request) => dashboardProjections && moduleStates
+        ? ok<GetModulesResponse>({ modules: await guildModules(request.params?.guildId ?? ''), capabilities: { pluginDashboard: true, liveState: 'sse' } })
+        : ok<GetModulesResponse>({ modules: manifests.getAll() }),
     },
     {
       module: 'platform',
@@ -149,6 +170,81 @@ export function createModuleConfigEndpoints({
       },
     },
   ];
+
+  if (dashboardProjections && moduleStates) {
+    endpoints.push({
+      module: 'platform', method: 'PATCH', path: '/guilds/:guildId/modules/:id', auth: 'guild_admin',
+      params: getSettingsParamsSchema.extend({ id: z.string().min(1) }), body: patchModuleStateBodySchema,
+      metadata: { operationId: 'patchGuildModuleState', tags: ['guilds', 'modules'] },
+      handler: async (request, context) => {
+        const guildId = request.params?.guildId ?? '';
+        const moduleId = request.params?.id ?? '';
+        const manifest = manifests.get(moduleId);
+        if (!manifest) return fail('NOT_FOUND', `Module "${moduleId}" was not found.`);
+        const body = request.body as { enabled: boolean; confirmDependents?: boolean };
+        const modules = await guildModules(guildId);
+        const current = new Map(modules.map((item) => [item.id, item.enabled]));
+        const changed = new Map<string, boolean>([[moduleId, body.enabled]]);
+        if (body.enabled) {
+          const disabledDependencies = transitiveDependencies(moduleId, manifests).filter((id) => current.get(id) === false);
+          if (disabledDependencies.length > 0) {
+            return fail('CONFLICT', 'Required dependencies are disabled.', { dependencies: disabledDependencies });
+          }
+        } else {
+          const dependentIds = new Set(transitiveDependents(moduleId, manifests));
+          const dependents = modules.filter((item) => item.enabled && dependentIds.has(item.id)).map((item) => item.id);
+          if (dependents.length > 0 && !body.confirmDependents) {
+            return fail('CONFLICT', 'Enabled modules depend on this module.', { dependents, confirmationRequired: true });
+          }
+          for (const dependent of dependents) changed.set(dependent, false);
+        }
+        const persisted = await moduleStates.setMany(guildId, changed, current);
+        if (!persisted) return fail('CONFLICT', 'Module state changed concurrently. Refresh and retry.', { retryable: true });
+        audit?.recordModuleStateChange({
+          guildId,
+          moduleId,
+          oldEnabled: current.get(moduleId) ?? true,
+          newEnabled: body.enabled,
+          affectedDependents: [...changed.keys()].filter((id) => id !== moduleId),
+          userId: context.session?.userId,
+        }, request);
+        stateEvents?.publish({ guildId, moduleIds: [...changed.keys()] });
+        const nextModules = await guildModules(guildId);
+        return ok({ guildId, module: nextModules.find((item) => item.id === moduleId)! });
+      },
+    });
+  }
+
+  return endpoints;
+}
+
+function transitiveDependencies(moduleId: string, manifests: ManifestRegistry): string[] {
+  const result = new Set<string>();
+  const visit = (id: string) => {
+    for (const dependency of manifests.get(id)?.dependencies ?? []) {
+      if (!result.has(dependency)) {
+        result.add(dependency);
+        visit(dependency);
+      }
+    }
+  };
+  visit(moduleId);
+  return [...result];
+}
+
+function transitiveDependents(moduleId: string, manifests: ManifestRegistry): string[] {
+  const result = new Set<string>();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const manifest of manifests.getAll()) {
+      if (!result.has(manifest.id) && (manifest.dependencies ?? []).some((dependency) => dependency === moduleId || result.has(dependency))) {
+        result.add(manifest.id);
+        changed = true;
+      }
+    }
+  }
+  return [...result];
 }
 
 function moduleIdFromSettingKey(key: string): string {

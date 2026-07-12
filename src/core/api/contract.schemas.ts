@@ -11,6 +11,11 @@ export const patchSettingsBodySchema = z.object({
   expectedVersion: z.number().int().positive().optional(),
 });
 
+export const patchModuleStateBodySchema = z.object({
+  enabled: z.boolean(),
+  confirmDependents: z.boolean().optional(),
+});
+
 export const getModuleParamsSchema = z.object({
   moduleId: z.string().min(1),
 });

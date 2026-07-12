@@ -3,6 +3,8 @@ import { ConfigService } from './core/config/config.service.js';
 import { ConfigurationService } from './core/config/configuration.service.js';
 import { DatabaseConfigProvider } from './core/config/database-config.provider.js';
 import { GuildSettingsRepository } from './core/config/guild-settings.repository.js';
+import { DatabaseGuildModuleStateRepository } from './core/config/guild-module-state.repository.js';
+import { DashboardStateEvents } from './core/api/dashboard-state.events.js';
 import { JsonConfigProvider } from './core/config/json-config.provider.js';
 import { createLogger } from './core/logger/logger.service.js';
 import { Container } from './core/container/container.js';
@@ -140,6 +142,8 @@ try {
   const moduleRegistry = new ModuleRegistry();
   const apiRouter = new APIRouter();
   const guildSettingsRepository = new GuildSettingsRepository(databaseAdapter);
+  const guildModuleStates = new DatabaseGuildModuleStateRepository(databaseAdapter);
+  const dashboardStateEvents = new DashboardStateEvents();
   const configProvider = new DatabaseConfigProvider(
     guildSettingsRepository,
     new JsonConfigProvider(),
@@ -232,6 +236,10 @@ try {
     settings: settingsRegistry,
     config: configurationService,
     audit: securityAudit,
+    dashboardProjections: appConfig.featureFlags.pluginDashboard,
+    moduleStates: guildModuleStates,
+    stateEvents: dashboardStateEvents,
+    availableModuleIds: () => new Set(moduleLoader.getLoadedModules().map((module) => module.name)),
   })) {
     apiRouter.register(endpoint);
   }
@@ -261,6 +269,12 @@ try {
     port: appConfig.api.port,
     router: apiRouter,
     logger,
+    dashboardStateStream: appConfig.featureFlags.pluginDashboard ? {
+      path: '/api/v1/dashboard/state/stream',
+      events: dashboardStateEvents,
+      sessionProvider,
+      sessionConfig,
+    } : undefined,
     logsStream: {
       path: '/api/v1/logs/stream',
       logs: logsService,

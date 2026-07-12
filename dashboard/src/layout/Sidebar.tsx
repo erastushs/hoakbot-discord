@@ -160,7 +160,7 @@ export function Sidebar({
                       href={`/modules/${encodeURIComponent(manifest.id)}`}
                       active={currentPath === `/modules/${encodeURIComponent(manifest.id)}`}
                       key={manifest.id}
-                      label={manifest.name}
+                       label={`${manifest.name}${manifest.available === false ? ' (unavailable)' : manifest.enabled === false ? ' (disabled)' : ''}`}
                       onNavigate={onNavigate}
                     />
                   )),

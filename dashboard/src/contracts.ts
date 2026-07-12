@@ -75,6 +75,9 @@ export interface ModuleManifest {
   dashboard?: DashboardConfig;
   tags?: string[];
   supportsHotReload: boolean;
+  enabled?: boolean;
+  available?: boolean;
+  health?: 'available' | 'disabled' | 'unavailable';
 }
 
 export interface SettingOption {
@@ -150,6 +153,10 @@ export interface GetManifestsResponse {
 
 export interface GetModulesResponse {
   modules: ModuleManifest[];
+  capabilities?: {
+    pluginDashboard: true;
+    liveState: 'sse';
+  };
 }
 
 export interface GetMetadataResponse {

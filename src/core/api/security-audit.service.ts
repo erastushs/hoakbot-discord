@@ -13,6 +13,7 @@ export type SecurityAuditEventName =
   | 'authentication_required'
   | 'rate_limit_exceeded'
   | 'configuration_changed'
+  | 'module_state_changed'
   | 'configuration_change_denied'
   | 'unknown_guild_access_attempt';
 
@@ -34,6 +35,15 @@ export interface SecurityAuditConfigChange {
   readonly newValue: unknown;
   readonly userId?: string;
   readonly metadata?: ISettingMetadata;
+}
+
+export interface SecurityAuditModuleStateChange {
+  readonly guildId: string;
+  readonly moduleId: string;
+  readonly oldEnabled: boolean;
+  readonly newEnabled: boolean;
+  readonly affectedDependents: readonly string[];
+  readonly userId?: string;
 }
 
 export interface SecurityAuditServiceOptions {
@@ -71,6 +81,20 @@ export class SecurityAuditService {
       settingKey: change.key,
       oldValue: this.maskValue(change.oldValue, change.metadata),
       newValue: this.maskValue(change.newValue, change.metadata),
+    }, 'Security audit event');
+  }
+
+  recordModuleStateChange(change: SecurityAuditModuleStateChange, request?: APIRequest): void {
+    this.logger.info({
+      ...this.baseEntry('module_state_changed', contextFromRequest(request, {
+        userId: change.userId,
+        guildId: change.guildId,
+        result: 'success',
+      })),
+      module: change.moduleId,
+      oldEnabled: change.oldEnabled,
+      newEnabled: change.newEnabled,
+      affectedDependents: change.affectedDependents,
     }, 'Security audit event');
   }
 

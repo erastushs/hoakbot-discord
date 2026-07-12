@@ -7,7 +7,7 @@
 4.0.0: compatibility-first plugin platform with migrated built-ins and a supported plugin SDK.
 
 ## Current Phase
-Phase 03 — Plugin Migration is complete behind independent disabled-by-default rollback flags; Phase 04 has not started.
+Phase 04 — Dashboard is complete behind a disabled-by-default rollback flag; Phase 05 has not started.
 
 ## Completed Milestones
 - Existing module manifests, registries, dependency graph, and loader

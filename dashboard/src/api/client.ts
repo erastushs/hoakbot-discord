@@ -87,8 +87,14 @@ export class APIClient {
     });
   }
 
-  getGuildModules(guildId: string): Promise<GetModulesResponse> {
-    return this.get<GetModulesResponse>(`/guilds/${encodeURIComponent(guildId)}/modules`);
+  async getGuildModules(guildId: string): Promise<GetModulesResponse> {
+    const response = await this.get<GetModulesResponse>(`/guilds/${encodeURIComponent(guildId)}/modules`);
+    if (!response.capabilities?.pluginDashboard) return response;
+    return { ...response, modules: response.modules.map((module) => ({ ...module, enabled: module.enabled ?? true, available: module.available ?? true, health: module.health ?? 'available' })) };
+  }
+
+  setGuildModuleEnabled(guildId: string, moduleId: string, enabled: boolean, confirmDependents = false): Promise<{ guildId: string; module: GetModulesResponse['modules'][number] }> {
+    return this.patch(`/guilds/${encodeURIComponent(guildId)}/modules/${encodeURIComponent(moduleId)}`, { enabled, confirmDependents });
   }
 
   getModuleSettings(moduleId: string): Promise<GetMetadataResponse> {
@@ -113,6 +119,10 @@ export class APIClient {
     for (const module of params.modules ?? []) query.append('module', module);
     const suffix = query.toString() ? `?${query.toString()}` : '';
     return this.get<GetLogsResponse>(`/logs${suffix}`);
+  }
+
+  dashboardStateStreamUrl(guildId: string): string {
+    return `${this.baseUrl}/dashboard/state/stream?guildId=${encodeURIComponent(guildId)}`;
   }
 
   logsStreamUrl(): string {

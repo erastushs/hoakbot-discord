@@ -7,11 +7,12 @@ import { PageHeader } from '../layout/PageHeader.js';
 export interface SharedModulePageProps {
   manifest: ModuleManifest;
   onSave?(values: Record<string, unknown>): Promise<void>;
+  onSetEnabled?(enabled: boolean): Promise<void>;
   settings: SettingMetadata[];
   values?: Record<string, unknown>;
 }
 
-export function SharedModulePage({ manifest, onSave, settings, values: initialValues }: SharedModulePageProps) {
+export function SharedModulePage({ manifest, onSave, onSetEnabled, settings, values: initialValues }: SharedModulePageProps) {
   const groups = useMemo(
     () => [...(manifest.dashboard?.settings.groups ?? [])].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)),
     [manifest.dashboard?.settings.groups],
@@ -27,6 +28,8 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [error, setError] = useState<string>();
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [toggleStatus, setToggleStatus] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [toggleError, setToggleError] = useState<string>();
 
   useEffect(() => {
     setValues(defaultValues);
@@ -74,6 +77,19 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
     setError(undefined);
   }
 
+  async function toggleEnabled() {
+    if (!onSetEnabled) return;
+    setToggleStatus('saving');
+    setToggleError(undefined);
+    try {
+      await onSetEnabled(!(manifest.enabled ?? true));
+      setToggleStatus('idle');
+    } catch (toggleFailure) {
+      setToggleStatus('error');
+      setToggleError(toggleFailure instanceof Error ? toggleFailure.message : 'Module state could not be changed.');
+    }
+  }
+
   const configuredCount = settings.length;
   const moduleSummary = moduleSummaryLabel(manifest);
 
@@ -81,13 +97,18 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
     <div className="grid gap-6 tablet:gap-8 wide:gap-10">
       <PageHeader
         actions={
-          <Button disabled={!onSave || dirtyKeys.size === 0 || saveStatus === 'saving'} onClick={() => void save()} variant="primary">
-            {saveStatus === 'saving' ? 'Saving' : 'Save changes'}
-          </Button>
+          <div className="flex gap-2">
+            {onSetEnabled ? <Button disabled={toggleStatus === 'saving'} isLoading={toggleStatus === 'saving'} onClick={() => void toggleEnabled()}>{toggleStatus === 'saving' ? 'Updating' : manifest.enabled ?? true ? 'Disable' : 'Enable'}</Button> : null}
+            <Button disabled={manifest.enabled === false || !onSave || dirtyKeys.size === 0 || saveStatus === 'saving'} onClick={() => void save()} variant="primary">
+              {saveStatus === 'saving' ? 'Saving' : 'Save changes'}
+            </Button>
+          </div>
         }
         description={`${manifest.description} Version ${manifest.version}.`}
         title={manifest.name}
       />
+
+      {toggleError ? <p className="text-small text-dashboard-danger" role="alert">{toggleError}</p> : null}
 
       <Section>
         <SectionHeader description={`${manifest.name} controls are rendered from existing module metadata and current settings values.`} title="Overview" />
@@ -95,6 +116,14 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
           <Card className="grid gap-3 p-5">
             <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Module</p>
             <p className="text-heading-m text-dashboard-text-primary">{moduleSummary}</p>
+          </Card>
+          <Card className="grid gap-3 p-5">
+            <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Health</p>
+            <p className="text-heading-m text-dashboard-text-primary">{titleCase(manifest.health ?? 'available')}</p>
+          </Card>
+          <Card className="grid gap-3 p-5">
+            <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Dependencies</p>
+            <p className="text-heading-m text-dashboard-text-primary">{manifest.dependencies?.join(', ') || 'None'}</p>
           </Card>
           <Card className="grid gap-3 p-5">
             <p className="text-caption font-medium uppercase tracking-[0.16em] text-dashboard-text-tertiary">Configuration</p>
@@ -118,7 +147,8 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
                     {groupSettings.map((setting) => (
                       <ModuleSettingControl
                         key={setting.key}
-                        onChange={(value) => updateValue(setting.key, value)}
+                         onChange={(value) => updateValue(setting.key, value)}
+                         disabled={manifest.enabled === false}
                         error={validationErrors[setting.key]}
                         setting={setting}
                         value={values[setting.key]}
@@ -168,11 +198,13 @@ export function SharedModulePage({ manifest, onSave, settings, values: initialVa
 }
 
 function ModuleSettingControl({
+  disabled,
   error,
   onChange,
   setting,
   value,
 }: {
+  disabled?: boolean;
   error?: string;
   onChange(value: unknown): void;
   setting: SettingMetadata;
@@ -181,13 +213,14 @@ function ModuleSettingControl({
   const controlId = `setting-${setting.key.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
 
   if (setting.type === 'boolean') {
-    return <Switch checked={Boolean(value)} description={setting.description} label={setting.label} onCheckedChange={onChange} />;
+    return <Switch checked={Boolean(value)} description={setting.description} disabled={disabled} label={setting.label} onCheckedChange={onChange} />;
   }
 
   if (setting.type === 'select' && setting.options) {
     return (
       <Select
         description={setting.description}
+        disabled={disabled}
         error={error}
         id={controlId}
         label={setting.label}
@@ -203,6 +236,7 @@ function ModuleSettingControl({
     return (
       <Textarea
         description={setting.description}
+        disabled={disabled}
         error={error}
         id={controlId}
         label={setting.label}
@@ -219,6 +253,7 @@ function ModuleSettingControl({
   return (
     <Input
       description={setting.description}
+      disabled={disabled}
       error={error}
       id={controlId}
       label={setting.label}

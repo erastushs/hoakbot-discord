@@ -3,9 +3,10 @@ import { Buffer } from 'node:buffer';
 import { URL } from 'node:url';
 
 import type { ILogger } from '../logger/logger.service.js';
-import type { ISessionProvider, SessionConfig } from '../auth/index.js';
+import type { ISessionProvider, SessionConfig, SessionRecord } from '../auth/index.js';
 import type { DashboardLogEntry, LogsService } from '../logs/logs.service.js';
 import type { APIRouter } from './router.js';
+import type { DashboardStateEvents } from './dashboard-state.events.js';
 import { applySecurityHeaders } from './security-headers.middleware.js';
 import { readCookie } from './session-auth.middleware.js';
 import type { APIHttpMethod, APIRequest, APIResponse } from './types.js';
@@ -19,7 +20,15 @@ export interface APIHttpServerOptions {
   logger: ILogger;
   cors?: APICorsOptions;
   logsStream?: APILogsStreamOptions;
+  dashboardStateStream?: APIDashboardStateStreamOptions;
   trustProxy?: boolean;
+}
+
+export interface APIDashboardStateStreamOptions {
+  readonly path: string;
+  readonly events: DashboardStateEvents;
+  readonly sessionProvider: ISessionProvider;
+  readonly sessionConfig: SessionConfig;
 }
 
 export interface APILogsStreamOptions {
@@ -40,7 +49,7 @@ export interface APIHttpServer {
   stop(): Promise<void>;
 }
 
-export function createAPIHttpServer({ port, router, logger, cors, logsStream, trustProxy = false }: APIHttpServerOptions): APIHttpServer {
+export function createAPIHttpServer({ port, router, logger, cors, logsStream, dashboardStateStream, trustProxy = false }: APIHttpServerOptions): APIHttpServer {
   const server = createServer(async (request, response) => {
     setCorsHeaders(request, response, cors);
     applySecurityHeaders(response);
@@ -52,7 +61,7 @@ export function createAPIHttpServer({ port, router, logger, cors, logsStream, tr
     }
 
     try {
-      if (await handleLogsStream(request, response, logsStream)) {
+      if (await handleLogsStream(request, response, logsStream) || await handleDashboardStateStream(request, response, dashboardStateStream)) {
         return;
       }
 
@@ -119,6 +128,37 @@ async function handleLogsStream(
     unsubscribe();
   });
 
+  return true;
+}
+
+async function handleDashboardStateStream(
+  request: IncomingMessage,
+  response: ServerResponse,
+  stream: APIDashboardStateStreamOptions | undefined,
+): Promise<boolean> {
+  if (!stream || request.method !== 'GET') return false;
+  const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
+  if (url.pathname !== stream.path) return false;
+  const sessionId = readCookie(toHeaders(request)['cookie'], stream.sessionConfig.cookieName);
+  const provider = stream.sessionProvider as ISessionProvider & { getSessionRecord?(id: string): Promise<SessionRecord | undefined> };
+  const session = sessionId ? await provider.getSessionRecord?.(sessionId) : undefined;
+  if (!session) {
+    sendJSON(response, { success: false, status: 401, error: { code: 'AUTH_REQUIRED', message: 'Authentication required' } });
+    return true;
+  }
+  const guildId = url.searchParams.get('guildId');
+  const guilds = Array.isArray(session.metadata?.['guilds']) ? session.metadata['guilds'] : [];
+  if (!guildId || !guilds.some((guild) => typeof guild === 'object' && guild !== null && (guild as { id?: string }).id === guildId)) {
+    sendJSON(response, { success: false, status: 403, error: { code: 'FORBIDDEN', message: 'Guild access denied' } });
+    return true;
+  }
+  response.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+  response.write(': connected\n\n');
+  const heartbeat = setInterval(() => response.write(': heartbeat\n\n'), 25_000);
+  const unsubscribe = stream.events.subscribe((event) => {
+    if (event.guildId === guildId) response.write(`event: module-state\ndata: ${JSON.stringify(event)}\n\n`);
+  });
+  request.on('close', () => { clearInterval(heartbeat); unsubscribe(); });
   return true;
 }
 

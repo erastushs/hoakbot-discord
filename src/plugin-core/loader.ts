@@ -5,12 +5,14 @@ import { validateCatalog } from './catalog-validator.js';
 import { resolveDependencies } from './dependency-resolver.js';
 import type { IContainer } from '../core/container/types.js';
 import type { PluginRegistry, PluginRegistrySnapshot } from './registry.js';
+import type { PluginMigrationRunner } from './migrations.js';
 
 export interface PluginLoadOptions {
   readonly services?: PluginContextServices;
   readonly lifecycle?: PluginLifecycleCoordinator;
   readonly signal?: AbortSignal;
   readonly container?: IContainer;
+  readonly migrationRunner?: PluginMigrationRunner;
 }
 
 export interface StartedPluginCatalog {
@@ -46,6 +48,15 @@ export async function loadPluginCatalog(catalog: readonly PluginCatalogEntry[], 
 
 export async function loadAndStartPluginCatalog(catalog: readonly PluginCatalogEntry[], registry: PluginRegistry, options: PluginLoadOptions = {}): Promise<StartedPluginCatalog> {
   const previous = registry.snapshot();
+  if (options.migrationRunner) {
+    for (const entry of catalog) {
+      const pluginId = (entry.manifest as { id?: unknown }).id;
+      for (const migration of entry.migrations ?? []) {
+        if (migration.namespace !== pluginId) throw new Error(`Migration namespace "${migration.namespace}" does not match owning plugin "${String(pluginId)}".`);
+      }
+    }
+    await options.migrationRunner.run(catalog.flatMap((entry) => entry.migrations ?? []));
+  }
   const snapshot = await loadPluginCatalog(catalog, registry, options);
   const lifecycle = options.lifecycle ?? new PluginLifecycleCoordinator();
   const requirements = new Map(catalog.map((entry) => [(entry.manifest as { id: string }).id, entry.requirement ?? 'required']));

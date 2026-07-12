@@ -60,6 +60,7 @@ export interface ISettingMetadata {
 export interface SettingValidationResult {
   success: boolean;
   error?: string;
+  value?: unknown;
 }
 
 export type SettingsChangeHandler = (key: string, value: unknown, guildId: string) => void;
@@ -73,6 +74,8 @@ export interface ISettingsRegistry {
   getModule(moduleId: string): ISettingMetadata[];
   getByGroup(moduleId: string, group: string): ISettingMetadata[];
   get(key: string): ISettingMetadata | undefined;
+  getOwner(key: string): string | undefined;
+  getOwnership(): Readonly<Record<string, string>>;
   validate(key: string, value: unknown): SettingValidationResult;
   onChange(handler: SettingsChangeHandler): () => void;
   notifyChange(key: string, value: unknown, guildId: string): void;

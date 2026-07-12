@@ -6,5 +6,7 @@ export * from './errors.js';
 export * from './loader.js';
 export * from './lifecycle.js';
 export * from './metadata-serializer.js';
+export * from './migrations.js';
+export * from './postgres-migration-store.js';
 export * from './registry.js';
 export * from './schema.js';

@@ -61,8 +61,27 @@ import { CommandRegistry } from './shared/command-registry.js';
 import type { HealthReport } from './core/health/types.js';
 import { createBuiltInRuntimeCatalog, generatedBuiltInPluginCatalog } from './modules/built-in-plugin-catalog.js';
 import { projectPluginModules } from './modules/plugin-compatibility.js';
-import { loadAndStartPluginCatalog, loadPluginCatalog, PluginRegistry, type PluginLifecycleCoordinator } from './plugin-core/index.js';
+import { loadAndStartPluginCatalog, PluginMigrationRunner, PluginRegistry, PostgresMigrationStore, type PluginLifecycleCoordinator } from './plugin-core/index.js';
+import { ConfigurationHotReloadCoordinator } from './core/config/hot-reload.coordinator.js';
 import type { IModule } from './modules/module.interface.js';
+import { createGeneralSettings } from './modules/general/settings.js';
+import { createVoiceSettings } from './modules/voice/settings.js';
+import { createModerationSettings } from './modules/moderation/settings.js';
+import { createLoggingSettings } from './modules/logging/settings.js';
+import { createWelcomeSettings } from './modules/welcome/settings.js';
+import { createGoodbyeSettings } from './modules/goodbye/settings.js';
+import { createShrineSettings } from './modules/shrine/settings.js';
+import type { AppConfig } from './core/config/types.js';
+
+export function registerBuiltInSettings(registry: SettingsRegistry, config: Readonly<AppConfig>): void {
+  registry.register('general', createGeneralSettings(config));
+  registry.register('voice', createVoiceSettings(config));
+  registry.register('moderation', createModerationSettings(config));
+  registry.register('logging', createLoggingSettings(config));
+  registry.register('welcome', createWelcomeSettings(config));
+  registry.register('goodbye', createGoodbyeSettings(config));
+  registry.register('shrine', createShrineSettings(config));
+}
 
 const bootstrapLogger = pino({
   level: 'info',
@@ -137,7 +156,9 @@ try {
   const sharedRegistry = new CommandRegistry();
   container.registerSingleton(TOKENS.CommandRegistry, () => sharedRegistry);
 
-  const settingsRegistry = new SettingsRegistry();
+  const compatibilityRollback = appConfig.featureFlags.pluginConfigRollback;
+  const settingsRegistry = new SettingsRegistry(appConfig.featureFlags.pluginConfigOwnership && !compatibilityRollback);
+  registerBuiltInSettings(settingsRegistry, appConfig);
   const manifestRegistry = new ManifestRegistry();
   const moduleRegistry = new ModuleRegistry();
   const apiRouter = new APIRouter();
@@ -149,7 +170,18 @@ try {
     new JsonConfigProvider(),
     settingsRegistry,
   );
-  const configurationService = new ConfigurationService(configProvider, settingsRegistry, eventBus, appConfig);
+  const hotReload = new ConfigurationHotReloadCoordinator({ enabled: appConfig.featureFlags.pluginConfigHotReload && !compatibilityRollback });
+  healthService.registerCheck(hotReload.createHealthCheck());
+  const configurationService = new ConfigurationService(configProvider, settingsRegistry, eventBus, appConfig, hotReload, appConfig.featureFlags.pluginConfigOwnership && !compatibilityRollback);
+  const pluginContextServices = {
+    logger: () => ({ log: (level: string, message: string, metadata?: unknown) => logger.info({ level, metadata }, message) }),
+    config: (ownerId: string, key: string, guildId?: string) => configurationService.getOwned(ownerId, key, guildId),
+    event: () => { throw new Error('Event capability is unavailable.'); },
+    command: () => { throw new Error('Command capability is unavailable.'); },
+    api: () => { throw new Error('API capability is unavailable.'); },
+    health: () => { throw new Error('Health capability is unavailable.'); },
+    hotReload: (ownerId: string, handler: Parameters<ConfigurationHotReloadCoordinator['register']>[1], guildId?: string) => hotReload.register(ownerId, handler, guildId),
+  };
   const discordOAuthConfig = {
     clientId: appConfig.discord.oauth?.clientId ?? appConfig.discord.clientId,
     clientSecret: appConfig.discord.oauth?.clientSecret ?? '',
@@ -191,12 +223,14 @@ try {
   let pluginLifecycle: PluginLifecycleCoordinator | undefined;
   let builtInModules: IModule[];
   const pluginRegistry = new PluginRegistry();
+  const migrationRunner = new PluginMigrationRunner(new PostgresMigrationStore(databaseAdapter.getClient()));
   if (appConfig.featureFlags.pluginCoreBootstrap) {
-    const snapshot = await loadPluginCatalog(generatedBuiltInPluginCatalog, pluginRegistry);
-    builtInModules = projectPluginModules(snapshot);
-    logger.info({ pluginIds: [...snapshot.keys()] }, 'Built-in modules selected through plugin-core bootstrap');
+    const started = await loadAndStartPluginCatalog(generatedBuiltInPluginCatalog, pluginRegistry, { container, migrationRunner, services: pluginContextServices });
+    pluginLifecycle = started.lifecycle;
+    builtInModules = projectPluginModules(started.snapshot);
+    logger.info({ pluginIds: [...started.snapshot.keys()] }, 'Built-in modules selected through plugin-core bootstrap');
   } else if (Object.entries(appConfig.featureFlags).some(([key, enabled]) => key.endsWith('Plugin') && enabled)) {
-    const started = await loadAndStartPluginCatalog(createBuiltInRuntimeCatalog(appConfig.featureFlags), pluginRegistry, { container });
+    const started = await loadAndStartPluginCatalog(createBuiltInRuntimeCatalog(appConfig.featureFlags), pluginRegistry, { container, migrationRunner, services: pluginContextServices });
     pluginLifecycle = started.lifecycle;
     builtInModules = projectPluginModules(started.snapshot);
   } else {

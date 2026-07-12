@@ -1,6 +1,9 @@
 {
   "pluginCoreBootstrap": false,
   "pluginDashboard": false,
+  "pluginConfigOwnership": false,
+  "pluginConfigHotReload": false,
+  "pluginConfigRollback": false,
   "generalPlugin": false,
   "loggingPlugin": false,
   "welcomePlugin": false,

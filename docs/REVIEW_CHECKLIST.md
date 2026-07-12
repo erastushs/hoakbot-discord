@@ -2,8 +2,8 @@
 
 Every item is mandatory unless explicitly marked not applicable with a reason.
 
-- [x] **Phase:** Work matches [Phase 04](phases/PHASE-04-DASHBOARD.md), its scope, deliverables, acceptance criteria, testing, and rollback plan; Phase 05 and plugin SDK work were not started.
-- [x] **Acceptance criteria:** Phase 04 criteria are covered by the dashboard serializer, built-in contract, module-state, routed security, API client, navigation, and module-page suites: fixture-driven generic UI; all seven built-ins; settings validation; authorized, persistent, audited, dependency-aware state changes; unauthorized, cross-guild, CSRF, CORS, and rate-limit protection; live state refresh; disabled controls; and preserved module routes.
+- [x] **Phase:** Work matches [Phase 05](phases/PHASE-05-CONFIG.md), its scope, deliverables, acceptance criteria, testing, and rollback plan; Phase 06 was not started.
+- [x] **Acceptance criteria:** Phase 05 criteria are covered by focused configuration tests and the full regression pipeline: unique ownership and schema-validated defaults; boundary validation, guild isolation, fallback, audit/cache/delivery behavior, deterministic coalescing, timeout/failure/reconciliation diagnostics, secret redaction, retained data on disable/rollback, migration replay/checksums, and readable 3.2.3 fixtures.
 - [x] **Architecture and ADRs:** Architecture is unchanged unless the phase requires a change and a human approved it; changes comply with [ARCHITECTURE](ARCHITECTURE.md) and relevant [ADR-011](adr/ADR-011-Plugin-System.md), [ADR-012](adr/ADR-012-Configuration.md), [ADR-013](adr/ADR-013-Dashboard.md), and [ADR-014](adr/ADR-014-Command-Discovery.md).
 - [x] **Correctness:** Success, empty, denied, missing-data, boundary, and failure paths are correct and deterministic.
 - [x] **Compatibility:** Existing commands, permissions, settings, IDs, database data, API envelopes/routes, dashboard behavior, and module compatibility remain intact unless approved.

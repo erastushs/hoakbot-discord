@@ -129,6 +129,9 @@ export interface FeatureFlagsConfig {
   modules: Record<string, boolean>;
   pluginCoreBootstrap: boolean;
   pluginDashboard: boolean;
+  pluginConfigOwnership: boolean;
+  pluginConfigHotReload: boolean;
+  pluginConfigRollback: boolean;
   generalPlugin: boolean;
   loggingPlugin: boolean;
   welcomePlugin: boolean;

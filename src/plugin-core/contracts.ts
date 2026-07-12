@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 import type { pluginManifestSchema } from './schema.js';
 import type { PluginContext } from './context.js';
+import type { PluginMigration } from './migrations.js';
 
 export const capabilityKinds = ['settings', 'commands', 'events', 'routes', 'permissions'] as const;
 
@@ -17,6 +18,7 @@ export interface PluginCatalogEntry {
   readonly manifest: unknown;
   readonly factory: PluginFactory;
   readonly requirement?: PluginRequirement;
+  readonly migrations?: readonly PluginMigration[];
 }
 export interface ValidatedPluginEntry {
   readonly manifest: PluginManifest;

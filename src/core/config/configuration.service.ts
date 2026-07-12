@@ -2,6 +2,8 @@ import type { IEventBus } from '../event-bus/types.js';
 import type { ISettingsRegistry, SettingValidationResult } from '../settings/types.js';
 import type { AppConfig } from './types.js';
 import type { ConfigEntry, ConfigSetOptions, IConfigProvider } from './provider.types.js';
+import type { ConfigurationHotReloadCoordinator } from './hot-reload.coordinator.js';
+import { ConfigurationError } from '../errors/types.js';
 
 const GLOBAL_GUILD_ID = '__global__';
 
@@ -13,6 +15,8 @@ export class ConfigurationService implements IConfigProvider {
     private readonly settings: ISettingsRegistry,
     private readonly eventBus: IEventBus,
     private readonly appConfig: Readonly<AppConfig>,
+    private readonly hotReload?: ConfigurationHotReloadCoordinator,
+    private readonly enforceOwnership = true,
   ) {}
 
   current(): Readonly<AppConfig> {
@@ -27,10 +31,10 @@ export class ConfigurationService implements IConfigProvider {
     }
 
     const value = await this.provider.get<T>(key, guildId);
-    if (value !== undefined) {
-      this.cache.set(cacheKey, structuredClone(value));
-    }
-
+    if (value === undefined) return undefined;
+    const validation = this.settings.validate(key, value);
+    if (!validation.success) throw new ConfigurationError(validation.error ?? `Invalid persisted value for "${key}".`);
+    this.cache.set(cacheKey, structuredClone(value));
     return value;
   }
 
@@ -50,6 +54,8 @@ export class ConfigurationService implements IConfigProvider {
     if (missing.length > 0) {
       const loaded = await this.provider.getMany<T>(missing, guildId);
       for (const [key, value] of Object.entries(loaded)) {
+        const validation = this.settings.validate(key, value);
+        if (!validation.success) throw new ConfigurationError(validation.error ?? `Invalid persisted value for "${key}".`);
         values[key] = value as T;
         this.cache.set(this.cacheKey(key, guildId), structuredClone(value));
       }
@@ -62,8 +68,25 @@ export class ConfigurationService implements IConfigProvider {
     return this.provider.getDefaults();
   }
 
-  validate(key: string, value: unknown): SettingValidationResult {
+  validate(key: string, value: unknown, ownerId?: string): SettingValidationResult {
+    const owner = this.settings.getOwner(key);
+    if (this.enforceOwnership && ownerId && owner !== ownerId) {
+      return { success: false, error: `Setting "${key}" is not owned by "${ownerId}".` };
+    }
     return this.settings.validate(key, value);
+  }
+
+  async getOwned<T>(ownerId: string, key: string, guildId?: string): Promise<T | undefined> {
+    const validation = this.validate(key, this.settings.get(key)?.defaultValue, ownerId);
+    if (!validation.success) throw new Error(validation.error);
+    const value = await this.get<T>(key, guildId);
+    return value === undefined ? structuredClone(this.settings.get(key)?.defaultValue) as T : value;
+  }
+
+  async setOwned(ownerId: string, key: string, value: unknown, options: ConfigSetOptions = {}): Promise<void> {
+    const ownership = this.validate(key, value, ownerId);
+    if (!ownership.success) throw new Error(ownership.error);
+    await this.set(key, value, options);
   }
 
   async set(key: string, value: unknown, options: ConfigSetOptions = {}): Promise<void> {
@@ -106,9 +129,7 @@ export class ConfigurationService implements IConfigProvider {
     const oldValue = await this.get(key, guildId);
     const deleted = await this.provider.delete(key, guildId);
     if (deleted) {
-      this.invalidate(key, guildId);
-      this.applyRuntimeValue(key, undefined);
-      this.emitChange(key, oldValue, undefined, { guildId, source: 'api' });
+      this.afterWrite(key, oldValue, undefined, { guildId, source: 'api' });
     }
 
     return deleted;
@@ -140,10 +161,11 @@ export class ConfigurationService implements IConfigProvider {
 
   private afterWrite(key: string, oldValue: unknown, newValue: unknown, options: ConfigSetOptions): void {
     this.invalidate(key, options.guildId);
-    this.cache.set(this.cacheKey(key, options.guildId), structuredClone(newValue));
+    if (newValue !== undefined) this.cache.set(this.cacheKey(key, options.guildId), structuredClone(newValue));
     this.applyRuntimeValue(key, newValue);
-    this.settings.notifyChange(key, newValue, options.guildId ?? GLOBAL_GUILD_ID);
+    if (this.settings.get(key)?.secret !== true) this.settings.notifyChange(key, newValue, options.guildId ?? GLOBAL_GUILD_ID);
     this.emitChange(key, oldValue, newValue, options);
+    this.hotReload?.enqueue({ ownerId: this.ownerFor(key), key, oldValue, newValue, ...(options.guildId ? { guildId: options.guildId } : {}), source: options.source ?? 'api', timestamp: Date.now() });
   }
 
   private emitChange(
@@ -152,12 +174,13 @@ export class ConfigurationService implements IConfigProvider {
     newValue: unknown,
     options: Pick<ConfigSetOptions, 'guildId' | 'source'>,
   ): void {
+    const secret = this.settings.get(key)?.secret === true;
     this.eventBus.emit('configuration.changed', {
-      module: key.split('.')[0] ?? 'platform',
+      module: this.ownerFor(key),
       guildId: options.guildId,
       key,
-      oldValue,
-      newValue,
+      oldValue: secret && oldValue !== undefined ? '[REDACTED]' : oldValue,
+      newValue: secret && newValue !== undefined ? '[REDACTED]' : newValue,
       source: options.source ?? 'api',
       timestamp: Date.now(),
     });
@@ -165,6 +188,12 @@ export class ConfigurationService implements IConfigProvider {
 
   private cacheKey(key: string, guildId?: string): string {
     return `${guildId ?? GLOBAL_GUILD_ID}:${key}`;
+  }
+
+  private ownerFor(key: string): string {
+    const owner = this.settings.getOwner(key);
+    if (this.enforceOwnership && !owner) throw new Error(`Unknown setting key "${key}".`);
+    return owner ?? 'platform';
   }
 
   private applyRuntimeValue(key: string, value: unknown): void {

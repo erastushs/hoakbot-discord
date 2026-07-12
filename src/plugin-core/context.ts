@@ -1,5 +1,6 @@
 import type { IContainer } from '../core/container/types.js';
 import type { PluginManifest } from './contracts.js';
+import type { HotReloadHandler } from '../core/config/hot-reload.coordinator.js';
 import { diagnostic, PluginCoreError } from './errors.js';
 import { serializeMetadata } from './metadata-serializer.js';
 
@@ -14,6 +15,7 @@ export interface PluginContextServices {
   readonly command: (ownerId: string, command: string, handler: (...args: unknown[]) => unknown, guildId?: string) => void | (() => void);
   readonly api: (ownerId: string, route: string, handler: (...args: unknown[]) => unknown, guildId?: string) => void | (() => void);
   readonly health: (ownerId: string, check: string, handler: () => unknown, guildId?: string) => void | (() => void);
+  readonly hotReload?: (ownerId: string, handler: HotReloadHandler, guildId?: string) => void | (() => void);
 }
 
 export const pluginInternalCapabilities = Symbol('pluginInternalCapabilities');
@@ -29,6 +31,7 @@ export interface PluginContext {
   readonly commands: { register(command: string, handler: (...args: unknown[]) => unknown): void | (() => void) };
   readonly api: { register(route: string, handler: (...args: unknown[]) => unknown): void | (() => void) };
   readonly health: { register(check: string, handler: () => unknown): void | (() => void) };
+  readonly lifecycle: { onConfigChange(handler: HotReloadHandler): void | (() => void) };
 }
 
 export function createPluginContext(manifest: PluginManifest, services: PluginContextServices, options: { guildId?: string; signal?: AbortSignal; container?: IContainer } = {}): PluginContext {
@@ -45,10 +48,16 @@ export function createPluginContext(manifest: PluginManifest, services: PluginCo
     logger: Object.freeze({
       log: (level: string, message: string, metadata?: unknown) => services.logger(scope).log(level, message, serializeMetadata(metadata)),
     }),
-    config: Object.freeze({ get: (key: string) => { requireDeclaration('settings', key); return services.config(ownerId, key, options.guildId); } }),
+    config: Object.freeze({
+      get: (key: string) => { requireDeclaration('settings', key); return services.config(ownerId, key, options.guildId); },
+    }),
     events: Object.freeze({ on: (event: string, handler: (...args: unknown[]) => unknown) => { requireDeclaration('events', event); return services.event(ownerId, event, handler, options.guildId); } }),
     commands: Object.freeze({ register: (command: string, handler: (...args: unknown[]) => unknown) => { requireDeclaration('commands', command); return services.command(ownerId, command, handler, options.guildId); } }),
     api: Object.freeze({ register: (route: string, handler: (...args: unknown[]) => unknown) => { requireDeclaration('routes', route); return services.api(ownerId, route, handler, options.guildId); } }),
     health: Object.freeze({ register: (check: string, handler: () => unknown) => { requireDeclaration('permissions', check); return services.health(ownerId, check, handler, options.guildId); } }),
+    lifecycle: Object.freeze({ onConfigChange: (handler: HotReloadHandler) => {
+      if (!services.hotReload) throw new Error('Hot reload capability is unavailable.');
+      return services.hotReload(ownerId, handler, options.guildId);
+    } }),
   });
 }

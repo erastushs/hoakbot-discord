@@ -1,66 +1,25 @@
 import { SlashCommandBuilder } from 'discord.js';
 import type { CommandContext } from '../../../shared/types/command.js';
-import type { ICommand } from '../../../shared/types/command.js';
-import type { CommandRegistry } from '../../../shared/command-registry.js';
-import type { AppConfig } from '../../../core/config/types.js';
 import { BaseCommand } from '../../../shared/command/base-command.js';
+import type { HelpService } from '../help/help-service.js';
 
 export class HelpCommand extends BaseCommand {
   readonly name = 'help';
   readonly description = 'Lists all available commands';
   readonly category = 'General';
-  readonly slashOptions = new SlashCommandBuilder().setName('help').setDescription('Lists all available commands');
+  readonly slashOptions = new SlashCommandBuilder()
+    .setName('help')
+    .setDescription('Lists all available commands')
+    .addStringOption((option) =>
+      option.setName('command').setDescription('Show help for a specific command').setRequired(false),
+    );
 
-  constructor(
-    private readonly registry: CommandRegistry,
-    private readonly config: Readonly<AppConfig>,
-  ) {
+  constructor(private readonly service: HelpService) {
     super();
   }
 
   async execute(ctx: CommandContext): Promise<void> {
-    const all = this.registry.all().filter((cmd) => !cmd.hidden);
-
-    const grouped = new Map<string, ICommand[]>();
-    for (const cmd of all) {
-      const cat = this.capitalize(cmd.category);
-      const list = grouped.get(cat) ?? [];
-      list.push(cmd);
-      grouped.set(cat, list);
-    }
-
-    const sortedCategories = [...grouped.keys()].sort((a, b) => a.localeCompare(b));
-
-    let totalCommands = 0;
-
-    const fields: { name: string; value: string }[] = [];
-
-    for (const cat of sortedCategories) {
-      const cmds = grouped.get(cat)!;
-      cmds.sort((a, b) => a.name.localeCompare(b.name));
-
-      const lines = cmds.map((cmd) => {
-        const permLabel = cmd.requiredPermissions && cmd.requiredPermissions.length > 0 ? ' (Moderator)' : '';
-        return [
-          `**\`/${cmd.name}\`**`,
-          `**\`${this.config.bot.prefix}${cmd.name}\`**`,
-          `${cmd.description}${permLabel}`,
-        ].join('\n');
-      });
-
-      fields.push({ name: cat, value: lines.join('\n\n') });
-      totalCommands += cmds.length;
-    }
-
-    await this.custom(ctx, {
-      title: '\u{1F4DA} Hoak Bot Help',
-      description: `**Total Commands:** ${totalCommands}\n**Categories:** ${sortedCategories.length}`,
-      fields,
-      thumbnail: ctx.user.client.user?.displayAvatarURL(),
-    });
-  }
-
-  private capitalize(s: string): string {
-    return s.charAt(0).toUpperCase() + s.slice(1);
+    const query = ctx.source === 'slash' ? ctx.args.get('command') : ctx.args.get('_suffix');
+    await this.service.show(ctx, typeof query === 'string' ? query.trim() || undefined : undefined);
   }
 }

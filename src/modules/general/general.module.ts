@@ -11,6 +11,17 @@ import { ServerInfoCommand } from './commands/serverinfo.command.js';
 import { BotInfoCommand } from './commands/botinfo.command.js';
 import { generalManifest } from './manifest.js';
 import { createGeneralSettings } from './settings.js';
+import { CommandIndexer } from './help/command-indexer.js';
+import { HelpService } from './help/help-service.js';
+import { HelpInteractionHandler } from './help/help-interaction-handler.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const packageJson = JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'package.json'), 'utf-8')) as {
+  version: string;
+};
 
 export class GeneralModule implements IModule {
   readonly name = 'general';
@@ -30,8 +41,10 @@ export class GeneralModule implements IModule {
       container.resolve(TOKENS.SettingsRegistry).register(this.name, createGeneralSettings(config));
     }
 
+    const helpService = new HelpService(new CommandIndexer(registry), config.bot.prefix, packageJson.version);
+    const helpInteractionHandler = new HelpInteractionHandler(helpService);
     const pingCommand = new PingCommand();
-    const helpCommand = new HelpCommand(registry, config);
+    const helpCommand = new HelpCommand(helpService);
     const avatarCommand = new AvatarCommand();
     const userInfoCommand = new UserInfoCommand();
     const serverInfoCommand = new ServerInfoCommand();
@@ -49,6 +62,13 @@ export class GeneralModule implements IModule {
       if (interaction.isChatInputCommand()) {
         router.handleSlash(interaction).catch((err) => {
           logger.error({ error: err }, 'Slash command handler failed');
+        });
+      } else if (
+        (interaction.isButton() || interaction.isStringSelectMenu()) &&
+        helpInteractionHandler.owns(interaction.customId)
+      ) {
+        helpInteractionHandler.handle(interaction).catch((err) => {
+          logger.error({ error: err }, 'Help interaction handler failed');
         });
       }
     });

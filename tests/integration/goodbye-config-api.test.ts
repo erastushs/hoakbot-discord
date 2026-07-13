@@ -149,6 +149,10 @@ describe('Goodbye configuration API pipeline', () => {
       success: true,
       data: { settings: [{ key: 'goodbye.enabled', value: false }] },
     });
-    expect(setMany).toHaveBeenCalledWith([{ key: 'goodbye.enabled', value: false }], 'guild-1');
+    expect(setMany).toHaveBeenCalledWith(
+      [{ key: 'goodbye.enabled', value: false }],
+      'guild-1',
+      { expectedVersion: undefined, changedBy: undefined, source: 'api' },
+    );
   });
 });

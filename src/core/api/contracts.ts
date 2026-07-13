@@ -15,6 +15,7 @@ export interface SettingValueContract {
 export interface GetSettingsResponse {
   guildId: string;
   settings: SettingValueContract[];
+  version?: number;
 }
 
 export interface PatchSettingsRequest {

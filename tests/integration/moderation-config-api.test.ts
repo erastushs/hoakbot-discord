@@ -154,6 +154,7 @@ describe('Moderation configuration API pipeline', () => {
     expect(setMany).toHaveBeenCalledWith(
       [{ key: 'moderation.roles.moderator', value: ['Moderator'] }],
       'guild-1',
+      { expectedVersion: undefined, changedBy: undefined, source: 'api' },
     );
   });
 });

@@ -159,6 +159,7 @@ describe('Logging configuration API pipeline', () => {
     expect(setMany).toHaveBeenCalledWith(
       [{ key: 'logging.message.maxAttachmentSizeMb', value: 25 }],
       'guild-1',
+      { expectedVersion: undefined, changedBy: undefined, source: 'api' },
     );
   });
 });

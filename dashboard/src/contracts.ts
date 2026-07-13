@@ -173,6 +173,7 @@ export interface SettingValue {
 export interface GetSettingsResponse {
   guildId: string;
   settings: SettingValue[];
+  version?: number;
 }
 
 export interface PatchSettingsResponse {

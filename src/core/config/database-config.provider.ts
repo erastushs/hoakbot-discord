@@ -75,26 +75,37 @@ export class DatabaseConfigProvider implements IConfigProvider {
     };
   }
 
-  async set(key: string, value: unknown, options: ConfigSetOptions = {}): Promise<void> {
+  async set(key: string, value: unknown, options: ConfigSetOptions = {}) {
     try {
-      await this.repository.saveSetting(this.resolveGuildId(options.guildId), key, value);
+      return await this.repository.saveSetting(this.resolveGuildId(options.guildId), key, value, options);
     } catch (error) {
+      if (error instanceof Error && error.name === 'ConfigVersionConflictError') throw error;
       throw this.wrapDatabaseError('save', key, error);
     }
   }
 
-  async setMany(entries: ConfigEntry[], guildId?: string): Promise<void> {
+  async setMany(entries: ConfigEntry[], guildId?: string, options: ConfigSetOptions = {}) {
     try {
-      await this.repository.bulkSave(this.resolveGuildId(guildId), entries);
+      return await this.repository.bulkSave(this.resolveGuildId(guildId), entries, options);
     } catch (error) {
+      if (error instanceof Error && error.name === 'ConfigVersionConflictError') throw error;
       throw this.wrapDatabaseError('bulk save', entries.map((entry) => entry.key).join(', '), error);
     }
   }
 
-  async delete(key: string, guildId?: string): Promise<boolean> {
+  async getVersion(guildId?: string): Promise<number> {
     try {
-      return await this.repository.deleteSetting(this.resolveGuildId(guildId), key);
+      return await this.repository.getVersion(this.resolveGuildId(guildId));
     } catch (error) {
+      throw this.wrapDatabaseError('load version', this.resolveGuildId(guildId), error);
+    }
+  }
+
+  async delete(key: string, guildId?: string, options: ConfigSetOptions = {}) {
+    try {
+      return await this.repository.deleteSetting(this.resolveGuildId(guildId), key, options);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ConfigVersionConflictError') throw error;
       throw this.wrapDatabaseError('delete', key, error);
     }
   }

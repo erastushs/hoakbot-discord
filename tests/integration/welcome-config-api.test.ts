@@ -148,6 +148,7 @@ describe('Welcome configuration API pipeline', () => {
     expect(setMany).toHaveBeenCalledWith(
       [{ key: 'welcome.message.body', value: ['Hello'] }],
       'guild-1',
+      { expectedVersion: undefined, changedBy: undefined, source: 'api' },
     );
   });
 });

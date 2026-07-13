@@ -110,8 +110,8 @@ describe('DatabaseConfigProvider', () => {
     await provider.set('voice.volume', 2, { guildId: 'guild-1' });
 
     expect(repository.saveSetting).toHaveBeenCalledTimes(2);
-    expect(repository.saveSetting).toHaveBeenNthCalledWith(1, 'guild-1', 'voice.volume', 1);
-    expect(repository.saveSetting).toHaveBeenNthCalledWith(2, 'guild-1', 'voice.volume', 2);
+    expect(repository.saveSetting).toHaveBeenNthCalledWith(1, 'guild-1', 'voice.volume', 1, { guildId: 'guild-1' });
+    expect(repository.saveSetting).toHaveBeenNthCalledWith(2, 'guild-1', 'voice.volume', 2, { guildId: 'guild-1' });
   });
 
   it('deletes settings through the repository', async () => {

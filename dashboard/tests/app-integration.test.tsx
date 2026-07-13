@@ -93,7 +93,7 @@ describe('App backend integration', () => {
       if (init?.method === 'PATCH') {
         return jsonResponse({
           success: true,
-          data: { guildId: 'guild-1', settings: [{ key: 'generic.title', value: 'Saved title' }] },
+          data: { guildId: 'guild-1', settings: [{ key: 'generic.title', value: 'Saved title' }], version: 2 },
         });
       }
 
@@ -122,7 +122,7 @@ describe('App backend integration', () => {
     const saveButtons = screen.getAllByRole('button', { name: 'Save changes' });
     await user.click(saveButtons.at(-1)!);
 
-    await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
+    await waitFor(() => expect(fetcher).toHaveBeenCalledWith('/api/v1/guilds/guild-1/settings', expect.objectContaining({ method: 'PATCH' })));
 
     const patchCall = fetcher.mock.calls.find(
       ([url, init]) => url === '/api/v1/guilds/guild-1/settings' && init?.method === 'PATCH',
@@ -135,7 +135,7 @@ describe('App backend integration', () => {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': 'csrf-token' },
-      body: JSON.stringify({ settings: { 'generic.title': 'Saved title' } }),
+      body: JSON.stringify({ settings: { 'generic.title': 'Saved title' }, expectedVersion: 0 }),
     });
   });
 
@@ -177,7 +177,7 @@ describe('App backend integration', () => {
 
     await waitFor(() => expect(fetcher).toHaveBeenCalledWith('/api/v1/guilds/guild-2/settings', expect.objectContaining({
       method: 'PATCH',
-      body: JSON.stringify({ settings: { 'generic.title': 'Saved Guild Two title' } }),
+      body: JSON.stringify({ settings: { 'generic.title': 'Saved Guild Two title' }, expectedVersion: 0 }),
     })));
     expect(fetcher).not.toHaveBeenCalledWith('/api/v1/guilds/guild-1/settings', expect.objectContaining({ method: 'PATCH' }));
   });

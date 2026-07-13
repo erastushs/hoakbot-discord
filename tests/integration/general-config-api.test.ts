@@ -150,6 +150,10 @@ describe('General configuration API pipeline', () => {
       success: true,
       data: { settings: [{ key: 'general.prefix', value: '!' }] },
     });
-    expect(setMany).toHaveBeenCalledWith([{ key: 'general.prefix', value: '!' }], 'guild-1');
+    expect(setMany).toHaveBeenCalledWith(
+      [{ key: 'general.prefix', value: '!' }],
+      'guild-1',
+      { expectedVersion: undefined, changedBy: undefined, source: 'api' },
+    );
   });
 });

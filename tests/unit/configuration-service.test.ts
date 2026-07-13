@@ -158,6 +158,37 @@ describe('ConfigurationService', () => {
     await expect(service.set('general.prefix', '')).rejects.toThrow();
   });
 
+  it('uses authoritative transactional changes for post-commit events', async () => {
+    const eventBus = bus();
+    const onChanged = vi.fn();
+    eventBus.subscribe('configuration.changed', onChanged);
+    const backing = provider({ 'general.prefix': 'stale' });
+    backing.setMany = vi.fn(async () => ({
+      version: 4,
+      changes: [{ key: 'general.prefix', oldValue: 'authoritative', newValue: '!' }],
+    }));
+    const service = new ConfigurationService(backing, settings(), eventBus, config());
+
+    await service.setMany([{ key: 'general.prefix', value: '!' }], 'guild-1');
+
+    expect(onChanged).toHaveBeenCalledWith(expect.objectContaining({ oldValue: 'authoritative', newValue: '!' }));
+  });
+
+  it('produces no post-commit side effects when persistence fails', async () => {
+    const eventBus = bus();
+    const onChanged = vi.fn();
+    eventBus.subscribe('configuration.changed', onChanged);
+    const backing = provider({ 'general.prefix': 'hoak' });
+    backing.setMany = vi.fn(async () => { throw new Error('rollback'); });
+    const appConfig = config();
+    const service = new ConfigurationService(backing, settings(), eventBus, appConfig);
+
+    await expect(service.setMany([{ key: 'general.prefix', value: '!' }], 'guild-1')).rejects.toThrow('rollback');
+
+    expect(onChanged).not.toHaveBeenCalled();
+    expect(appConfig.bot.prefix).toBe('hoak');
+  });
+
   it('emits configuration.changed and updates the live runtime snapshot', async () => {
     const eventBus = bus();
     const onChanged = vi.fn();

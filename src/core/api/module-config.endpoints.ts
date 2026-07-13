@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { IConfigProvider } from '../config/provider.types.js';
+import { ConfigVersionConflictError, type IConfigProvider } from '../config/provider.types.js';
 import type { GuildModuleStateRepository } from '../config/guild-module-state.repository.js';
 import type { ISettingMetadata, ISettingsRegistry } from '../settings/types.js';
 import type { ManifestRegistry } from '../../modules/manifest-registry.js';
@@ -122,6 +122,7 @@ export function createModuleConfigEndpoints({
         return ok<GetSettingsResponse>({
           guildId,
           settings: metadata.map((setting) => toSettingValue(setting, values[setting.key])),
+          version: await config.getVersion?.(guildId) ?? 0,
         });
       },
     },
@@ -135,7 +136,7 @@ export function createModuleConfigEndpoints({
       metadata: { operationId: 'patchGuildSettings', tags: ['guilds', 'settings'] },
       handler: async (request, context) => {
         const guildId = request.params?.guildId ?? '';
-        const body = request.body as { settings: Record<string, unknown> };
+        const body = request.body as { settings: Record<string, unknown>; expectedVersion?: number };
         const entries = Object.entries(body.settings);
 
         for (const [key, value] of entries) {
@@ -147,26 +148,38 @@ export function createModuleConfigEndpoints({
           }
         }
 
-        const oldValues = await config.getMany(entries.map(([key]) => key), guildId);
-        await config.setMany(entries.map(([key, value]) => ({ key, value })), guildId);
-
-        for (const [key, value] of entries) {
-          const metadata = settings.get(key);
-          audit?.recordConfigurationChange({
+        try {
+          const result = await config.setMany(entries.map(([key, value]) => ({ key, value })), guildId, {
+            expectedVersion: body.expectedVersion,
+            changedBy: context.session?.userId,
+            source: 'api',
+          });
+          for (const change of result?.changes ?? entries.map(([key, value]) => ({ key, oldValue: undefined, newValue: value }))) {
+            audit?.recordConfigurationChange({
+              guildId,
+              module: change.key.split('.')[0] || 'unknown',
+              key: change.key,
+              oldValue: change.oldValue,
+              newValue: change.newValue,
+              userId: context.session?.userId,
+              metadata: settings.get(change.key),
+            }, request);
+          }
+          return ok<PatchSettingsResponse>({
             guildId,
-            module: moduleIdFromSettingKey(key),
-            key,
-            oldValue: oldValues[key],
-            newValue: value,
-            userId: context.session?.userId,
-            metadata,
-          }, request);
+            settings: entries.map(([key, value]) => ({ key, value })),
+            version: result?.version ?? await config.getVersion?.(guildId) ?? 0,
+          });
+        } catch (error) {
+          if (error instanceof ConfigVersionConflictError) {
+            return fail('CONFLICT', 'Configuration changed concurrently. Refresh and retry.', {
+              expectedVersion: error.expectedVersion,
+              currentVersion: error.currentVersion,
+              retryable: true,
+            });
+          }
+          throw error;
         }
-
-        return ok<PatchSettingsResponse>({
-          guildId,
-          settings: entries.map(([key, value]) => ({ key, value })),
-        });
       },
     },
   ];
@@ -245,10 +258,6 @@ function transitiveDependents(moduleId: string, manifests: ManifestRegistry): st
     }
   }
   return [...result];
-}
-
-function moduleIdFromSettingKey(key: string): string {
-  return key.split('.')[0] || 'unknown';
 }
 
 function toSettingValue(setting: ISettingMetadata, value: unknown): SettingValueContract {

@@ -96,7 +96,7 @@ function createRouter(log = logger(), options: { validSession?: boolean; authori
     getMany: vi.fn(async () => ({ 'general.prefix': '!' })),
     getDefaults: vi.fn(),
     set: vi.fn(),
-    setMany: vi.fn(),
+    setMany: vi.fn(async () => ({ version: 1, changes: [{ key: 'general.prefix', oldValue: '!', newValue: '?' }] })),
     watch: vi.fn(() => () => undefined),
   };
   const audit = new SecurityAuditService(log, { now: () => new Date('2026-07-07T00:00:00.000Z') });

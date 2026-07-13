@@ -10,7 +10,7 @@
 
 ## Current Phase
 
-Hardening Phase 1 — Cross-guild dashboard state isolation is complete. Module forms now reset loaded values, dirty state, validation, and save state on module or value revision, preventing stale values from one guild from being submitted to another. Phase 07 and Phase 10 remain complete and uncommitted pending authorization.
+Hardening Phase H2 — Transactional configuration persistence is complete. Guild configuration writes now atomically commit settings, a guild-wide optimistic-concurrency version, and durable audits; conflicts and failures produce no cache, event, or hot-reload side effects. Hardening Phase 1, Phase 07, and Phase 10 remain complete and uncommitted pending authorization.
 
 ## Completed Phases
 
@@ -28,15 +28,15 @@ Hardening Phase 1 — Cross-guild dashboard state isolation is complete. Module 
 
 ## Current Objective
 
-Preserve the completed cross-guild dashboard isolation fix and all completed plugin-platform behavior. Do not begin Hardening Phase 2 or promote the SDK/CLI prerelease without separate authorization and complete release gates.
+Preserve the completed H1 dashboard-isolation and H2 transactional-configuration fixes with all completed plugin-platform behavior. Do not begin another hardening phase or promote the SDK/CLI prerelease without separate authorization and complete release gates.
 
 ## Known Issues
 
-The Engineering Audit Review's cross-guild dashboard state-isolation finding is resolved. Remaining audit release blockers are recorded below.
+The Engineering Audit Review's cross-guild dashboard state-isolation and transactional/versioned configuration findings are resolved. Remaining audit release blockers are recorded below.
 
 ## Blockers
 
-The remaining Engineering Audit Review release blockers are guild-scoped log authorization, transactional versioned configuration writes, the Phase 10 SDK acceptance failure, SDK harness capability enforcement, high-severity dependency vulnerabilities, reversible plugin factory loading, and honest release gates. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
+The remaining Engineering Audit Review release blockers are guild-scoped log authorization, the Phase 10 SDK acceptance failure, SDK harness capability enforcement, high-severity dependency vulnerabilities, reversible plugin factory loading, and honest release gates. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
 
 ## Pending TODO
 
@@ -55,7 +55,7 @@ The remaining Engineering Audit Review release blockers are guild-scoped log aut
 
 ## Next Recommended Task
 
-Define and authorize Hardening Phase 2 — guild-scoped log authorization. Do not begin it as part of Hardening Phase 1.
+Define and authorize the next hardening phase separately. Do not begin guild-scoped logging or another audit blocker as part of H2.
 
 ## Relevant ADRs
 
@@ -72,4 +72,4 @@ Phase 02 implements ADR-011 core behavior without changing later-phase contracts
 
 ## Files Recently Changed
 
-Hardening Phase 1 updated the shared dashboard module form and its unit/integration regressions so guild, module, and loaded-value revisions discard stale dirty state before saving. Build, typecheck, 735 tests, and lint completed successfully on Node 26; lint reports one pre-existing `no-explicit-any` warning in `src/plugin-core/contracts.ts`. The Engineering Audit Review and changelog were updated. No commit was created.
+Hardening Phase H2 added a guild-wide configuration version and durable audit migration, transactional repository writes/deletes, optimistic `expectedVersion` conflict handling, authoritative post-commit cache/event/hot-reload delivery, dashboard version propagation, and rollback/conflict regressions. Build, typecheck, 706 backend tests, 32 dashboard tests, and lint completed successfully on Node 26; lint reports one pre-existing `no-explicit-any` warning in `src/plugin-core/contracts.ts`. The Engineering Audit Review and changelog were updated. No commit was created.

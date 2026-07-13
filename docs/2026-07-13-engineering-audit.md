@@ -404,6 +404,7 @@ The repository should not be accepted as a final 4.0 baseline until the release 
 - **Scope:** Atomic bulk write, row/version concurrency, durable audit in the same transaction, post-commit cache/event/hot-reload behavior, conflict response.
 - **Complexity:** High.
 - **Regression risk:** High.
+- **Disposition:** Resolved in Hardening Phase H2. Guild configuration writes now lock a guild-wide version row and atomically commit all setting mutations, one version increment, and durable per-key audit records. Matching `expectedVersion` values commit; stale versions return `409 CONFLICT` without persistence or post-commit effects. Cache mutation, events, security telemetry, and hot reload use authoritative committed changes only after transaction success. Single writes and deletes use the same versioned transaction path. Build, typecheck, 738 tests, and lint passed on 2026-07-13; lint retained one pre-existing warning.
 
 ### 4. Resolve the failing Phase 10 SDK acceptance suite
 

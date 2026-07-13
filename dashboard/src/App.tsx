@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { APIClient, DashboardAPIError } from './api/client.js';
 import { AuthGuard } from './auth/AuthGuard.js';
@@ -18,6 +18,7 @@ interface DashboardState {
   settings: SettingMetadata[];
   values: Record<string, unknown>;
   pluginDashboard: boolean;
+  version: number;
   error?: string;
 }
 
@@ -40,12 +41,14 @@ function DashboardShell({ api }: { api: APIClient }) {
   const page = getPageFromPath(window.location.pathname);
   const auth = useAuth();
   const guild = auth.selectedGuild;
+  const versionRef = useRef(0);
   const [state, setState] = useState<DashboardState>({
     status: 'loading',
     manifests: [],
     settings: [],
     values: {},
     pluginDashboard: false,
+    version: 0,
   });
 
   const loadDashboard = useCallback(async () => {
@@ -65,6 +68,7 @@ function DashboardShell({ api }: { api: APIClient }) {
         settings: [],
         values: {},
         pluginDashboard: false,
+        version: 0,
         error: 'No authorized guilds are available for this Discord account.',
       };
       debugDashboard('[dashboard-app] loadDashboard:missingGuild', {
@@ -147,6 +151,7 @@ function DashboardShell({ api }: { api: APIClient }) {
           settings: [],
           values: {},
           pluginDashboard: Boolean(modulesResponse.capabilities?.pluginDashboard),
+          version: 0,
           error: `Module "${moduleId}" was not found by the backend.`,
         };
         debugDashboard('[dashboard-app] loadDashboard:moduleNotFound', {
@@ -204,8 +209,10 @@ function DashboardShell({ api }: { api: APIClient }) {
         settings,
         values: Object.fromEntries(valuesResponse?.settings.map((setting) => [setting.key, setting.value]) ?? []),
         pluginDashboard: Boolean(modulesResponse.capabilities?.pluginDashboard),
+        version: valuesResponse?.version ?? 0,
       };
       logStateUpdate('ready', nextState, moduleId);
+      versionRef.current = nextState.version;
       setState(nextState);
       debugDashboard('[dashboard-app] loadDashboard:ready', {
         moduleCount: modules.length,
@@ -219,6 +226,7 @@ function DashboardShell({ api }: { api: APIClient }) {
         settings: [],
         values: {},
         pluginDashboard: false,
+        version: 0,
         error: toErrorMessage(error),
       };
       debugDashboardError('[dashboard-app] loadDashboard:failed', {
@@ -254,13 +262,15 @@ function DashboardShell({ api }: { api: APIClient }) {
         throw new Error('A guild id is required before settings can be saved.');
       }
 
-      const response = await api.patchGuildSettings(guild.id, settings);
+      const response = await api.patchGuildSettings(guild.id, settings, versionRef.current);
+      versionRef.current = response.version ?? versionRef.current;
       setState((current) => ({
         ...current,
         values: {
           ...current.values,
           ...Object.fromEntries(response.settings.map((setting) => [setting.key, setting.value])),
         },
+        version: response.version ?? current.version,
       }));
     },
     [api, guild],

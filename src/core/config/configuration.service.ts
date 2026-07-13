@@ -97,12 +97,13 @@ export class ConfigurationService implements IConfigProvider {
       }
     }
 
-    const oldValue = await this.get(key, options.guildId);
-    await this.provider.set(key, value, options);
-    this.afterWrite(key, oldValue, value, options);
+    const fallbackOldValue = await this.get(key, options.guildId);
+    const result = await this.provider.set(key, value, options);
+    const change = result?.changes[0];
+    this.afterWrite(key, change ? change.oldValue : fallbackOldValue, change?.newValue ?? value, options);
   }
 
-  async setMany(entries: ConfigEntry[], guildId?: string): Promise<void> {
+  async setMany(entries: ConfigEntry[], guildId?: string, options: ConfigSetOptions = {}) {
     for (const entry of entries) {
       const validation = this.validate(entry.key, entry.value);
       if (!validation.success) {
@@ -110,15 +111,22 @@ export class ConfigurationService implements IConfigProvider {
       }
     }
 
-    const oldValues = await this.getMany(entries.map((entry) => entry.key), guildId);
-    await this.provider.setMany(entries, guildId);
+    const fallbackOldValues = await this.getMany(entries.map((entry) => entry.key), guildId);
+    const result = await this.provider.setMany(entries, guildId, options);
 
     for (const entry of entries) {
-      this.afterWrite(entry.key, oldValues[entry.key], entry.value, {
+      const change = result?.changes.find((candidate) => candidate.key === entry.key);
+      this.afterWrite(entry.key, change ? change.oldValue : fallbackOldValues[entry.key], change?.newValue ?? entry.value, {
+        ...options,
         guildId,
-        source: 'api',
+        source: options.source ?? 'api',
       });
     }
+    return result;
+  }
+
+  getVersion(guildId?: string): Promise<number> {
+    return this.provider.getVersion?.(guildId) ?? Promise.resolve(0);
   }
 
   async delete(key: string, guildId?: string): Promise<boolean> {
@@ -126,10 +134,11 @@ export class ConfigurationService implements IConfigProvider {
       return false;
     }
 
-    const oldValue = await this.get(key, guildId);
-    const deleted = await this.provider.delete(key, guildId);
+    const result = await this.provider.delete(key, guildId, { guildId, source: 'api' });
+    const deleted = typeof result === 'boolean' ? result : result.deleted;
     if (deleted) {
-      this.afterWrite(key, oldValue, undefined, { guildId, source: 'api' });
+      const change = typeof result === 'boolean' ? undefined : result.changes[0];
+      this.afterWrite(key, change?.oldValue, undefined, { guildId, source: 'api' });
     }
 
     return deleted;

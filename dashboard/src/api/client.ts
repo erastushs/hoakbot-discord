@@ -105,8 +105,8 @@ export class APIClient {
     return this.get<GetSettingsResponse>(`/guilds/${encodeURIComponent(guildId)}/settings`);
   }
 
-  patchGuildSettings(guildId: string, settings: Record<string, unknown>): Promise<PatchSettingsResponse> {
-    return this.patch<PatchSettingsResponse>(`/guilds/${encodeURIComponent(guildId)}/settings`, { settings });
+  patchGuildSettings(guildId: string, settings: Record<string, unknown>, expectedVersion: number): Promise<PatchSettingsResponse> {
+    return this.patch<PatchSettingsResponse>(`/guilds/${encodeURIComponent(guildId)}/settings`, { settings, expectedVersion });
   }
 
   getLogs(params: { limit?: number; cursor?: string; search?: string; levels?: string[]; modules?: string[]; since?: number } = {}): Promise<GetLogsResponse> {

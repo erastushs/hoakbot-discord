@@ -149,6 +149,10 @@ describe('Voice configuration API pipeline', () => {
       success: true,
       data: { settings: [{ key: 'voice.volume', value: 1.2 }] },
     });
-    expect(setMany).toHaveBeenCalledWith([{ key: 'voice.volume', value: 1.2 }], 'guild-1');
+    expect(setMany).toHaveBeenCalledWith(
+      [{ key: 'voice.volume', value: 1.2 }],
+      'guild-1',
+      { expectedVersion: undefined, changedBy: undefined, source: 'api' },
+    );
   });
 });

@@ -109,7 +109,7 @@ export class APIClient {
     return this.patch<PatchSettingsResponse>(`/guilds/${encodeURIComponent(guildId)}/settings`, { settings, expectedVersion });
   }
 
-  getLogs(params: { limit?: number; cursor?: string; search?: string; levels?: string[]; modules?: string[]; since?: number } = {}): Promise<GetLogsResponse> {
+  getLogs(guildId: string, params: { limit?: number; cursor?: string; search?: string; levels?: string[]; modules?: string[]; since?: number } = {}): Promise<GetLogsResponse> {
     const query = new URLSearchParams();
     if (params.limit) query.set('limit', String(params.limit));
     if (params.cursor) query.set('cursor', params.cursor);
@@ -118,15 +118,15 @@ export class APIClient {
     for (const level of params.levels ?? []) query.append('level', level);
     for (const module of params.modules ?? []) query.append('module', module);
     const suffix = query.toString() ? `?${query.toString()}` : '';
-    return this.get<GetLogsResponse>(`/logs${suffix}`);
+    return this.get<GetLogsResponse>(`/guilds/${encodeURIComponent(guildId)}/logs${suffix}`);
   }
 
   dashboardStateStreamUrl(guildId: string): string {
     return `${this.baseUrl}/dashboard/state/stream?guildId=${encodeURIComponent(guildId)}`;
   }
 
-  logsStreamUrl(): string {
-    return `${this.baseUrl}/logs/stream`;
+  logsStreamUrl(guildId: string): string {
+    return `${this.baseUrl}/guilds/${encodeURIComponent(guildId)}/logs/stream`;
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {

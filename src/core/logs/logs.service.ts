@@ -22,6 +22,7 @@ export interface DashboardLogEntry {
 }
 
 export interface LogsQuery {
+  guildId?: string;
   levels?: DashboardLogLevel[];
   modules?: string[];
   search?: string;
@@ -60,13 +61,18 @@ export class LogsService implements LogSink {
     this.events.emit('entry', entry);
   }
 
+  queryGuild(guildId: string, query: Omit<LogsQuery, 'guildId'> = {}): LogsResult {
+    return this.query({ ...query, guildId });
+  }
+
   query(query: LogsQuery = {}): LogsResult {
     const limit = clampLimit(query.limit);
     const search = query.search?.trim().toLowerCase();
     const levels = new Set(query.levels ?? []);
     const modules = new Set((query.modules ?? []).map(normalizeModuleName));
-    const cursorIndex = query.cursor ? this.entries.findIndex((entry) => entry.id === query.cursor) : -1;
-    const candidates = cursorIndex >= 0 ? this.entries.slice(0, cursorIndex) : this.entries;
+    const guildEntries = query.guildId ? this.entries.filter((entry) => entry.guildId === query.guildId) : [];
+    const cursorIndex = query.cursor ? guildEntries.findIndex((entry) => entry.id === query.cursor) : -1;
+    const candidates = cursorIndex >= 0 ? guildEntries.slice(0, cursorIndex) : guildEntries;
     const filtered = candidates.filter((entry) => {
       if (levels.size > 0 && !levels.has(entry.level)) return false;
       if (modules.size > 0 && !modules.has(normalizeModuleName(entry.module))) return false;
@@ -83,9 +89,12 @@ export class LogsService implements LogSink {
     };
   }
 
-  subscribe(listener: (entry: DashboardLogEntry) => void): () => void {
-    this.events.on('entry', listener);
-    return () => this.events.off('entry', listener);
+  subscribeGuild(guildId: string, listener: (entry: DashboardLogEntry) => void): () => void {
+    const scopedListener = (entry: DashboardLogEntry) => {
+      if (entry.guildId === guildId) listener(entry);
+    };
+    this.events.on('entry', scopedListener);
+    return () => this.events.off('entry', scopedListener);
   }
 
   private toEntry(level: LogSinkLevel, args: unknown[]): DashboardLogEntry {

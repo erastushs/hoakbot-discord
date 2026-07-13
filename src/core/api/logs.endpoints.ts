@@ -22,13 +22,13 @@ export function createLogsEndpoints({ logs }: LogsEndpointDependencies): APIEndp
     {
       module: 'platform',
       method: 'GET',
-      path: '/logs',
-      auth: 'authenticated',
+      path: '/guilds/:guildId/logs',
+      auth: 'guild_admin',
       query: logsQuerySchema,
       metadata: { operationId: 'getLogs', tags: ['logs'] },
       handler: async (request) => {
         const query = request.query as z.infer<typeof logsQuerySchema> | undefined;
-        return ok(logs.query({
+        return ok(logs.queryGuild(request.params?.['guildId'] ?? '', {
           limit: query?.limit,
           cursor: query?.cursor,
           search: query?.search,

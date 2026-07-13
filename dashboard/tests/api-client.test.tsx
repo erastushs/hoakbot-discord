@@ -78,6 +78,14 @@ describe('APIClient', () => {
     }));
   });
 
+  it('encodes guild-scoped log REST and stream URLs', async () => {
+    const fetcher = vi.fn(async () => jsonResponse({ success: true, data: { logs: [], total: 0 } }));
+    const client = new APIClient({ baseUrl: '/api/v1', fetcher: fetcher as unknown as typeof fetch });
+    await client.getLogs('guild/a', { limit: 1, levels: ['ERROR'] });
+    expect(fetcher).toHaveBeenCalledWith('/api/v1/guilds/guild%2Fa/logs?limit=1&level=ERROR', expect.objectContaining({ method: 'GET' }));
+    expect(client.logsStreamUrl('guild/a')).toBe('/api/v1/guilds/guild%2Fa/logs/stream');
+  });
+
   it('centralizes API errors', async () => {
     const fetcher = vi.fn(async () =>
       jsonResponse({ success: false, error: { code: 'FORBIDDEN', message: 'No access' } }, false, 403),

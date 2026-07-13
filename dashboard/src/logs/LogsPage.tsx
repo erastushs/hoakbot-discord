@@ -4,6 +4,7 @@ import { AlertTriangle, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
 import type { APIClient } from '../api/client.js';
 import { Button, Card, Skeleton } from '../components/index.js';
 import type { DashboardLogEntry, DashboardLogLevel } from '../contracts.js';
+import { useGuild } from '../guilds/GuildContext.js';
 
 const LEVELS: DashboardLogLevel[] = ['INFO', 'WARN', 'ERROR', 'DEBUG'];
 const MODULES = ['Voice', 'Welcome', 'Goodbye', 'Logging', 'Moderation', 'Shrine', 'Security', 'Dashboard', 'API', 'Database', 'Scheduler'];
@@ -19,6 +20,9 @@ interface LogsPageProps {
 }
 
 export function LogsPage({ api }: LogsPageProps) {
+  const { currentGuild } = useGuild();
+  const guildId = currentGuild?.id;
+  const generation = useRef(0);
   const [logs, setLogs] = useState<DashboardLogEntry[]>([]);
   const [bufferedLogs, setBufferedLogs] = useState<DashboardLogEntry[]>([]);
   const [selectedLog, setSelectedLog] = useState<DashboardLogEntry | undefined>();
@@ -48,39 +52,54 @@ export function LogsPage({ api }: LogsPageProps) {
   }), [loadLimit, search, selectedLevels, selectedModules, timeFilter]);
 
   const loadLogs = useCallback(async (cursor?: string) => {
+    if (!guildId) return;
+    const requestGeneration = generation.current;
     setStatus((current) => cursor ? current : 'loading');
     setError(undefined);
     try {
-      const response = await api.getLogs({ ...query, cursor });
+      const response = await api.getLogs(guildId, { ...query, cursor });
+      if (requestGeneration !== generation.current) return;
       setLogs((current) => boundedLogs(cursor ? [...current, ...response.logs] : response.logs));
       setNextCursor(response.nextCursor);
       setStatus('ready');
     } catch (loadError) {
+      if (requestGeneration !== generation.current) return;
       setError(loadError instanceof Error ? loadError.message : 'Logs could not be loaded.');
       setStatus('error');
     }
-  }, [api, query]);
+  }, [api, guildId, query]);
 
   useEffect(() => {
+    generation.current += 1;
+    setLogs([]);
+    setBufferedLogs([]);
+    setSelectedLog(undefined);
+    setNextCursor(undefined);
+    setConnection('idle');
     void loadLogs();
-  }, [loadLogs]);
+  }, [guildId, loadLogs]);
 
   useEffect(() => {
-    if (!liveMode) {
+    if (!liveMode || !guildId) {
       setConnection('idle');
       return;
     }
 
+    const streamGeneration = generation.current;
     let eventSource: EventSource | undefined;
     let reconnectTimer: number | undefined;
     let closed = false;
 
     const connect = () => {
       setConnection('connecting');
-      eventSource = new EventSource(api.logsStreamUrl(), { withCredentials: true });
-      eventSource.addEventListener('open', () => setConnection('connected'));
+      eventSource = new EventSource(api.logsStreamUrl(guildId), { withCredentials: true });
+      eventSource.addEventListener('open', () => {
+        if (streamGeneration === generation.current) setConnection('connected');
+      });
       eventSource.addEventListener('log', (event) => {
+        if (streamGeneration !== generation.current) return;
         const entry = JSON.parse((event as MessageEvent).data) as DashboardLogEntry;
+        if (entry.guildId !== guildId) return;
         if (!matchesFilters(entry, search, selectedLevels, selectedModules, timeFilter)) return;
         if (paused) {
           setBufferedLogs((current) => boundedLogs([entry, ...current]));
@@ -104,7 +123,7 @@ export function LogsPage({ api }: LogsPageProps) {
       eventSource?.close();
       if (reconnectTimer) window.clearTimeout(reconnectTimer);
     };
-  }, [api, liveMode, paused, search, selectedLevels, selectedModules, timeFilter]);
+  }, [api, guildId, liveMode, paused, search, selectedLevels, selectedModules, timeFilter]);
 
   useEffect(() => {
     if (!paused && bufferedLogs.length > 0) {

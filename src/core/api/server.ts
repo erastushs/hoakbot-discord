@@ -3,10 +3,11 @@ import { Buffer } from 'node:buffer';
 import { URL } from 'node:url';
 
 import type { ILogger } from '../logger/logger.service.js';
-import type { ISessionProvider, SessionConfig, SessionRecord } from '../auth/index.js';
+import type { IAuthorizationProvider, ISessionProvider, SessionConfig, SessionRecord } from '../auth/index.js';
 import type { DashboardLogEntry, LogsService } from '../logs/logs.service.js';
 import type { APIRouter } from './router.js';
 import type { DashboardStateEvents } from './dashboard-state.events.js';
+import { authorizeGuildRequest } from './authorization.middleware.js';
 import { applySecurityHeaders } from './security-headers.middleware.js';
 import { readCookie } from './session-auth.middleware.js';
 import type { APIHttpMethod, APIRequest, APIResponse } from './types.js';
@@ -36,6 +37,7 @@ export interface APILogsStreamOptions {
   readonly logs: LogsService;
   readonly sessionProvider: ISessionProvider;
   readonly sessionConfig: SessionConfig;
+  readonly authorizationProvider: IAuthorizationProvider;
 }
 
 export interface APICorsOptions {
@@ -88,7 +90,7 @@ export function createAPIHttpServer({ port, router, logger, cors, logsStream, da
   };
 }
 
-async function handleLogsStream(
+export async function handleLogsStream(
   request: IncomingMessage,
   response: ServerResponse,
   stream: APILogsStreamOptions | undefined,
@@ -98,18 +100,25 @@ async function handleLogsStream(
   }
 
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
-  if (url.pathname !== stream.path) {
-    return false;
-  }
+  const escapedPath = stream.path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = new RegExp(`^${escapedPath.replace(':guildId', '([^/]+)')}$`).exec(url.pathname);
+  if (!match) return false;
+  const guildId = decodeURIComponent(match[1] ?? '');
 
   const sessionId = readCookie(toHeaders(request)['cookie'], stream.sessionConfig.cookieName);
-  const session = sessionId ? await stream.sessionProvider.getSession(sessionId) : undefined;
+  const provider = stream.sessionProvider as ISessionProvider & { getSessionRecord?(id: string): Promise<SessionRecord | undefined> };
+  const session = sessionId ? await provider.getSessionRecord?.(sessionId) : undefined;
   if (!session) {
     sendJSON(response, {
       success: false,
       status: 401,
       error: { code: 'AUTH_REQUIRED', message: 'Authentication required' },
     });
+    return true;
+  }
+  const denied = await authorizeGuildRequest(stream.authorizationProvider, session, guildId);
+  if (denied) {
+    sendJSON(response, denied);
     return true;
   }
 
@@ -122,11 +131,24 @@ async function handleLogsStream(
   response.write(': connected\n\n');
 
   const heartbeat = setInterval(() => response.write(': heartbeat\n\n'), 25_000);
-  const unsubscribe = stream.logs.subscribe((entry) => writeSSE(response, entry));
-  request.on('close', () => {
+  const unsubscribe = stream.logs.subscribeGuild(guildId, (entry) => writeSSE(response, entry));
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
     clearInterval(heartbeat);
     unsubscribe();
-  });
+    request.off('close', cleanup);
+    request.off('error', cleanup);
+    response.off('close', cleanup);
+    response.off('error', cleanup);
+    response.off('finish', cleanup);
+  };
+  request.once('close', cleanup);
+  request.once('error', cleanup);
+  response.once('close', cleanup);
+  response.once('error', cleanup);
+  response.once('finish', cleanup);
 
   return true;
 }

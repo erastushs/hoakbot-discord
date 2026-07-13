@@ -391,10 +391,11 @@ try {
         }
       : undefined,
     logsStream: {
-      path: '/api/v1/logs/stream',
+      path: '/api/v1/guilds/:guildId/logs/stream',
       logs: logsService,
       sessionProvider,
       sessionConfig,
+      authorizationProvider,
     },
     cors: {
       nodeEnv: appConfig.env.nodeEnv,

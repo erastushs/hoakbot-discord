@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Standardized safe Discord content truncation and mention escaping and recorded the approved Phase 01 surface inventory, presentation matrix, and golden regression map.
 
 ### Security
+- Fixed cross-guild dashboard form isolation by discarding stale dirty state whenever the active module or loaded settings values change, with guild-switch and save regression coverage.
 - Verified dashboard accessibility presentation and existing authenticated, authorized, guild-isolated, CSRF, CORS, rate-limit, audit, and WebSocket security regressions.
 
 ## [2.0.0] — 2025-07-03

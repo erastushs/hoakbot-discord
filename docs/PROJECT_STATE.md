@@ -10,7 +10,7 @@
 
 ## Current Phase
 
-Phase 10 — Plugin SDK remains complete with canonical public contracts, a versioned prerelease SDK, generator and template, test harness exports, example plugin, static validation and inspection, bounded preflight, package checks, documentation, and release policy. Phase 07 — Events is now complete. No Phase 07 or Phase 10 commit has been created; commits remain pending authorization.
+Hardening Phase 1 — Cross-guild dashboard state isolation is complete. Module forms now reset loaded values, dirty state, validation, and save state on module or value revision, preventing stale values from one guild from being submitted to another. Phase 07 and Phase 10 remain complete and uncommitted pending authorization.
 
 ## Completed Phases
 
@@ -28,15 +28,15 @@ Phase 10 — Plugin SDK remains complete with canonical public contracts, a vers
 
 ## Current Objective
 
-Preserve the completed Phase 07 declarative event contract and completed Phase 08–10 platform behavior. Do not promote the SDK/CLI prerelease without separate authorization and complete release gates.
+Preserve the completed cross-guild dashboard isolation fix and all completed plugin-platform behavior. Do not begin Hardening Phase 2 or promote the SDK/CLI prerelease without separate authorization and complete release gates.
 
 ## Known Issues
 
-None recorded for Phase 01.
+The Engineering Audit Review's cross-guild dashboard state-isolation finding is resolved. Remaining audit release blockers are recorded below.
 
 ## Blockers
 
-None recorded. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
+The remaining Engineering Audit Review release blockers are guild-scoped log authorization, transactional versioned configuration writes, the Phase 10 SDK acceptance failure, SDK harness capability enforcement, high-severity dependency vulnerabilities, reversible plugin factory loading, and honest release gates. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
 
 ## Pending TODO
 
@@ -55,7 +55,7 @@ None recorded. Human approval remains required for scope changes, contract/ADR c
 
 ## Next Recommended Task
 
-Review and authorize the pending Phase 07 and Phase 10 commits separately; execute Node 22/24 release-matrix jobs before any SDK/CLI prerelease promotion.
+Define and authorize Hardening Phase 2 — guild-scoped log authorization. Do not begin it as part of Hardening Phase 1.
 
 ## Relevant ADRs
 
@@ -72,4 +72,4 @@ Phase 02 implements ADR-011 core behavior without changing later-phase contracts
 
 ## Files Recently Changed
 
-Phase 07 added typed declarative events, validated inventory and generated catalog integration, deterministic dependency/priority ordering, lifecycle-safe source adapters, compatibility aliases, payload/failure diagnostics, migrated built-ins, and legacy rollback. Completed Phase 08–10 behavior remains intact. The required pipeline passed on locally available Node 26; Node 22/24 remain declared executable matrix entries unavailable locally. No Phase 07 or Phase 10 commit has been created.
+Hardening Phase 1 updated the shared dashboard module form and its unit/integration regressions so guild, module, and loaded-value revisions discard stale dirty state before saving. Build, typecheck, 735 tests, and lint completed successfully on Node 26; lint reports one pre-existing `no-explicit-any` warning in `src/plugin-core/contracts.ts`. The Engineering Audit Review and changelog were updated. No commit was created.

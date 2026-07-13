@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button, Card, EmptyState, Input, Section, SectionHeader, Select, Switch, Textarea } from '../components/index.js';
 import type { DashboardSettingGroup, ModuleManifest, SettingMetadata } from '../contracts.js';
@@ -30,14 +30,18 @@ export function SharedModulePage({ manifest, onSave, onSetEnabled, settings, val
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [toggleStatus, setToggleStatus] = useState<'idle' | 'saving' | 'error'>('idle');
   const [toggleError, setToggleError] = useState<string>();
+  const formRevision = useMemo(() => JSON.stringify([manifest.id, settingsFingerprint, defaultValues]), [defaultValues, manifest.id, settingsFingerprint]);
+  const previousFormRevision = useRef(formRevision);
 
   useEffect(() => {
+    if (previousFormRevision.current === formRevision) return;
+    previousFormRevision.current = formRevision;
     setValues(defaultValues);
     setDirtyKeys(new Set());
     setSaveStatus('idle');
     setError(undefined);
     setValidationErrors({});
-  }, [settingsFingerprint]);
+  }, [defaultValues, formRevision]);
 
   async function save() {
     if (!onSave || dirtyKeys.size === 0) {

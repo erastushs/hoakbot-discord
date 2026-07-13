@@ -40,14 +40,14 @@ function jsonResponse<T>(body: APIResponse<T>, ok = true, status = 200): Respons
   } as Response;
 }
 
-function meResponse() {
+function meResponse(guilds = [{ id: 'guild-1', name: 'Guild One' }]) {
   return jsonResponse({
     success: true,
     data: {
       authenticationState: 'authenticated',
       user: { id: 'user-1', username: 'admin', displayName: 'Admin' },
-      guilds: [{ id: 'guild-1', name: 'Guild One' }],
-      selectedGuild: { id: 'guild-1', name: 'Guild One' },
+      guilds,
+      selectedGuild: guilds[0],
     },
   });
 }
@@ -137,6 +137,49 @@ describe('App backend integration', () => {
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': 'csrf-token' },
       body: JSON.stringify({ settings: { 'generic.title': 'Saved title' } }),
     });
+  });
+
+  it('discards dirty settings when switching guilds and saves only the active guild values', async () => {
+    const user = userEvent.setup();
+    const guilds = [{ id: 'guild-1', name: 'Guild One' }, { id: 'guild-2', name: 'Guild Two' }];
+    const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith('/me')) return meResponse(guilds);
+      if (url.endsWith('/csrf')) return jsonResponse({ success: true, data: { csrfToken: 'csrf-token' } });
+      if (url.endsWith('/modules/module%3Aalpha/settings')) {
+        return jsonResponse({ success: true, data: { settings: [setting] } });
+      }
+      if (url.endsWith('/guilds/guild-2/settings') && init?.method === 'PATCH') {
+        return jsonResponse({ success: true, data: { guildId: 'guild-2', settings: [{ key: 'generic.title', value: 'Saved Guild Two title' }] } });
+      }
+      if (url.endsWith('/guilds/guild-1/settings')) {
+        return jsonResponse({ success: true, data: { guildId: 'guild-1', settings: [{ key: 'generic.title', value: 'Guild One title' }] } });
+      }
+      if (url.endsWith('/guilds/guild-2/settings')) {
+        return jsonResponse({ success: true, data: { guildId: 'guild-2', settings: [{ key: 'generic.title', value: 'Guild Two title' }] } });
+      }
+      return jsonResponse({ success: true, data: { modules: [manifest] } });
+    });
+    vi.stubGlobal('fetch', fetcher);
+    window.history.pushState({}, '', '/modules/module%3Aalpha');
+
+    render(<App />);
+
+    const title = await screen.findByRole('textbox', { name: /Title/ });
+    expect(title).toHaveValue('Guild One title');
+    await user.clear(title);
+    await user.type(title, 'Unsaved Guild One title');
+    await user.selectOptions(screen.getByLabelText('Current guild'), 'guild-2');
+
+    await waitFor(() => expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('Guild Two title'));
+    await user.clear(screen.getByRole('textbox', { name: /Title/ }));
+    await user.type(screen.getByRole('textbox', { name: /Title/ }), 'Saved Guild Two title');
+    await user.click(screen.getAllByRole('button', { name: 'Save changes' }).at(-1)!);
+
+    await waitFor(() => expect(fetcher).toHaveBeenCalledWith('/api/v1/guilds/guild-2/settings', expect.objectContaining({
+      method: 'PATCH',
+      body: JSON.stringify({ settings: { 'generic.title': 'Saved Guild Two title' } }),
+    })));
+    expect(fetcher).not.toHaveBeenCalledWith('/api/v1/guilds/guild-1/settings', expect.objectContaining({ method: 'PATCH' }));
   });
 
   it('shows the exact fetch exception for a network failure', async () => {

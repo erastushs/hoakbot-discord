@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { ModuleManifest } from '../src/contracts.js';
 import { ModulePage } from '../src/modules/ModulePage.js';
@@ -90,6 +90,37 @@ describe('ModulePage', () => {
     render(<ModulePage manifest={{ ...generalManifest, enabled: true }} onSetEnabled={async () => { throw new Error('State conflict'); }} settings={[]} />);
     await user.click(screen.getByRole('button', { name: 'Disable' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('State conflict');
+  });
+
+  it('discards dirty values when the loaded module values change', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn(async () => undefined);
+    const { rerender } = render(
+      <ModulePage
+        manifest={generalManifest}
+        onSave={onSave}
+        settings={settings}
+        values={{ 'generic.title': 'Guild One title' }}
+      />,
+    );
+
+    const title = screen.getByRole('textbox', { name: /Title/ });
+    await user.clear(title);
+    await user.type(title, 'Unsaved Guild One title');
+    expect(screen.getAllByRole('button', { name: 'Save changes' }).some((button) => !button.hasAttribute('disabled'))).toBe(true);
+
+    rerender(
+      <ModulePage
+        manifest={generalManifest}
+        onSave={onSave}
+        settings={settings}
+        values={{ 'generic.title': 'Guild Two title' }}
+      />,
+    );
+
+    expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('Guild Two title');
+    expect(screen.getAllByRole('button', { name: 'Save changes' }).every((button) => button.hasAttribute('disabled'))).toBe(true);
+    expect(onSave).not.toHaveBeenCalled();
   });
 
   it('renders non-General modules with the shared module template', () => {

@@ -21,6 +21,9 @@ export class MemberLogService {
     private readonly eventBus: IEventBus,
   ) {}
 
+  activate(): void { this.active = true; }
+  handleDiscordMemberUpdate(oldMember: GuildMember | PartialGuildMember, newMember: GuildMember): void { if (this.active) void this.handleMemberUpdate(oldMember as GuildMember, newMember); }
+
   register(): void {
     if (this.active) return;
     this.active = true;

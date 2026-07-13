@@ -124,6 +124,7 @@ const featureFlagsSchema = z.object({
   pluginConfigOwnership: z.boolean().default(false),
   pluginConfigHotReload: z.boolean().default(false),
   pluginConfigRollback: z.boolean().default(false),
+  pluginEventsRollback: z.boolean().default(false),
   generalPlugin: z.boolean().default(false),
   loggingPlugin: z.boolean().default(false),
   welcomePlugin: z.boolean().default(false),

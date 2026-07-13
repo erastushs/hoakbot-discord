@@ -1,4 +1,6 @@
 import { TOKENS } from '../../core/container/tokens.js';
+import { defineEvent } from '@hoakbot/plugin-contracts';
+import { z } from 'zod';
 import type { Subscription } from '../../core/event-bus/types.js';
 import { pluginInternalCapabilities, type PluginFactory } from '../../plugin-core/index.js';
 import { ImageService } from '../../shared/image/image.service.js';
@@ -27,10 +29,13 @@ export const createShrinePlugin: PluginFactory = (context) => {
   let generation = 0;
   let readySubscription: Subscription | undefined;
   let scheduler: ShrinePollingScheduler | undefined;
+  const declarative = context[pluginInternalCapabilities]?.eventMode === 'declarative';
+  const events = [defineEvent({ id: 'bot.ready', owner: shrineManifest.id, source: 'internal', payload: z.unknown(), handler: () => scheduler?.start() })];
   const module: IModule = Object.freeze({ name: 'shrine', version: '3.2.1', enabled: true, manifest: shrineManifest, register: () => undefined });
   return {
     id: shrineManifest.id,
     module,
+    events,
     start: () => {
       if (started) return;
       const run = ++generation;
@@ -42,7 +47,7 @@ export const createShrinePlugin: PluginFactory = (context) => {
       const network = new ShrineClient({ baseUrl: config.bot.shrine.nightLightBaseUrl, retries: 2, retryDelayMs: 1000, timeoutMs: 10000 }, logger);
       const service = new ShrineService(container.resolve(TOKENS.DiscordClient), configuration, network, new ShrineCardRenderer(new ImageService(logger)), logger, container.resolve(TOKENS.MetricsService), eventBus);
       scheduler = new ShrinePollingScheduler(service, logger, config.bot.shrine);
-      readySubscription = eventBus.subscribe('bot.ready', () => { if (run === generation) scheduler?.start(); });
+      if (!declarative) readySubscription = eventBus.subscribe('bot.ready', () => { if (run === generation) scheduler?.start(); });
       started = true;
       if (container.resolve(TOKENS.DiscordClient).isReady()) scheduler.start();
       container.resolve(TOKENS.MetricsService).counter('plugin_migration_shrine_cutover').increment();

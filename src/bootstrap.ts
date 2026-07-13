@@ -46,6 +46,8 @@ import { ModuleLoader } from './modules/module-loader.js';
 import { ManifestRegistry } from './modules/manifest-registry.js';
 import { ModuleRegistry } from './modules/module-registry.js';
 import { EventBus } from './core/event-bus/event-bus.js';
+import { EventCoordinator, EventRegistry } from './core/event-bus/event-registry.js';
+import { ConfigurationEventSourceAdapter, DiscordEventSourceAdapter, EventSourceCoordinator, InternalEventSourceAdapter } from './core/event-bus/source-adapters.js';
 import { SupabaseAdapter } from './core/database/supabase.adapter.js';
 import { HealthService } from './core/health/health.service.js';
 import { MetricsService } from './core/metrics/metrics.service.js';
@@ -66,7 +68,7 @@ import {
   PluginMigrationRunner,
   PluginRegistry,
   PostgresMigrationStore,
-  type PluginLifecycleCoordinator,
+  PluginLifecycleCoordinator,
 } from './plugin-core/index.js';
 import { ConfigurationHotReloadCoordinator } from './core/config/hot-reload.coordinator.js';
 import type { IModule } from './modules/module.interface.js';
@@ -247,14 +249,40 @@ try {
   container.registerSingleton(TOKENS.SessionProvider, () => sessionProvider);
   container.registerSingleton(TOKENS.AuthorizationProvider, () => authorizationProvider);
 
+  const { eventCatalog, eventCatalogHash } = await import('./generated/event-catalog.js');
+  const { validateGeneratedEventCatalog } = await import('./core/event-bus/validate-catalog.js');
+  validateGeneratedEventCatalog(eventCatalog, eventCatalogHash);
+  const eventRegistry = new EventRegistry();
+  const eventCoordinator = new EventCoordinator(eventRegistry, (diagnostic) => {
+    metricsService.counter(`plugin_event_${diagnostic.code.replaceAll('.', '_')}_total`).increment();
+    logger.warn({ event: diagnostic.event, owner: diagnostic.owner, error: diagnostic.error }, 'Declarative event diagnostic');
+  });
+  const sourceCoordinator = new EventSourceCoordinator({
+    internal: new InternalEventSourceAdapter(eventBus, eventCoordinator),
+    configuration: new ConfigurationEventSourceAdapter(eventBus, eventCoordinator),
+    discord: new DiscordEventSourceAdapter(client, eventCoordinator, {
+      'discord.interaction_create': 'interactionCreate',
+      'discord.message_create': 'messageCreate',
+      'discord.guild_member_add': 'guildMemberAdd',
+      'discord.guild_member_remove': 'guildMemberRemove',
+      'discord.voice_state_update': 'voiceStateUpdate',
+      'discord.guild_member_update': 'guildMemberUpdate',
+      'discord.message_delete': 'messageDelete',
+      'discord.message_update': 'messageUpdate',
+      'discord.message_bulk_delete': 'messageDeleteBulk',
+    }),
+  });
   let pluginLifecycle: PluginLifecycleCoordinator | undefined;
   let builtInModules: IModule[];
   const pluginRegistry = new PluginRegistry();
   const migrationRunner = new PluginMigrationRunner(new PostgresMigrationStore(databaseAdapter.getClient()));
+  const eventLifecycle = new PluginLifecycleCoordinator({ events: eventCoordinator, sources: sourceCoordinator, eventMode: appConfig.featureFlags.pluginEventsRollback ? 'legacy' : 'declarative' });
   if (appConfig.featureFlags.pluginCoreBootstrap) {
     const started = await loadAndStartPluginCatalog(generatedBuiltInPluginCatalog, pluginRegistry, {
       container,
       migrationRunner,
+      lifecycle: eventLifecycle,
+      eventMode: appConfig.featureFlags.pluginEventsRollback ? 'legacy' : 'declarative',
       services: pluginContextServices,
     });
     pluginLifecycle = started.lifecycle;
@@ -264,7 +292,7 @@ try {
     const started = await loadAndStartPluginCatalog(
       createBuiltInRuntimeCatalog(appConfig.featureFlags),
       pluginRegistry,
-      { container, migrationRunner, services: pluginContextServices },
+      { container, migrationRunner, lifecycle: eventLifecycle, eventMode: appConfig.featureFlags.pluginEventsRollback ? 'legacy' : 'declarative', services: pluginContextServices },
     );
     pluginLifecycle = started.lifecycle;
     builtInModules = projectPluginModules(started.snapshot);

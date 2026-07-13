@@ -30,6 +30,11 @@ export class MessageLogService {
     private readonly eventBus: IEventBus,
   ) {}
 
+  activate(): void { this.active = true; }
+  handleDiscordDelete(message: Message | PartialMessage): void { if (this.active) void this.handleMessageDelete(message); }
+  handleDiscordUpdate(oldMessage: Message | PartialMessage, newMessage: Message | PartialMessage): void { if (this.active) void this.handleMessageEdit(oldMessage, newMessage); }
+  handleDiscordBulkDelete(messages: unknown): void { if (this.active) void this.handleMessageBulkDelete(messages as BulkMessageCollection); }
+
   register(): void {
     if (this.active) return;
     this.active = true;

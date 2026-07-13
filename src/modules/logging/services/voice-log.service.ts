@@ -36,6 +36,15 @@ export class VoiceLogService {
     private readonly metrics: IMetrics,
   ) {}
 
+  activate(): void { this.active = true; }
+  handleDiscordVoiceState(oldState: VoiceState, newState: VoiceState): void {
+    if (!this.active) return;
+    const member = newState.member ?? oldState.member;
+    if (!member || member.user.bot || oldState.channelId === newState.channelId) return;
+    const action: VoiceLogAction = !oldState.channelId ? 'join' : !newState.channelId ? 'leave' : 'move';
+    void this.handleVoiceEvent({ action, userId: member.id, username: member.user.username, displayName: member.displayName, avatarURL: member.user.displayAvatarURL(), oldChannelName: oldState.channel?.name ?? null, newChannelName: newState.channel?.name ?? null, guildId: newState.guild.id });
+  }
+
   register(): void {
     if (this.active) return;
     this.active = true;

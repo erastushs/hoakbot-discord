@@ -1,4 +1,6 @@
 import { TOKENS } from '../../core/container/tokens.js';
+import { defineEvent } from '@hoakbot/plugin-contracts';
+import type { GuildMember, PartialGuildMember } from 'discord.js';
 import { pluginInternalCapabilities, type PluginFactory } from '../../plugin-core/index.js';
 import { ImageService } from '../../shared/image/image.service.js';
 import { TemplateService } from '../../shared/template/template.service.js';
@@ -22,10 +24,13 @@ export const createGoodbyePlugin: PluginFactory = (context) => {
   if (!container) throw new Error('Goodbye plugin requires the built-in capability bridge.');
   let started = false;
   let service: GoodbyeService | undefined;
+  const declarative = context[pluginInternalCapabilities]?.eventMode === 'declarative';
+  const events = [defineEvent({ id: 'discord.guild_member_remove', owner: goodbyeManifest.id, source: 'discord', payload: { parse: (value) => value as GuildMember | PartialGuildMember }, handler: (member) => service?.handleMemberLeave(member) })];
   const module: IModule = Object.freeze({ name: 'goodbye', version: '1.0.0', enabled: true, manifest: goodbyeManifest, register: () => undefined });
   return {
     id: goodbyeManifest.id,
     module,
+    events,
     start: () => {
       if (started) return;
       const configurationService = container.resolve(TOKENS.ConfigurationService);
@@ -34,7 +39,8 @@ export const createGoodbyePlugin: PluginFactory = (context) => {
       settings?.register('goodbye', createGoodbyeSettings(config));
       const logger = container.resolve(TOKENS.Logger);
       service = new GoodbyeService(container.resolve(TOKENS.DiscordClient), configurationService, new ImageService(logger), new TemplateService(), logger, container.resolve(TOKENS.MetricsService));
-      service.register();
+      if (!declarative) service.register();
+      else service.activate();
       started = true;
       container.resolve(TOKENS.MetricsService).counter('plugin_migration_goodbye_cutover').increment();
       logger.info({ enabled: config.bot.goodbye.enabled }, 'Goodbye plugin registered');

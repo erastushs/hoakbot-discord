@@ -7,7 +7,7 @@
 4.0.0: compatibility-first plugin platform with migrated built-ins and a supported plugin SDK.
 
 ## Current Phase
-Phase 10 — Plugin SDK is complete with canonical public contracts, a versioned prerelease SDK, safe generator and reusable template, exported test harness, example plugin, static CLI workflows, documentation, compatibility guidance, and release policy. Phase 07 remains explicitly skipped and incomplete.
+Phase 10 — Plugin SDK remains complete with canonical public contracts, a versioned prerelease SDK, safe generator and reusable template, exported test harness, example plugin, static CLI workflows, documentation, compatibility guidance, and release policy. Phase 07 — Events is also complete.
 
 ## Completed Milestones
 - Existing module manifests, registries, dependency graph, and loader
@@ -20,9 +20,10 @@ Phase 10 — Plugin SDK is complete with canonical public contracts, a versioned
 - Phase 04 delivered metadata-driven dashboard projections, dependency-aware state controls, persistence, audit, and authenticated live updates
 - Phase 05 delivered plugin-owned validated settings, deterministic hot reload, migration checksums, diagnostics, and rollback controls
 - Phase 06 delivered typed command definitions, generated deterministic discovery, canonical registry projections, permission and autocomplete metadata, explicit deployment drift detection, and compatibility rollback adapters
+- Phase 07 delivered typed declarative event definitions, validated inventory and generated discovery, deterministic dependency/priority ordering, lifecycle-safe source adapters, compatibility aliases, observable failure handling, migrated built-ins, and legacy rollback
 - Phase 08 delivered validated asset ownership, deterministic generated build assets, safe namespaced resolution, bounded caching and disposal, migrated consumers, and compatibility rollback
 - Phase 09 delivered a reusable plugin test harness, shared typed fixtures, integration/parity and security coverage, measured coverage regression gates, upgrade/rollback evidence, and release checks
-- Phase 10 delivered canonical SDK contracts, reviewed harness exports, safe generation and templates, an example plugin, static CLI workflows, contributor documentation, compatibility guidance, and prerelease policy; Phase 07 remains skipped and incomplete
+- Phase 10 delivered canonical SDK contracts, reviewed harness exports, safe generation and templates, an example plugin, static CLI workflows, contributor documentation, compatibility guidance, and prerelease policy
 
 ## Upcoming Phases
 1. UX Polish

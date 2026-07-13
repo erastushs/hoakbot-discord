@@ -23,10 +23,12 @@ export const createModerationPlugin: PluginFactory = (context) => {
   if (!container) throw new Error('Moderation plugin requires the built-in capability bridge.');
   let started = false;
   let commands: CommandDescriptor[] = [];
+  const publications = ['moderation.action', 'moderation.warningIssued'] as const;
   const module: IModule = Object.freeze({ name: 'moderation', version: '1.0.0', enabled: true, manifest: moderationManifest, register: () => undefined });
   return {
     id: moderationManifest.id,
     module,
+    publications,
     start: () => {
       if (started) return;
       const registry = container.resolve(TOKENS.CommandRegistry);

@@ -1,5 +1,10 @@
 import type { PluginDiagnostic, RegisteredPlugin } from './contracts.js';
 import { diagnostic, PluginCoreError } from './errors.js';
+import type { EventCoordinator } from '../core/event-bus/event-registry.js';
+import type { EventSourceCoordinator } from '../core/event-bus/source-adapters.js';
+
+export type PluginEventMode = 'declarative' | 'legacy';
+export interface PluginLifecycleOptions { readonly timeoutMs?: number; readonly events?: EventCoordinator; readonly sources?: EventSourceCoordinator; readonly eventMode?: PluginEventMode }
 
 export interface LifecycleResult {
   readonly ready: boolean;
@@ -11,16 +16,39 @@ export class PluginLifecycleCoordinator {
   private started: RegisteredPlugin[] = [];
   private stopped = false;
   private diagnostics: PluginDiagnostic[] = [];
+  private readonly eventStops = new Map<string, () => void>();
+  private readonly timeoutMs: number;
+  private readonly events?: EventCoordinator;
+  private readonly sources?: EventSourceCoordinator;
+  private readonly eventMode: PluginEventMode;
 
-  constructor(private readonly timeoutMs = 10_000) {}
+  constructor(options: number | PluginLifecycleOptions = 10_000) {
+    this.timeoutMs = typeof options === 'number' ? options : options.timeoutMs ?? 10_000;
+    this.events = typeof options === 'number' ? undefined : options.events;
+    this.sources = typeof options === 'number' ? undefined : options.sources;
+    this.eventMode = typeof options === 'number' ? 'legacy' : options.eventMode ?? 'legacy';
+  }
+
 
   async start(plugins: readonly RegisteredPlugin[], requirements: ReadonlyMap<string, 'required' | 'optional'> = new Map(), signal?: AbortSignal): Promise<LifecycleResult> {
     if (this.started.length) throw new PluginCoreError([diagnostic('LIFECYCLE_FAILURE', 'Lifecycle is already started.')]);
     this.stopped = false;
     this.diagnostics = [];
+    const available = new Set(plugins.map(({ manifest }) => manifest.id));
+    for (const plugin of plugins) for (const definition of plugin.instance.events ?? []) for (const dependency of definition.dependencies) if (!available.has(dependency)) throw new PluginCoreError([diagnostic('MISSING_DEPENDENCY', `Event "${definition.id}" requires missing "${dependency}".`, { pluginId: plugin.manifest.id })]);
     for (const plugin of plugins) {
       try {
-        await this.invoke(plugin, 'start', signal);
+        let installation: ReturnType<EventCoordinator['install']> | undefined;
+        let stopSources: (() => void) | undefined;
+        if (this.eventMode === 'declarative' && plugin.instance.events?.length) {
+          if (!this.events) throw new Error('Declarative event coordinator is unavailable.');
+          if (plugin.instance.events.some(({ owner }) => owner !== plugin.manifest.id)) throw new Error(`Plugin "${plugin.manifest.id}" declared event ownership for another owner.`);
+          installation = this.events.install(plugin.instance.events);
+          try { stopSources = this.sources?.start(plugin.instance.events); } catch (error) { installation.stop(); throw error; }
+        }
+        try { await this.invoke(plugin, 'start', signal); } catch (error) { stopSources?.(); installation?.stop(); throw error; }
+        installation?.activate();
+        if (installation) this.eventStops.set(plugin.manifest.id, () => { stopSources?.(); installation.stop(); });
         this.started.push(plugin);
       } catch (error) {
         this.diagnostics.push(this.toDiagnostic(plugin.manifest.id, error));
@@ -37,6 +65,8 @@ export class PluginLifecycleCoordinator {
     if (!this.stopped) {
       this.stopped = true;
       for (const plugin of [...this.started].reverse()) {
+        this.eventStops.get(plugin.manifest.id)?.();
+        this.eventStops.delete(plugin.manifest.id);
         try { await this.invoke(plugin, 'stop', signal); } catch (error) { this.diagnostics.push(this.toDiagnostic(plugin.manifest.id, error)); }
       }
       this.started = [];

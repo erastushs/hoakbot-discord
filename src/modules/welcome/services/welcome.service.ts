@@ -36,6 +36,8 @@ export class WelcomeService {
     private readonly metrics: IMetrics,
   ) {}
 
+  activate(): void { this.active = true; }
+
   register(): void {
     if (this.active) return;
     this.active = true;

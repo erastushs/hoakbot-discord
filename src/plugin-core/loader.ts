@@ -13,6 +13,7 @@ export interface PluginLoadOptions {
   readonly signal?: AbortSignal;
   readonly container?: IContainer;
   readonly migrationRunner?: PluginMigrationRunner;
+  readonly eventMode?: 'declarative' | 'legacy';
 }
 
 export interface StartedPluginCatalog {
@@ -35,7 +36,7 @@ export async function loadPluginCatalog(catalog: readonly PluginCatalogEntry[], 
   const stage = registry.stage();
   try {
     for (const entry of ordered) {
-      const instance = await entry.factory(createPluginContext(entry.manifest, options.services ?? unavailableServices, { signal: options.signal, container: options.container }));
+      const instance = await entry.factory(createPluginContext(entry.manifest, options.services ?? unavailableServices, { signal: options.signal, container: options.container, eventMode: options.eventMode }));
       if (instance.id !== entry.manifest.id) throw new Error(`Factory for "${entry.manifest.id}" returned "${instance.id}".`);
       stage.register(Object.freeze({ manifest: entry.manifest, instance }) satisfies RegisteredPlugin);
     }

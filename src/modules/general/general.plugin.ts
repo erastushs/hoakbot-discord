@@ -1,4 +1,5 @@
 import { Events, type Interaction, type Message } from 'discord.js';
+import { defineEvent } from '@hoakbot/plugin-contracts';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,23 +50,33 @@ export const createGeneralPlugin: PluginFactory = (context) => {
   const messageHandler = (message: Message) => {
     if (!message.author.bot) router.handlePrefix(message).catch((error) => logger.error({ error }, 'Prefix command handler failed'));
   };
+  const declarative = context[pluginInternalCapabilities]?.eventMode === 'declarative';
+  const events = [
+    defineEvent({ id: 'discord.interaction_create', owner: generalManifest.id, source: 'discord', payload: { parse: (value) => value as Interaction }, handler: interactionHandler }),
+    defineEvent({ id: 'discord.message_create', owner: generalManifest.id, source: 'discord', payload: { parse: (value) => value as Message }, handler: messageHandler }),
+  ];
   const module: IModule = Object.freeze({ name: 'general', version: '1.0.0', enabled: true, manifest: generalManifest, register: () => undefined });
   return {
     id: generalManifest.id,
     module,
+    events,
     start: () => {
       if (started) return;
       settings?.register('general', createGeneralSettings(config));
       registry.registerMany(commands);
-      client.on(Events.InteractionCreate, interactionHandler);
-      client.on(Events.MessageCreate, messageHandler);
+      if (!declarative) {
+        client.on(Events.InteractionCreate, interactionHandler);
+        client.on(Events.MessageCreate, messageHandler);
+      }
       started = true;
       metrics.counter('plugin_migration_general_cutover').increment();
     },
     stop: () => {
       if (!started) return;
-      client.off(Events.InteractionCreate, interactionHandler);
-      client.off(Events.MessageCreate, messageHandler);
+      if (!declarative) {
+        client.off(Events.InteractionCreate, interactionHandler);
+        client.off(Events.MessageCreate, messageHandler);
+      }
       for (const descriptor of commands) registry.unregister(descriptor.metadata.name);
       settings?.unregister('general');
       started = false;

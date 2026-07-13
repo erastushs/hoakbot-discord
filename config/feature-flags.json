@@ -1,9 +1,10 @@
 {
-  "pluginCoreBootstrap": false,
+  "pluginCoreBootstrap": true,
   "pluginDashboard": false,
   "pluginConfigOwnership": false,
   "pluginConfigHotReload": false,
   "pluginConfigRollback": false,
+  "pluginEventsRollback": false,
   "generalPlugin": false,
   "loggingPlugin": false,
   "welcomePlugin": false,

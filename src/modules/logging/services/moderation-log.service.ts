@@ -68,6 +68,8 @@ export class ModerationLogService {
     private readonly eventBus: IEventBus,
   ) {}
 
+  activate(): void { this.active = true; }
+
   register(): void {
     if (this.active) return;
     this.active = true;

@@ -132,6 +132,7 @@ export interface FeatureFlagsConfig {
   pluginConfigOwnership: boolean;
   pluginConfigHotReload: boolean;
   pluginConfigRollback: boolean;
+  pluginEventsRollback: boolean;
   generalPlugin: boolean;
   loggingPlugin: boolean;
   welcomePlugin: boolean;

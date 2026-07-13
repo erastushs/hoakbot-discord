@@ -1,4 +1,4 @@
-import type { PluginManifest as CanonicalPluginManifest } from '@hoakbot/plugin-contracts';
+import type { EventDefinition, PluginManifest as CanonicalPluginManifest } from '@hoakbot/plugin-contracts';
 import type { PluginContext } from './context.js';
 import type { PluginMigration } from './migrations.js';
 
@@ -11,6 +11,8 @@ export interface PluginInstance {
   readonly id: string;
   readonly start?: (signal: AbortSignal) => void | Promise<void>;
   readonly stop?: (signal: AbortSignal) => void | Promise<void>;
+  readonly events?: readonly EventDefinition<any>[];
+  readonly publications?: readonly string[];
 }
 export type PluginRequirement = 'required' | 'optional';
 export interface PluginCatalogEntry {

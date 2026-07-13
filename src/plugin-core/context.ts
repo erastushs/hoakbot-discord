@@ -22,7 +22,7 @@ export const pluginInternalCapabilities = Symbol('pluginInternalCapabilities');
 
 export interface PluginContext {
   readonly ownerId: string;
-  readonly [pluginInternalCapabilities]?: Readonly<{ container: IContainer }>;
+  readonly [pluginInternalCapabilities]?: Readonly<{ container: IContainer; eventMode: 'declarative' | 'legacy' }>;
   readonly guildId?: string;
   readonly signal: AbortSignal;
   readonly logger: PluginLogger;
@@ -34,7 +34,7 @@ export interface PluginContext {
   readonly lifecycle: { onConfigChange(handler: HotReloadHandler): void | (() => void) };
 }
 
-export function createPluginContext(manifest: PluginManifest, services: PluginContextServices, options: { guildId?: string; signal?: AbortSignal; container?: IContainer } = {}): PluginContext {
+export function createPluginContext(manifest: PluginManifest, services: PluginContextServices, options: { guildId?: string; signal?: AbortSignal; container?: IContainer; eventMode?: 'declarative' | 'legacy' } = {}): PluginContext {
   const ownerId = manifest.id;
   const signal = options.signal ?? new AbortController().signal;
   const requireDeclaration = (kind: 'settings' | 'events' | 'commands' | 'routes' | 'permissions', value: string): void => {
@@ -43,7 +43,7 @@ export function createPluginContext(manifest: PluginManifest, services: PluginCo
   const scope = options.guildId === undefined ? { ownerId } : { ownerId, guildId: options.guildId };
   return Object.freeze({
     ...scope,
-    ...(options.container ? { [pluginInternalCapabilities]: Object.freeze({ container: options.container }) } : {}),
+    ...(options.container ? { [pluginInternalCapabilities]: Object.freeze({ container: options.container, eventMode: options.eventMode ?? 'legacy' }) } : {}),
     signal,
     logger: Object.freeze({
       log: (level: string, message: string, metadata?: unknown) => services.logger(scope).log(level, message, serializeMetadata(metadata)),

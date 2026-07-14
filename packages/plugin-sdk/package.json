@@ -17,7 +17,7 @@
     "test": "node --test dist/**/*.test.js",
     "prepack": "npm run build"
   },
-  "dependencies": { "@hoakbot/plugin-contracts": "4.0.0-next.0", "zod": "^3.25.76" },
+  "dependencies": { "@hoakbot/plugin-contracts": "file:../plugin-contracts", "zod": "^3.25.76" },
   "devDependencies": { "@types/node": "^26.1.0", "typescript": "^6.0.3" },
   "license": "MIT"
 }

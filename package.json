@@ -8,7 +8,7 @@
   ],
   "main": "dist/bootstrap.js",
   "scripts": {
-    "build": "npm run build --workspaces --if-present && tsc && npm run generate:assets && npm run dashboard:build",
+    "build": "tsc -b --force packages/plugin-contracts packages/plugin-sdk packages/example-plugin && tsc && npm run generate:assets && npm run dashboard:build",
     "plugin-sdk:build": "npm run build --workspace @hoakbot/plugin-contracts && npm run build --workspace @hoakbot/plugin-sdk",
     "plugin-sdk:matrix": "tsx scripts/check-plugin-sdk-node-matrix.ts",
     "plugin-sdk:typecheck": "npm run build --workspace @hoakbot/plugin-contracts && npm run typecheck --workspace @hoakbot/plugin-sdk",
@@ -18,7 +18,7 @@
     "generate:assets": "tsx scripts/generate-assets.ts",
     "dev": "tsx watch src/bootstrap.ts",
     "start": "node dist/bootstrap.js",
-    "lint": "eslint src/ dashboard/ packages/*/src/ packages/example-plugin/test/ scripts/ tests/",
+    "lint": "eslint src/ dashboard/ packages/*/src/**/*.ts packages/example-plugin/test/ scripts/ tests/",
     "lint:fix": "eslint src/ dashboard/ --fix",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",

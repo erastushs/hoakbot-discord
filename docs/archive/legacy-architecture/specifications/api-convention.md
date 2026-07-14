@@ -1,4 +1,6 @@
-# API Convention Specification
+# Historical API Convention Specification
+
+> Archived by Release Phase R3. Current API compatibility is governed by `docs/ARCHITECTURE.md` and `docs/adr/ADR-013-Dashboard.md`.
 
 ## Base URL
 

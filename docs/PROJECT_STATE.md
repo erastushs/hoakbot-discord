@@ -10,7 +10,7 @@
 
 ## Current Phase
 
-Release Phase R1 — Production dependency hardening is complete locally for the v4 baseline promotion candidate. The production audit has zero high or critical vulnerabilities after removing the obsolete `@discordjs/opus` native dependency chain and pinning transitive `undici` to a fixed release. Full local validation has passed on the available Node runtime; the hosted Node 22/24/26 release matrix still must run before prerelease promotion.
+Release Phase R3 — Documentation consistency is complete for the v4 baseline promotion candidate. Active architecture, roadmap, ADR, evidence, review, feature-flag, and transport documentation now share one authority chain; obsolete v3 architecture and roadmap material is archived as historical. Hosted Node 22/24/26 validation from Release Phase R2 remains the release gate before prerelease promotion.
 
 ## Completed Phases
 
@@ -28,15 +28,15 @@ Release Phase R1 — Production dependency hardening is complete locally for the
 
 ## Current Objective
 
-Preserve the completed H1–H6 hardening fixes, R1 dependency hardening, and all completed plugin-platform behavior. Do not expand dependency work beyond production vulnerability remediation without separate authorization.
+Preserve the completed H1–H6 hardening fixes, R1 dependency hardening, R3 documentation consistency, and all completed plugin-platform behavior. Do not change application architecture or expand dependency work without separate authorization.
 
 ## Known Issues
 
-The Engineering Audit Review's dashboard isolation, transactional configuration, guild logging, reversible plugin loading, unrestricted built-in DI, release-pipeline, and high-severity production dependency findings are resolved. Remaining audit release blockers are recorded below.
+The Engineering Audit Review's dashboard isolation, transactional configuration, guild logging, reversible plugin loading, unrestricted built-in DI, release-pipeline, high-severity production dependency, and documentation-consistency findings are resolved in repository state. Remaining audit release blockers are recorded below.
 
 ## Blockers
 
-The H5 SDK, H6 release-pipeline, and R1 production dependency blockers are resolved in repository configuration. The remaining blocker is successful execution of the Node 22/24/26 matrix in GitHub Actions before prerelease promotion. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
+The H5 SDK, H6 release-pipeline, R1 production dependency, and R3 documentation-consistency blockers are resolved in repository state. The remaining blocker is successful execution of the Node 22/24/26 matrix in GitHub Actions before prerelease promotion. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
 
 ## Pending TODO
 
@@ -51,12 +51,13 @@ The H5 SDK, H6 release-pipeline, and R1 production dependency blockers are resol
 - Keep Phase 09 harness, shared-fixture, integration/parity, failure/cleanup, security, coverage, upgrade/rollback, and release-evidence checks green.
 - Keep Phase 10 schema parity, exact exports, generator, harness, CLI, packaging, documentation, and consumer checks green.
 - Keep `npm audit --omit=dev --audit-level=high` green; any future production advisory must be fixed, mitigated, or documented as an accepted risk with exploitability, runtime exposure, upstream status, and review recommendation.
+- Keep documentation authority centralized in `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`, `docs/PROJECT_STATE.md`, and ADR-011 through ADR-014; archived legacy documents are historical only.
 - Execute the declared Node 22/24/26 release matrix in GitHub Actions before prerelease promotion; only Node 26 was available for local validation.
 - Create Phase 07 and Phase 10 commits only with explicit authorization.
 
 ## Next Recommended Task
 
-Run the hosted Node 22/24/26 release matrix and review the R1 dependency-hardening diff for prerelease promotion readiness.
+Run the hosted Node 22/24/26 release matrix and review the R1/R3 promotion-readiness diffs before prerelease promotion.
 
 ## Relevant ADRs
 
@@ -65,7 +66,7 @@ Run the hosted Node 22/24/26 release matrix and review the R1 dependency-hardeni
 - [ADR-013 — Dashboard](adr/ADR-013-Dashboard.md)
 - [ADR-014 — Command Discovery](adr/ADR-014-Command-Discovery.md)
 
-Phase 02 implements ADR-011 core behavior without changing later-phase contracts.
+ADR-011 through ADR-014 are the active v4 ADRs. Legacy ADR-001 through ADR-010 and legacy specifications are archived under [Documentation Archive](archive/README.md) and are historical references only.
 
 ## Relevant Phase Documents
 
@@ -73,4 +74,4 @@ Phase 02 implements ADR-011 core behavior without changing later-phase contracts
 
 ## Files Recently Changed
 
-Release Phase R1 removed `@discordjs/opus` and its vulnerable native install helper chain from production dependencies while retaining `opusscript` for Discord voice encoding, and added an `undici` override to keep Discord REST/WebSocket clients on `>=6.27.0`. `npm audit --omit=dev --audit-level=high` reports zero vulnerabilities. No accepted production dependency risks remain. No commit was created.
+Release Phase R3 archived the obsolete root v3 architecture and roadmap plus legacy ADR-001 through ADR-010/specification documents, reconciled dashboard live-update documentation on authenticated SSE rather than WebSocket, superseded conflicting ADR references, corrected stale evidence/checklist/roadmap claims, and documented the checked-in feature-flag baseline. No source-code changes were made. No commit was created.

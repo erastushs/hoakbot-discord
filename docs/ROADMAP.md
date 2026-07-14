@@ -7,7 +7,7 @@
 4.0.0: compatibility-first plugin platform with migrated built-ins and a supported plugin SDK.
 
 ## Current Phase
-Phase 10 — Plugin SDK remains complete with canonical public contracts, a versioned prerelease SDK, safe generator and reusable template, exported test harness, example plugin, static CLI workflows, documentation, compatibility guidance, and release policy. Phase 07 — Events is also complete.
+Release Phase R3 — Documentation consistency is complete for baseline promotion. The active authority chain is [ARCHITECTURE](ARCHITECTURE.md), this roadmap, [PROJECT_STATE](PROJECT_STATE.md), and ADR-011 through ADR-014. Legacy v3 architecture, roadmap, ADR-001 through ADR-010, and old specifications are archived under [Documentation Archive](archive/README.md) as historical references only.
 
 ## Completed Milestones
 - Existing module manifests, registries, dependency graph, and loader
@@ -24,18 +24,21 @@ Phase 10 — Plugin SDK remains complete with canonical public contracts, a vers
 - Phase 08 delivered validated asset ownership, deterministic generated build assets, safe namespaced resolution, bounded caching and disposal, migrated consumers, and compatibility rollback
 - Phase 09 delivered a reusable plugin test harness, shared typed fixtures, integration/parity and security coverage, measured coverage regression gates, upgrade/rollback evidence, and release checks
 - Phase 10 delivered canonical SDK contracts, reviewed harness exports, safe generation and templates, an example plugin, static CLI workflows, contributor documentation, compatibility guidance, and prerelease policy
+- Release Phase R1 resolved production dependency vulnerabilities with a clean high-severity production audit and no accepted risks
+- Release Phase R3 removed baseline-blocking documentation conflicts, reconciled dashboard live updates on SSE, superseded conflicting ADRs, archived obsolete architecture/roadmap material, and documented feature-flag state
 
-## Upcoming Phases
-1. UX Polish
-2. Plugin Core
-3. Plugin Migration
-4. Dashboard
-5. Config
-6. Commands
-7. Events
-8. Assets
-9. Testing
-10. Plugin SDK
+## Remaining Promotion Gates
+
+1. Hosted GitHub Actions release matrix must pass on Node 22, Node 24, and Node 26.
+2. Human approval is required before prerelease publication, deployment, or commits.
+
+## Feature-Flag Baseline
+
+- `pluginCoreBootstrap`: enabled in the checked-in baseline as the selected v4 core path.
+- `pluginDashboard`, `pluginConfigOwnership`, `pluginConfigHotReload`, `pluginConfigRollback`, `pluginEventsRollback`, and per-built-in plugin flags: disabled unless an operator intentionally selects those rollout or rollback paths.
+- `modules.*`: compatibility-facing module availability controls that remain valid through 4.0.
+
+Feature flags are rollout and rollback controls. Disabled later-phase flags do not invalidate completed phase implementation or evidence.
 
 ## Success Metrics
 - All seven built-ins migrate with unchanged behavior and exact order: General -> Logging -> Welcome -> Goodbye -> Voice -> Moderation -> Shrine
@@ -43,3 +46,4 @@ Phase 10 — Plugin SDK remains complete with canonical public contracts, a vers
 - Plugin startup, dependencies, commands, events, and assets are deterministic and validated
 - Full build, lint, typecheck, security, migration, dashboard, and test suites pass
 - Contributors can create, validate, test, package, and document a plugin independently
+- Documentation references one active baseline authority chain, with obsolete v3 material archived as historical

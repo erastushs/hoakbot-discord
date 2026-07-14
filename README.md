@@ -451,4 +451,4 @@ curl http://127.0.0.1:3000/api/v1/system/health
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for completed milestones and upcoming deployment/validation work.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for completed milestones and upcoming deployment/validation work. The previous root roadmap is archived under `docs/archive/legacy-roadmap/` as historical context.

@@ -35,4 +35,4 @@ Critical branch floors are plugin core 73.29%, lifecycle 80.76%, config 60.90%, 
 - [x] 3.2.3 upgrade and rollback evidence preserves commands, data, API, dashboard behavior, and plugin order.
 - [x] No flaky release blocker was observed in the required validation run.
 
-No commit has been created. Phase 07 remains explicitly skipped and incomplete, and Phase 10 has not started.
+No Phase 09-only commit has been created. Later phases are complete in repository state: Phase 07 evidence is recorded in [PHASE-07-EVIDENCE](PHASE-07-EVIDENCE.md), and Phase 10 evidence is recorded in [PHASE-10-EVIDENCE](PHASE-10-EVIDENCE.md). Hosted Node 22/24/26 release-matrix execution remains the promotion gate tracked in [PROJECT_STATE](../PROJECT_STATE.md).

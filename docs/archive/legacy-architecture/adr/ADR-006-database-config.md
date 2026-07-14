@@ -1,4 +1,6 @@
-# ADR-006: Database Configuration Schema
+# Historical ADR-006: Database Configuration Schema
+
+> Archived by Release Phase R3. Current transactional configuration behavior is governed by `docs/adr/ADR-012-Configuration.md`.
 
 **Status:** Accepted  
 **Applies to:** v3.0 Milestone 3  

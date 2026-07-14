@@ -1,4 +1,6 @@
-# ADR-001: Module Manifest Schema
+# Historical ADR-001: Module Manifest Schema
+
+> Archived by Release Phase R3. Superseded for v4 baseline decisions by `docs/adr/ADR-011-Plugin-System.md`, with compatibility details retained in current phase documents.
 
 **Status:** Accepted  
 **Applies to:** v3.0 Milestone 2  

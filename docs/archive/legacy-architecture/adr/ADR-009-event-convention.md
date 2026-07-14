@@ -1,4 +1,6 @@
-# ADR-009: Event Naming Convention & Ownership
+# Historical ADR-009: Event Naming Convention & Ownership
+
+> Archived by Release Phase R3. Current event ownership and lifecycle behavior is governed by `docs/adr/ADR-011-Plugin-System.md` and `docs/phases/PHASE-07-EVENTS.md`.
 
 **Status:** Accepted  
 **Applies to:** v3.0 Milestone 5  

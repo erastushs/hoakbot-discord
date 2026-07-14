@@ -34,7 +34,7 @@ Golden fixtures are executable semantic assertions rather than serialized Discor
 - `tests/unit/shrine-service.test.ts` and deterministic canvas tests for render/fallback behavior.
 - `tests/unit/moderation-log-service.test.ts`, `message-log-service.test.ts`, `member-log-service.test.ts`, and `voice-log-service.test.ts` for audit identity, event context, timestamps, truncation, channel/config and send failures.
 - `dashboard/tests` for loading/empty/error/populated presentation, labels, validation, keyboard-accessible controls, and protected rendering.
-- Security suites under `tests/unit` and `tests/integration` for OAuth sessions, CSRF, authorization, guild isolation, CORS, rate limits, audit behavior, envelopes, and authenticated WebSockets.
+- Security suites under `tests/unit` and `tests/integration` for OAuth sessions, CSRF, authorization, guild isolation, CORS, rate limits, audit behavior, envelopes, and authenticated SSE live updates.
 
 Snapshots are intentionally semantic: tests assert stable user-visible fields and invariants while excluding nondeterministic timestamps and Discord.js serialization details. Canvas bytes are asserted only where deterministic; otherwise tests assert attachment/fallback contracts.
 

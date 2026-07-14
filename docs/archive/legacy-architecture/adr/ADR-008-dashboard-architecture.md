@@ -1,4 +1,6 @@
-# ADR-008: Dashboard Architecture
+# Historical ADR-008: Dashboard Architecture
+
+> Archived by Release Phase R3. Superseded for v4 baseline decisions by `docs/adr/ADR-013-Dashboard.md`. Runtime live updates use authenticated SSE, not a dashboard WebSocket endpoint.
 
 **Status:** Accepted  
 **Applies to:** v3.0 Milestone 7  

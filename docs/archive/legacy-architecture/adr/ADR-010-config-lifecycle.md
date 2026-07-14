@@ -1,4 +1,6 @@
-# ADR-010: Configuration Change Lifecycle
+# Historical ADR-010: Configuration Change Lifecycle
+
+> Archived by Release Phase R3. Current configuration lifecycle behavior is governed by `docs/adr/ADR-012-Configuration.md`. Dashboard live updates use authenticated SSE.
 
 **Status:** Accepted  
 **Applies to:** v3.0 Milestone 8  

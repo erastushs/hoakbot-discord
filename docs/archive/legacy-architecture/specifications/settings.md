@@ -1,4 +1,6 @@
-# Settings Metadata Specification
+# Historical Settings Metadata Specification
+
+> Archived by Release Phase R3. Current settings behavior is governed by `docs/adr/ADR-012-Configuration.md` and `docs/phases/PHASE-05-CONFIG.md`.
 
 ## Overview
 

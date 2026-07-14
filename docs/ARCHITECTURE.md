@@ -25,7 +25,13 @@ Plugins statically declare commands. One canonical registry validates ownership 
 Plugins declare published and subscribed events with owned schemas. Core infrastructure events remain core-owned. Event names are namespaced, compatibility aliases are explicit, subscriptions are removed during shutdown, and payload boundaries are validated.
 
 ## Dashboard Architecture
-The React dashboard remains an API-only client with no bot/plugin imports. It renders generic metadata-driven plugin/module pages without name-specific branches. OAuth sessions, CSRF, authorization, guild isolation, CORS, rate limiting, security audit, response envelopes, and authenticated WebSockets remain unchanged.
+The React dashboard remains an API-only client with no bot/plugin imports. It renders generic metadata-driven plugin/module pages without name-specific branches. OAuth sessions, CSRF, authorization, guild isolation, CORS, rate limiting, security audit, response envelopes, and authenticated guild-scoped SSE live updates are preserved. Dashboard live transports use `EventSource`; there is no normative dashboard WebSocket endpoint for v4 baseline promotion.
+
+## Documentation Authority
+Current baseline authority is this architecture document, [ROADMAP](ROADMAP.md), [PROJECT_STATE](PROJECT_STATE.md), and accepted ADRs under [docs/adr](adr/ADR-011-Plugin-System.md). The pre-v4 root architecture, root roadmap, ADR-001 through ADR-010, and legacy specifications are archived under [archive](archive/README.md) and are historical references only.
+
+## Feature Flags
+Feature flags remain compatibility and rollback controls, not proof that a phase is incomplete. The checked-in baseline enables `pluginCoreBootstrap` and keeps `pluginDashboard`, `pluginConfigOwnership`, `pluginConfigHotReload`, `pluginConfigRollback`, `pluginEventsRollback`, and per-built-in plugin cutover flags disabled unless an operator intentionally selects those paths. Module flags under `modules` remain the compatibility-facing runtime controls.
 
 ## Configuration Strategy
 Retain cache -> database -> manifest-default reads and validated, transactional, audited writes with cache invalidation and events. Existing setting keys and tables remain valid. Plugin settings are namespaced; secrets never enter manifests, logs, or dashboard metadata.

@@ -1,7 +1,7 @@
 # ADR-014 — Command Discovery
 
 ## Status
-Accepted for the 4.0.0 implementation plan.
+Accepted for the 4.0.0 implementation plan. Supersedes command-discovery and permission-visibility portions of legacy ADR-001 Module Manifest and ADR-004 Permission Model.
 
 ## Context
 Runtime routing, Discord deployment scripts, command listing, Help, permission visibility, and autocomplete can drift if they discover commands independently. Plugins require explicit ownership and collision detection without arbitrary runtime scanning.
@@ -18,4 +18,4 @@ One source of truth improves reproducibility and permission consistency; autocom
 Runtime recursive scanning: rejected as implicit and unsuitable for locked packages. Let plugins deploy commands: rejected because credentials, rate limits, collisions, and rollback remain centralized. Keep separate indexes: rejected due to drift. Automatically deploy at startup: rejected because startup should not mutate Discord registration. Omit permission/autocomplete metadata: rejected because runtime and Help would diverge.
 
 ## Related ADRs
-ADR-001 Module Manifest, ADR-004 Permission Model, ADR-011 Plugin System, ADR-012 Configuration, ADR-013 Dashboard.
+ADR-011 Plugin System, ADR-012 Configuration, ADR-013 Dashboard. Legacy ADR-001 and ADR-004 are archived under `docs/archive/legacy-architecture/adr/`.

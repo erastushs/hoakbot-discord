@@ -93,7 +93,7 @@ Complexity and regression risk use **Low / Medium / High / Very High**.
 | Guild changes can retain the previous guild’s form values               | **Critical** |        Low |          Medium | `defaultValues` changes with `initialValues` at `dashboard/src/modules/SharedModulePage.tsx:22-24`, but the reset effect depends only on setting keys at `:34-40`. Guilds with identical setting keys do not trigger reset. `ModulePage` has no guild-specific React key at `dashboard/src/App.tsx:302`. |
 | Logs REST and SSE are not guild-scoped                                  |     **High** |       High |            High | **Resolved by H3.** Canonical REST and SSE routes require `:guildId`, reuse centralized membership and permission authorization, and filter strict guild equality before pagination or serialization. Platform-only entries are excluded and legacy unscoped routes expose no data. |
 | Persisted enable/disable state does not control runtime plugin behavior |     **High** |  Very High |            High | Endpoint persistence and audit occur at `src/core/api/module-config.endpoints.ts:174-215`, but no lifecycle, command, event, or scheduler registration is changed. Runtime availability remains based on globally loaded modules.                                                                        |
-| Documented WebSocket architecture differs from SSE implementation       |   **Medium** |     Medium |          Medium | WebSockets are required by `docs/ARCHITECTURE.md:28` and Phase 04; runtime advertises SSE at `src/core/api/module-config.endpoints.ts:100-108` and uses `EventSource` at `dashboard/src/App.tsx:240-248`.                                                                                                |
+| Documented WebSocket architecture differs from SSE implementation       | **Resolved R3** |     Medium |          Medium | Active architecture, ADR-013, Phase 04, coding rules, checklist, and changelog now identify authenticated guild-scoped SSE/EventSource as the dashboard live-update transport.                                                                                                |
 | Required browser E2E coverage is absent                                 |   **Medium** |     Medium |             Low | Phase 04 requests E2E/responsive/live-update tests, but no Playwright/Cypress dependency or E2E script exists in `package.json`.                                                                                                                                                                         |
 | Dashboard/server API DTOs are duplicated manually                       |      **Low** |     Medium |          Medium | Server contracts live in `src/core/api/contracts.ts`; dashboard duplicates transport types in `dashboard/src/contracts.ts:1-192`.                                                                                                                                                                        |
 
@@ -330,13 +330,13 @@ All ADR files remain marked accepted. Supersession and precedence are not suffic
 | Phase 09 evidence is stale                                                         |   **High** |        Low |             Low | `docs/phases/PHASE-09-EVIDENCE.md:38`.                                                             |
 | Completed phases do not identify their canonical commits                           |   **High** |        Low |             Low | Only Phase 00 complies with `docs/COMMIT_RULES.md:36`.                                             |
 | Orchestrator still identifies Phase 01 as current                                  |   **High** |        Low |             Low | `docs/ORCHESTRATOR.md:15`.                                                                         |
-| Roadmap calls completed phases “Upcoming”                                          | **Medium** |        Low |             Low | `docs/ROADMAP.md:28-38`.                                                                           |
-| Review checklist is a pre-checked Phase 07 record, not a reusable checklist        | **Medium** |        Low |             Low | `docs/REVIEW_CHECKLIST.md:5-25`.                                                                   |
+| Roadmap calls completed phases “Upcoming”                                          | **Resolved R3** |        Low |             Low | `docs/ROADMAP.md` now records completed milestones and remaining promotion gates instead of listing completed phases as upcoming. |
+| Review checklist is a pre-checked Phase 07 record, not a reusable checklist        | **Resolved R3** |        Low |             Low | `docs/REVIEW_CHECKLIST.md` is now an unchecked reusable baseline review checklist. |
 | Changelog omits historical releases and phase content                              | **Medium** |        Low |             Low | Released sections jump from Unreleased to 2.0.0 despite 3.2.x tags.                                |
 | Multi-package version policy is undocumented                                       | **Medium** |     Medium |          Medium | Root 3.2.3, dashboard 3.0.0, SDK/contracts 4.0.0-next.0, example 0.1.0.                            |
-| Root and `docs/` architecture/roadmap sources conflict                             |   **High** |     Medium |          Medium | Both remain present and normative-looking.                                                         |
-| WebSocket documentation conflicts with SSE runtime                                 |   **High** |     Medium |          Medium | Runtime uses `EventSource`; architecture and checklist claim WebSockets.                           |
-| Checked-in feature flags differ from “disabled-by-default/current behavior” claims |   **High** |     Medium |            High | `config/feature-flags.json` enables plugin core while many later platform flags remain disabled.   |
+| Root and `docs/` architecture/roadmap sources conflict                             | **Resolved R3** |     Medium |          Medium | Obsolete root v3 architecture/roadmap and legacy architecture docs are archived under `docs/archive/`; active authority is `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`, `docs/PROJECT_STATE.md`, and ADR-011 through ADR-014. |
+| WebSocket documentation conflicts with SSE runtime                                 | **Resolved R3** |     Medium |          Medium | Dashboard live-update documentation now names authenticated guild-scoped SSE/EventSource as the v4 baseline transport. |
+| Checked-in feature flags differ from “disabled-by-default/current behavior” claims | **Resolved R3** |     Medium |            High | `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`, and `docs/PROJECT_STATE.md` document `pluginCoreBootstrap` as enabled and later rollout/rollback flags as disabled operator controls. |
 | Release workflow omits Phase 09/10 gates                                           | **Resolved H6** |     Medium |          Medium | Tagged candidates run coverage/parity, SDK acceptance, API drift, and workspace validation on Node 22/24/26 before publication. |
 | Root lint/build do not cover the full workspace                                    | **Resolved H6** |     Medium |          Medium | Root build, lint, and typecheck now include maintained workspace package sources and scripts.                                  |
 | Stale milestone placeholders remain                                                |    **Low** |        Low |             Low | Example: `src/core/auth/providers/oauth-state.service.ts:14-19`.                                   |
@@ -485,7 +485,7 @@ No vulnerabilities are classified as **Mitigated** or **Accepted Risk** in R1 be
    Complexity: High; regression risk: High.
 
 8. **Generate parity and upgrade/rollback evidence from executable runs rather than static approval JSON.**  
-   Complexity: High; regression risk: High.
+    Complexity: High; regression risk: High.
 
 9. **Correct global command deployment projection.**  
    Complexity: Medium; regression risk: High.
@@ -493,8 +493,8 @@ No vulnerabilities are classified as **Mitigated** or **Accepted Risk** in R1 be
 10. **Perform full build-time asset validation and add Voice playback/cleanup parity tests.**  
     Complexity: Medium/High; regression risk: High.
 
-11. **Correct project-state, phase-evidence, architecture, roadmap, and commit-history claims before declaring a baseline.**  
-    Complexity: Low/Medium; regression risk: Low.
+11. **Correct project-state, phase-evidence, architecture, roadmap, and commit-history claims before declaring a baseline — resolved R3 for documentation consistency.**
+    R3 reconciled active documentation authority, archived obsolete v3 architecture/roadmap material, corrected stale phase-evidence references, and replaced the Phase 07-specific review checklist. Commit-history claims remain limited to “no cleanly scoped phase commit” where applicable.
 
 ---
 
@@ -519,7 +519,7 @@ No vulnerabilities are classified as **Mitigated** or **Accepted Risk** in R1 be
 17. Add dedicated migration acceptance coverage for all seven built-ins.
 18. Generate or share dashboard transport contracts.
 19. Document or replace the SDK’s restricted custom semver grammar.
-20. Reconcile WebSocket documentation with the actual SSE transport.
+20. Reconcile WebSocket documentation with the actual SSE transport — resolved R3.
 
 ---
 
@@ -545,6 +545,6 @@ No vulnerabilities are classified as **Mitigated** or **Accepted Risk** in R1 be
 3. Consolidate duplicate dashboard setting renderers and normalization logic.
 4. Raise aggregate coverage floors incrementally after per-file gates are operational.
 5. Standardize phase evidence format and canonical completion-commit recording.
-6. Mark obsolete root architecture/roadmap documents as historical or archive them under an explicit supersession policy.
+6. Mark obsolete root architecture/roadmap documents as historical or archive them under an explicit supersession policy — resolved R3.
 7. Improve font lifecycle documentation where global canvas unregistering is unavailable.
 8. Add more exhaustive command/event catalog permutation tests.

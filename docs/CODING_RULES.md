@@ -75,7 +75,7 @@ These rules implement [ARCHITECTURE](ARCHITECTURE.md), accepted [ADRs](adr/ADR-0
 ## Dashboard
 
 - Keep the React dashboard API-only and metadata-driven; never import bot/plugin runtime code or add plugin-ID conditionals.
-- Preserve OAuth sessions, CSRF, authorization, guild isolation, CORS, rate limiting, audit, response envelopes, and authenticated WebSockets.
+- Preserve OAuth sessions, CSRF, authorization, guild isolation, CORS, rate limiting, audit, response envelopes, and authenticated guild-scoped SSE live updates.
 - Render untrusted content as text; prohibit raw HTML and plugin-provided executable UI.
 - Enforce authorization server-side; hidden client controls are not access control.
 

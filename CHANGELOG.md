@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added the Phase 02 plugin core: static validated catalogs, dependency and collision diagnostics, atomic immutable registry snapshots, scoped capability context, secret-free metadata serialization, deterministic lifecycle coordination, and legacy module projections.
-- Added a disabled-by-default `pluginCoreBootstrap` flag providing reversible old/new bootstrap selection.
+- Added the `pluginCoreBootstrap` rollout flag, now enabled in the checked-in baseline, providing reversible old/new bootstrap selection.
 - Added Phase 03 plugin factories, parity fixtures, lifecycle cleanup, and independent migration flags for General, Logging, Welcome, Goodbye, Voice, Moderation, and Shrine.
 - Added the Phase 04 metadata-driven dashboard projection, normalized guild module state, generic metadata and state controls, dependency-aware audited enable/disable persistence, authenticated live state updates, and a disabled-by-default `pluginDashboard` rollback flag.
 - Added Phase 05 plugin-owned, schema-validated configuration, deterministic value hot reload with health diagnostics and reconciliation, namespaced checksummed migrations, secret-redacted change delivery, and disabled-by-default ownership/hot-reload flags with an explicit compatibility rollback flag.
@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the `4.0.0-next.0` developer prereleases of `@hoakbot/plugin-contracts` and `@hoakbot/plugin-sdk`, including reviewed ESM contracts, shared schemas and harness exports, a safe plugin generator and template, the `hoak-plugin` create/validate/inspect/preflight/check/pack CLI, an example plugin, and contributor documentation.
 
 ### Changed
+- Reconciled Release Phase R3 documentation for baseline promotion: superseded conflicting legacy ADRs, archived obsolete v3 architecture and roadmap material, documented authenticated SSE as the dashboard live-update transport, corrected stale evidence/checklist references, and recorded the feature-flag baseline.
 - Hardened tagged release candidates with a Node 22/24/26 validation matrix covering workspace-wide build, typecheck, lint, backend/dashboard tests, SDK acceptance, API drift, coverage, parity, and workspace policy checks before publication.
 - Isolated release write permission to the publication job, which depends on successful completion of every matrix gate.
 - Hardened the public plugin SDK harness with declarative event installation, manifest capability enforcement, exactly-once reverse cleanup, and startup rollback matching production behavior.
@@ -33,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scoped dashboard log history and live SSE streams to one server-authorized guild, excluding cross-guild and platform-only entries before pagination or transport and cleaning up reconnect subscriptions safely.
 - Made guild configuration writes atomic and versioned with optimistic concurrency, transactional durable audit records, rollback on failure, post-commit cache and hot-reload updates, and dashboard conflict handling.
 - Fixed cross-guild dashboard form isolation by discarding stale dirty state whenever the active module or loaded settings values change, with guild-switch and save regression coverage.
-- Verified dashboard accessibility presentation and existing authenticated, authorized, guild-isolated, CSRF, CORS, rate-limit, audit, and WebSocket security regressions.
+- Verified dashboard accessibility presentation and existing authenticated, authorized, guild-isolated, CSRF, CORS, rate-limit, audit, and SSE security regressions.
 
 ## [2.0.0] — 2025-07-03
 

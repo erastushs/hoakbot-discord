@@ -1,4 +1,6 @@
-# Migration Strategy Specification
+# Historical Migration Strategy Specification
+
+> Archived by Release Phase R3. Current migration and rollback evidence is governed by `docs/PROJECT_STATE.md` and phase documents under `docs/phases/`.
 
 ## Overview
 

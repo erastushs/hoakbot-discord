@@ -1,4 +1,6 @@
-# Hoak Bot v3.0 Roadmap — Configuration Platform
+# Historical Roadmap: Hoak Bot v3.0 Configuration Platform
+
+> Archived by Release Phase R3. This document describes the pre-v4 module roadmap and is no longer normative for baseline promotion. The current roadmap is `docs/ROADMAP.md`; current phase state is `docs/PROJECT_STATE.md`.
 
 **Version:** 3.0  
 **Status:** Architecture Approved  

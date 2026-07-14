@@ -1,4 +1,6 @@
-# Validation Strategy Specification
+# Historical Validation Strategy Specification
+
+> Archived by Release Phase R3. Current validation behavior is governed by `docs/ARCHITECTURE.md`, current ADRs, and phase documents under `docs/phases/`.
 
 ## Overview
 

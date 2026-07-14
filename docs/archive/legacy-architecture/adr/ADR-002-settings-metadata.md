@@ -1,4 +1,6 @@
-# ADR-002: Settings Metadata & Registry
+# Historical ADR-002: Settings Metadata & Registry
+
+> Archived by Release Phase R3. Superseded for v4 baseline decisions by `docs/adr/ADR-012-Configuration.md` and `docs/adr/ADR-013-Dashboard.md`.
 
 **Status:** Accepted  
 **Applies to:** v3.0 Milestone 2  

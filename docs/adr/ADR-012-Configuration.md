@@ -1,7 +1,7 @@
 # ADR-012 — Configuration
 
 ## Status
-Accepted for the 4.0.0 implementation plan.
+Accepted for the 4.0.0 implementation plan. Supersedes legacy ADR-002 Settings Metadata, ADR-003 Configuration Provider, ADR-006 Database Configuration, and configuration portions of ADR-010 Configuration Lifecycle.
 
 ## Context
 Plugins need owned, validated configuration and runtime value updates while 3.2.3 consumers depend on existing keys, tables, cache/database/default fallback, audit, and guild isolation.
@@ -18,4 +18,4 @@ Configuration remains backward compatible, attributable, and reloadable without 
 Rename module storage immediately: rejected as breaking. Give plugins raw database/config access: rejected for isolation and audit. Roll back committed data when a callback fails: rejected because callbacks are external side effects and distributed rollback is unreliable. Hot reload plugin code: rejected as unsafe and out of scope. Delete data on uninstall: rejected for rollback safety.
 
 ## Related ADRs
-ADR-002 Settings Metadata, ADR-003 Configuration Provider, ADR-006 Database Configuration, ADR-010 Configuration Lifecycle, ADR-011 Plugin System, ADR-013 Dashboard.
+ADR-011 Plugin System, ADR-013 Dashboard. Legacy ADR-002, ADR-003, ADR-006, and ADR-010 are archived under `docs/archive/legacy-architecture/adr/`.

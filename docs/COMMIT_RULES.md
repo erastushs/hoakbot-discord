@@ -35,7 +35,7 @@ Exactly: `feat`, `fix`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `chor
 - **ROADMAP:** update when phase ordering, milestone scope, target outcomes, success metrics, or official current phase changes.
 - **PROJECT_STATE:** update whenever current phase/objective, completed phases, blockers, known issues, TODOs, next task, relevant references, or recently changed files materially change. Phase completion must identify its commit.
 
-Keep these documents consistent with [ARCHITECTURE](ARCHITECTURE.md), the relevant [phase](phases/PHASE-01-UX-POLISH.md), and accepted [ADRs](adr/ADR-011-Plugin-System.md).
+Keep these documents consistent with [ARCHITECTURE](ARCHITECTURE.md), the current phase or release gate in [PROJECT_STATE](PROJECT_STATE.md), and accepted [ADRs](adr/ADR-011-Plugin-System.md).
 
 ## Good Examples
 

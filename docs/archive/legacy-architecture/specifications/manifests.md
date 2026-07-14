@@ -1,4 +1,6 @@
-# Module Manifest Specification
+# Historical Module Manifest Specification
+
+> Archived by Release Phase R3. Current plugin manifest behavior is governed by `docs/adr/ADR-011-Plugin-System.md` and SDK documentation under `docs/plugin-sdk/`.
 
 ## Overview
 

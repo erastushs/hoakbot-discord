@@ -1,4 +1,6 @@
-# Hoak Bot — System Architecture v3
+# Historical Architecture: Hoak Bot System Architecture v3
+
+> Archived by Release Phase R3. This document describes the pre-v4 module architecture and is no longer normative for baseline promotion. The current architecture is `docs/ARCHITECTURE.md`; current ADR authority is `docs/adr/ADR-011-Plugin-System.md` through `docs/adr/ADR-014-Command-Discovery.md`.
 
 **Version:** 3.0 — Configuration Platform  
 **Status:** Architecture Approved  

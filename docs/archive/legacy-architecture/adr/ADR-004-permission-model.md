@@ -1,4 +1,6 @@
-# ADR-004: Permission Model
+# Historical ADR-004: Permission Model
+
+> Archived by Release Phase R3. Current permission compatibility is governed by `docs/ARCHITECTURE.md`, `docs/adr/ADR-013-Dashboard.md`, and `docs/adr/ADR-014-Command-Discovery.md`.
 
 **Status:** Accepted  
 **Applies to:** v3.0 Milestone 5  

@@ -12,7 +12,7 @@ Read in this exact order before changing files:
 2. [ORCHESTRATOR](ORCHESTRATOR.md)
 3. [ARCHITECTURE](ARCHITECTURE.md)
 4. Every ADR relevant to the current work, beginning with [ADR-011](adr/ADR-011-Plugin-System.md), [ADR-012](adr/ADR-012-Configuration.md), [ADR-013](adr/ADR-013-Dashboard.md), and [ADR-014](adr/ADR-014-Command-Discovery.md) as applicable
-5. The current phase document identified by `PROJECT_STATE`, currently [Phase 01](phases/PHASE-01-UX-POLISH.md)
+5. The current phase, release phase, or promotion gate identified by `PROJECT_STATE`; when a dedicated phase document exists, read it before implementation
 
 Then inspect git status/diff, package scripts, affected implementation, neighboring tests, and repository conventions.
 

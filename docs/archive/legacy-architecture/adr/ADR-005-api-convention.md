@@ -1,4 +1,6 @@
-# ADR-005: API Convention & REST Design
+# Historical ADR-005: API Convention & REST Design
+
+> Archived by Release Phase R3. Current API compatibility is governed by `docs/ARCHITECTURE.md` and `docs/adr/ADR-013-Dashboard.md`.
 
 **Status:** Accepted  
 **Applies to:** v3.0 Milestone 6  

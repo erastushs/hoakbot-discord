@@ -18,7 +18,7 @@ Phase 10 implements the approved generator, template, documentation, CLI, stable
 
 ## Validation and Compatibility
 
-SDK API generation/check, SDK typecheck/build/tests, generated and example consumer checks, CLI acceptance tests, and repository validation passed. Node 26 executed locally. Node 22 and 24 are declared executable ESM matrix entries but were unavailable locally; no local execution is claimed for them. CommonJS is not supported.
+SDK API generation/check, SDK typecheck/build/tests, generated and example consumer checks, CLI acceptance tests, and repository validation passed. Local validation executed on the available Node runtime. Node 22, 24, and 26 are declared executable release-matrix entries in the Release workflow; hosted matrix success remains the promotion gate tracked in [PROJECT_STATE](../PROJECT_STATE.md). CommonJS is not supported.
 
 ## Release and Rollback
 

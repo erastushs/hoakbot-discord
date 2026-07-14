@@ -22,7 +22,7 @@
     "lint:fix": "eslint src/ dashboard/ --fix",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
-    "typecheck": "npm run typecheck --workspaces --if-present && npm run check:commands && npm run check:events && tsc --noEmit && tsc -p dashboard/tsconfig.json --noEmit",
+    "typecheck": "tsc -b --force packages/plugin-contracts packages/plugin-sdk packages/example-plugin && npm run check:commands && npm run check:events && tsc --noEmit && tsc -p dashboard/tsconfig.json --noEmit",
     "generate:commands": "tsx scripts/generate-command-catalog.ts",
     "check:commands": "tsx scripts/generate-command-catalog.ts --check",
     "generate:events": "tsx scripts/generate-event-catalog.ts",

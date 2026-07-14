@@ -337,8 +337,8 @@ All ADR files remain marked accepted. Supersession and precedence are not suffic
 | Root and `docs/` architecture/roadmap sources conflict                             |   **High** |     Medium |          Medium | Both remain present and normative-looking.                                                         |
 | WebSocket documentation conflicts with SSE runtime                                 |   **High** |     Medium |          Medium | Runtime uses `EventSource`; architecture and checklist claim WebSockets.                           |
 | Checked-in feature flags differ from “disabled-by-default/current behavior” claims |   **High** |     Medium |            High | `config/feature-flags.json` enables plugin core while many later platform flags remain disabled.   |
-| Release workflow omits Phase 09/10 gates                                           |   **High** |     Medium |          Medium | `.github/workflows/release.yml` omits coverage/parity, SDK checks, API drift, and Node 24/26 jobs. |
-| Root lint/build do not cover the full workspace                                    | **Medium** |     Medium |          Medium | Lint covers `src/ dashboard/`; root build omits SDK/example builds.                                |
+| Release workflow omits Phase 09/10 gates                                           | **Resolved H6** |     Medium |          Medium | Tagged candidates run coverage/parity, SDK acceptance, API drift, and workspace validation on Node 22/24/26 before publication. |
+| Root lint/build do not cover the full workspace                                    | **Resolved H6** |     Medium |          Medium | Root build, lint, and typecheck now include maintained workspace package sources and scripts.                                  |
 | Stale milestone placeholders remain                                                |    **Low** |        Low |             Low | Example: `src/core/auth/providers/oauth-state.service.ts:14-19`.                                   |
 | Coverage baselines are low for security-sensitive code                             | **Medium** |       High |          Medium | Phase 09 evidence records approximately 50–60% aggregate floors.                                   |
 
@@ -441,6 +441,7 @@ The repository should not be accepted as a final 4.0 baseline until the release 
 - **Scope:** Include all release-critical commands and execute supported Node versions before promotion.
 - **Complexity:** Medium.
 - **Regression risk:** Medium.
+- **Disposition:** Resolved in Hardening Phase H6. Tagged release candidates execute the complete quality-gate set on Node 22, 24, and 26. Publication is a separate job that depends on the full matrix and alone receives content-write permission. Workflow regression tests enforce the matrix, command inventory, dependency, and workspace-validation structure. Local Node 26 validation passed; hosted Node 22/24 execution remains required before promotion.
 
 ---
 

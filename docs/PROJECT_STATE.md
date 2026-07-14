@@ -10,7 +10,7 @@
 
 ## Current Phase
 
-Hardening Phase H5 — SDK release-blocker remediation is complete. The public harness now enforces manifest capabilities, installs declarative events, and matches production cleanup and rollback semantics. Generated plugins are accepted through clean install, typecheck, build, test, and pack; documentation snippets compile; API drift is part of the SDK gate. Dependency and release-pipeline work remain out of scope.
+Hardening Phase H6 — Release pipeline hardening is complete. Every tagged release candidate is validated on Node 22, 24, and 26 with workspace-wide build, typecheck, lint, backend/dashboard tests, SDK acceptance, API drift, coverage, parity, and workspace policy gates before the publication job can create an artifact. Dependency upgrades remain out of scope.
 
 ## Completed Phases
 
@@ -28,7 +28,7 @@ Hardening Phase H5 — SDK release-blocker remediation is complete. The public h
 
 ## Current Objective
 
-Preserve the completed H1–H5 hardening fixes and all completed plugin-platform behavior. Do not begin dependency or release-pipeline work without separate authorization.
+Preserve the completed H1–H6 hardening fixes and all completed plugin-platform behavior. Do not begin dependency upgrades without separate authorization.
 
 ## Known Issues
 
@@ -36,7 +36,7 @@ The Engineering Audit Review's dashboard isolation, transactional configuration,
 
 ## Blockers
 
-The H5 SDK release blockers are resolved. Remaining blockers are the separately scoped high-severity dependency vulnerabilities, honest release-pipeline gates, and execution of the supported Node 22/24 matrix before prerelease promotion. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
+The H5 SDK and H6 release-pipeline blockers are resolved in repository configuration. Remaining blockers are the separately scoped high-severity dependency vulnerabilities and successful execution of the Node 22/24/26 matrix in GitHub Actions before prerelease promotion. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
 
 ## Pending TODO
 
@@ -50,12 +50,12 @@ The H5 SDK release blockers are resolved. Remaining blockers are the separately 
 - Keep Phase 08 manifest, generator, containment, integrity, ownership, cache/disposal, build integration, consumer compatibility, and rollback regressions green.
 - Keep Phase 09 harness, shared-fixture, integration/parity, failure/cleanup, security, coverage, upgrade/rollback, and release-evidence checks green.
 - Keep Phase 10 schema parity, exact exports, generator, harness, CLI, packaging, documentation, and consumer checks green.
-- Execute the declared Node 22 and 24 matrix before prerelease promotion; only Node 26 was available and executed locally.
+- Execute the declared Node 22/24/26 release matrix in GitHub Actions before prerelease promotion; only Node 26 was available for local validation.
 - Create Phase 07 and Phase 10 commits only with explicit authorization.
 
 ## Next Recommended Task
 
-Define and authorize dependency remediation and release-pipeline hardening separately. Do not continue either as part of H5.
+Define and authorize dependency remediation separately. Do not continue dependency work as part of H6.
 
 ## Relevant ADRs
 
@@ -72,4 +72,4 @@ Phase 02 implements ADR-011 core behavior without changing later-phase contracts
 
 ## Files Recently Changed
 
-Hardening Phase H5 aligned the public SDK harness with production declarative events, capability denial, exactly-once reverse cleanup, and failure rollback. Acceptance now compiles documentation snippets and verifies a generated plugin through clean install, typecheck, build, test, and pack using public SDK APIs; SDK API drift is included in `plugin-sdk:check`. Dependency and release-pipeline work was not performed. No commit was created.
+Hardening Phase H6 added a Node 22/24/26 release-candidate matrix and blocked publication on workspace-wide build, typecheck, lint, backend/dashboard tests, SDK acceptance, API drift, coverage, parity, and workspace policy validation. Validation jobs use read-only permissions; release write permission is isolated to the dependent publication job. Dependency work was not performed. No commit was created.

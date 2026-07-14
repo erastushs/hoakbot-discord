@@ -6,11 +6,41 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  validate:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24, 26]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:backend
+      - run: npm run dashboard:test
+      - run: npm run plugin-sdk:check
+      - run: npm run plugin-sdk:api:check
+      - run: npm run test:coverage
+      - run: npm run check-phase-09-parity
+      - run: npm run workspace:validate
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v7
@@ -29,13 +59,6 @@ jobs:
             exit 1
           fi
           echo "Version $TAG_VERSION validated"
-
-      - run: npm ci
-      - run: npm run check:commands
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run build
-      - run: npm test
 
       - name: Create Release
         uses: softprops/action-gh-release@v3

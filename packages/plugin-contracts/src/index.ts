@@ -8,7 +8,15 @@ export const pluginCommandSchema = z.object({ id: z.string().min(1), autocomplet
 export const pluginEventSchema = z.object({ id: z.string().min(1), priority: z.number().int().min(-1000).max(1000).default(0) }).strict();
 export const pluginConfigSchema = z.object({ key: z.string().min(1), secret: z.boolean().default(false) }).strict();
 export const pluginAssetSchema = z.object({ path: z.string().min(1).regex(/^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[A-Za-z0-9._/-]+$/) }).strict();
-const capabilitiesSchema = z.object({ settings: z.array(z.string().min(1)).default([]), commands: z.array(z.string().min(1)).default([]), events: z.array(z.string().min(1)).default([]), routes: z.array(z.string().min(1)).default([]), permissions: z.array(z.string().min(1)).default([]) }).strict().default({});
+const stringArraySchema = z.array(z.string().min(1)).default([]);
+const capabilityOwnershipSchema = z.object({
+  routes: z.object({ owners: stringArraySchema, contributors: stringArraySchema }).strict().default({}),
+  events: z.object({ publishers: stringArraySchema, subscribers: stringArraySchema }).strict().default({}),
+  commands: stringArraySchema,
+  schedulers: stringArraySchema,
+  assets: stringArraySchema,
+}).strict().default({});
+const capabilitiesSchema = z.object({ settings: stringArraySchema, commands: stringArraySchema, events: stringArraySchema, routes: stringArraySchema, permissions: stringArraySchema, ownership: capabilityOwnershipSchema }).strict().default({});
 export const pluginManifestSchema = z.object({ schemaVersion: z.literal(1), id: identifierSchema, name: z.string().min(1), description: z.string().min(1), version: semverSchema, dependencies: z.array(pluginDependencySchema).default([]), capabilities: capabilitiesSchema, contracts: z.object({ config: z.array(pluginConfigSchema).default([]), commands: z.array(pluginCommandSchema).default([]), events: z.array(pluginEventSchema).default([]), assets: z.array(pluginAssetSchema).default([]) }).strict().default({}), metadata: z.record(z.unknown()).optional() }).strict();
 export type CapabilityKind = (typeof capabilityKinds)[number];
 export type PluginManifest = Omit<z.output<typeof pluginManifestSchema>, 'contracts'> & { readonly contracts?: z.output<typeof pluginManifestSchema>['contracts'] };

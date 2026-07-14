@@ -27,8 +27,39 @@ describe('plugin core behavioral contracts', () => {
     try { resolveDependencies(validateCatalog(catalog)); } catch (error) { expect((error as PluginCoreError).diagnostics[0]).toMatchObject({ code }); expect((error as PluginCoreError).diagnostics[0]?.path?.length).toBeGreaterThan(1); }
   });
 
-  it.each(['settings', 'commands', 'events', 'routes', 'permissions'] as const)('rejects %s collisions', (kind) => {
+  it.each(['settings', 'commands', 'permissions'] as const)('rejects exclusive %s collisions', (kind) => {
     expect(() => validateCatalog([entry('a', [], { [kind]: ['shared'] }), entry('b', [], { [kind]: ['shared'] })])).toThrow(PluginCoreError);
+  });
+
+  it('allows shared route contributors but rejects duplicate route owners', () => {
+    expect(() => validateCatalog([
+      entry('a', [], { routes: ['/shared'], ownership: { routes: { contributors: ['/shared'] } } }),
+      entry('b', [], { routes: ['/shared'], ownership: { routes: { contributors: ['/shared'] } } }),
+    ])).not.toThrow();
+    expect(() => validateCatalog([
+      entry('a', [], { routes: ['/owned'], ownership: { routes: { owners: ['/owned'] } } }),
+      entry('b', [], { routes: ['/owned'], ownership: { routes: { owners: ['/owned'] } } }),
+    ])).toThrow(PluginCoreError);
+  });
+
+  it('allows event subscribers with publishers but rejects duplicate event publishers', () => {
+    expect(() => validateCatalog([
+      entry('publisher', [], { events: ['event'], ownership: { events: { publishers: ['event'] } } }),
+      entry('subscriber', [], { events: ['event'], ownership: { events: { subscribers: ['event'] } } }),
+    ])).not.toThrow();
+    expect(() => validateCatalog([
+      entry('a', [], { events: ['event'], ownership: { events: { publishers: ['event'] } } }),
+      entry('b', [], { events: ['event'], ownership: { events: { publishers: ['event'] } } }),
+    ])).toThrow(PluginCoreError);
+  });
+
+  it('rejects duplicate scheduler and asset ownership', () => {
+    for (const kind of ['schedulers', 'assets'] as const) {
+      expect(() => validateCatalog([
+        entry('a', [], { ownership: { [kind]: ['owned'] } }),
+        entry('b', [], { ownership: { [kind]: ['owned'] } }),
+      ])).toThrow(PluginCoreError);
+    }
   });
 
   it('publishes atomically and leaves snapshots immutable', async () => {

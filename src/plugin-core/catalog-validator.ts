@@ -1,6 +1,21 @@
 import { pluginManifestSchema } from './schema.js';
-import { capabilityKinds, type PluginCatalogEntry, type ValidatedPluginEntry } from './contracts.js';
+import { type ExclusiveCapabilityKind, type PluginCatalogEntry, type PluginManifest, type ValidatedPluginEntry } from './contracts.js';
 import { diagnostic, PluginCoreError } from './errors.js';
+
+function exclusiveCapabilities(manifest: PluginManifest): ReadonlyMap<ExclusiveCapabilityKind, readonly string[]> {
+  const ownership = manifest.capabilities.ownership;
+  const hasRouteOwnership = ownership.routes.owners.length > 0 || ownership.routes.contributors.length > 0;
+  const hasEventOwnership = ownership.events.publishers.length > 0 || ownership.events.subscribers.length > 0;
+  return new Map<ExclusiveCapabilityKind, readonly string[]>([
+    ['settings', manifest.capabilities.settings],
+    ['commands', ownership.commands.length ? ownership.commands : manifest.capabilities.commands],
+    ['permissions', manifest.capabilities.permissions],
+    ['routes', hasRouteOwnership ? ownership.routes.owners : manifest.capabilities.routes],
+    ['events', hasEventOwnership ? ownership.events.publishers : manifest.capabilities.events],
+    ['schedulers', ownership.schedulers],
+    ['assets', ownership.assets],
+  ]);
+}
 
 export function validateCatalog(catalog: readonly PluginCatalogEntry[]): readonly ValidatedPluginEntry[] {
   const diagnostics = [];
@@ -22,8 +37,8 @@ export function validateCatalog(catalog: readonly PluginCatalogEntry[]): readonl
     const owner = ids.get(id);
     if (owner) diagnostics.push(diagnostic('DUPLICATE_PLUGIN_ID', `Duplicate plugin id "${id}".`, { pluginId: id }));
     else ids.set(id, id);
-    for (const kind of capabilityKinds) {
-      for (const value of entry.manifest.capabilities[kind]) {
+    for (const [kind, values] of exclusiveCapabilities(entry.manifest)) {
+      for (const value of values) {
         const key = `${kind}:${value}`;
         const existing = capabilities.get(key);
         if (existing) diagnostics.push(diagnostic('CAPABILITY_COLLISION', `${kind} "${value}" is declared by "${existing}" and "${id}".`, { pluginId: id, capability: kind, value }));

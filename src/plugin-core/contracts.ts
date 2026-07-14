@@ -3,8 +3,10 @@ import type { PluginContext } from './context.js';
 import type { PluginMigration } from './migrations.js';
 
 export const capabilityKinds = ['settings', 'commands', 'events', 'routes', 'permissions'] as const;
+export const exclusiveCapabilityKinds = ['settings', 'commands', 'permissions', 'routes', 'events', 'schedulers', 'assets'] as const;
 
 export type CapabilityKind = (typeof capabilityKinds)[number];
+export type ExclusiveCapabilityKind = (typeof exclusiveCapabilityKinds)[number];
 export type PluginManifest = CanonicalPluginManifest;
 export type PluginFactory = (context: PluginContext) => PluginInstance | Promise<PluginInstance>;
 export interface PluginInstance {
@@ -34,7 +36,7 @@ export interface PluginDiagnostic {
   readonly message: string;
   readonly pluginId?: string;
   readonly path?: readonly string[];
-  readonly capability?: CapabilityKind;
+  readonly capability?: CapabilityKind | ExclusiveCapabilityKind;
   readonly value?: string;
 }
 export type PluginErrorCode =

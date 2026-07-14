@@ -6,12 +6,20 @@ import { generalManifest } from '../../src/modules/general/manifest.js';
 import type { IModule } from '../../src/modules/module.interface.js';
 
 const moduleStub = (): IModule => ({ name: 'general', version: generalManifest.version, enabled: true, manifest: generalManifest, register: vi.fn() });
+const flatCapabilities = (manifest: typeof generalManifest) => ({ settings: manifest.settings ?? [], commands: manifest.commands ?? [], events: manifest.events ?? [], routes: manifest.routes ?? [], permissions: manifest.permissions ?? [] });
 
 describe('built-in plugin compatibility', () => {
   it('projects the complete 3.2.3 module contract without renaming capabilities', () => {
     const plugin = projectLegacyManifest(generalManifest);
     expect(plugin.id).toBe(generalManifest.id);
-    expect(plugin.capabilities).toEqual({ settings: generalManifest.settings, commands: generalManifest.commands, events: generalManifest.events, routes: generalManifest.routes, permissions: generalManifest.permissions });
+    expect(plugin.capabilities).toMatchObject(flatCapabilities(generalManifest));
+    expect(plugin.capabilities.ownership).toMatchObject({
+      commands: generalManifest.commands,
+      events: { subscribers: generalManifest.events, publishers: [] },
+      routes: { owners: ['/modules/general/settings'], contributors: ['/guilds/:guildId/settings'] },
+      schedulers: [],
+      assets: [],
+    });
     expect(plugin.metadata?.['legacyManifest']).toBe(generalManifest);
   });
 
@@ -31,13 +39,8 @@ describe('built-in plugin compatibility', () => {
   it('projects every built-in API and dashboard contract completely', () => {
     for (const entry of generatedBuiltInPluginCatalog) {
       const projected = projectLegacyManifest(entry.legacyManifest);
-      expect(projected.capabilities).toEqual({
-        settings: entry.legacyManifest.settings ?? [],
-        commands: entry.legacyManifest.commands ?? [],
-        events: entry.legacyManifest.events ?? [],
-        routes: entry.legacyManifest.routes ?? [],
-        permissions: entry.legacyManifest.permissions ?? [],
-      });
+      expect(projected.capabilities).toMatchObject(flatCapabilities(entry.legacyManifest));
+      expect(projected.capabilities.ownership.routes.contributors).toEqual((entry.legacyManifest.routes ?? []).filter((route) => route === '/guilds/:guildId/settings'));
       expect(projected.metadata?.['legacyManifest']).toBe(entry.legacyManifest);
       expect(entry.legacyManifest.dashboard).toBeDefined();
     }

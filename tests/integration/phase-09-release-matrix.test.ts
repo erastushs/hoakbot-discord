@@ -15,7 +15,8 @@ describe('Phase 09 integration and release matrix', () => {
     expect(goldenCommands.map(({ name }) => name)).toEqual(['avatar', 'ban', 'botinfo', 'clean', 'help', 'kick', 'ping', 'serverinfo', 'timeout', 'userinfo', 'warn', 'warn-clear', 'warn-remove', 'warnings']);
     for (const entry of generatedBuiltInPluginCatalog) {
       const projected = projectLegacyManifest(entry.legacyManifest);
-      expect(projected.capabilities).toEqual({ settings: entry.legacyManifest.settings ?? [], commands: entry.legacyManifest.commands ?? [], events: entry.legacyManifest.events ?? [], routes: entry.legacyManifest.routes ?? [], permissions: entry.legacyManifest.permissions ?? [] });
+      expect(projected.capabilities).toMatchObject({ settings: entry.legacyManifest.settings ?? [], commands: entry.legacyManifest.commands ?? [], events: entry.legacyManifest.events ?? [], routes: entry.legacyManifest.routes ?? [], permissions: entry.legacyManifest.permissions ?? [] });
+      expect(projected.capabilities.ownership.routes.contributors).toEqual((entry.legacyManifest.routes ?? []).filter((route) => route === '/guilds/:guildId/settings'));
       expect(entry.legacyManifest.dashboard).toBeDefined();
     }
   });

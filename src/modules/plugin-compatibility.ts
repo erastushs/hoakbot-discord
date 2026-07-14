@@ -2,6 +2,22 @@ import type { PluginCatalogEntry, PluginInstance, PluginManifest } from '../plug
 import type { IModuleManifest } from './manifest.types.js';
 import type { IModule } from './module.interface.js';
 
+const SHARED_SETTINGS_ROUTE = '/guilds/:guildId/settings';
+
+const eventPublishersByPlugin: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  moderation: Object.freeze(['moderation.action', 'moderation.warningIssued']),
+  voice: Object.freeze(['voiceStateUpdate', 'voice.memberJoined']),
+});
+
+const eventSubscribersByPlugin: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  general: Object.freeze(['interactionCreate', 'messageCreate']),
+  logging: Object.freeze(['voiceStateUpdate', 'guildMemberUpdate', 'messageDelete', 'messageUpdate', 'messageBulkDelete', 'moderation.action', 'moderation.warningIssued']),
+  voice: Object.freeze(['bot.ready']),
+  welcome: Object.freeze(['discord.guild_member_add']),
+  goodbye: Object.freeze(['discord.guild_member_remove']),
+  shrine: Object.freeze(['bot.ready']),
+});
+
 export interface LegacyModulePluginInstance extends PluginInstance {
   readonly module: IModule;
 }
@@ -24,6 +40,19 @@ export function projectLegacyManifest(manifest: IModuleManifest): PluginManifest
       events: [...(manifest.events ?? [])],
       routes: [...(manifest.routes ?? [])],
       permissions: [...(manifest.permissions ?? [])],
+      ownership: {
+        routes: {
+          owners: (manifest.routes ?? []).filter((route) => route !== SHARED_SETTINGS_ROUTE),
+          contributors: (manifest.routes ?? []).filter((route) => route === SHARED_SETTINGS_ROUTE),
+        },
+        events: {
+          publishers: [...(eventPublishersByPlugin[manifest.id] ?? [])],
+          subscribers: [...(eventSubscribersByPlugin[manifest.id] ?? [])],
+        },
+        commands: [...(manifest.commands ?? [])],
+        schedulers: manifest.id === 'shrine' ? ['shrine.polling'] : [],
+        assets: ['welcome', 'voice', 'shrine'].includes(manifest.id) ? [`${manifest.id}:assets`] : [],
+      },
     },
     metadata: { legacyManifest: manifest },
   };

@@ -1,5 +1,12 @@
-import type { IContainer } from '../core/container/types.js';
 import type { PluginManifest } from './contracts.js';
+import type { Client } from 'discord.js';
+import type { ConfigurationService } from '../core/config/configuration.service.js';
+import type { ILogger } from '../core/logger/logger.service.js';
+import type { IEventBus } from '../core/event-bus/types.js';
+import type { IMetrics } from '../core/metrics/types.js';
+import type { ISettingsRegistry } from '../core/settings/types.js';
+import type { IDatabaseAdapter } from '../core/database/database-adapter.js';
+import type { CommandRegistry } from '../shared/command-registry.js';
 import type { HotReloadHandler } from '../core/config/hot-reload.coordinator.js';
 import { diagnostic, PluginCoreError } from './errors.js';
 import { serializeMetadata } from './metadata-serializer.js';
@@ -18,11 +25,23 @@ export interface PluginContextServices {
   readonly hotReload?: (ownerId: string, handler: HotReloadHandler, guildId?: string) => void | (() => void);
 }
 
-export const pluginInternalCapabilities = Symbol('pluginInternalCapabilities');
+export interface BuiltInCapabilityGrant {
+  readonly configuration: ConfigurationService;
+  readonly logger: ILogger;
+  readonly events: IEventBus;
+  readonly metrics: IMetrics;
+  readonly client: Client;
+  readonly commands: CommandRegistry;
+  readonly settings?: ISettingsRegistry;
+  readonly database: IDatabaseAdapter;
+}
+
+export const builtInGrantName = 'builtIn';
 
 export interface PluginContext {
   readonly ownerId: string;
-  readonly [pluginInternalCapabilities]?: Readonly<{ container: IContainer; eventMode: 'declarative' | 'legacy' }>;
+  readonly grants?: Readonly<Record<string, unknown>>;
+  readonly eventMode: 'declarative' | 'legacy';
   readonly guildId?: string;
   readonly signal: AbortSignal;
   readonly logger: PluginLogger;
@@ -34,16 +53,28 @@ export interface PluginContext {
   readonly lifecycle: { onConfigChange(handler: HotReloadHandler): void | (() => void) };
 }
 
-export function createPluginContext(manifest: PluginManifest, services: PluginContextServices, options: { guildId?: string; signal?: AbortSignal; container?: IContainer; eventMode?: 'declarative' | 'legacy' } = {}): PluginContext {
+export function createPluginContext(manifest: PluginManifest, services: PluginContextServices, options: { guildId?: string; signal?: AbortSignal; grants?: Readonly<Record<string, unknown>>; eventMode?: 'declarative' | 'legacy'; trackDisposer?: (disposer: () => void | Promise<void>) => void } = {}): PluginContext {
   const ownerId = manifest.id;
   const signal = options.signal ?? new AbortController().signal;
   const requireDeclaration = (kind: 'settings' | 'events' | 'commands' | 'routes' | 'permissions', value: string): void => {
     if (!manifest.capabilities[kind].includes(value)) throw new PluginCoreError([diagnostic('UNDECLARED_CAPABILITY', `Plugin "${ownerId}" did not declare ${kind} "${value}".`, { pluginId: ownerId, capability: kind, value })]);
   };
   const scope = options.guildId === undefined ? { ownerId } : { ownerId, guildId: options.guildId };
+  const tracked = <T extends void | (() => void)>(result: T): T => {
+    if (typeof result !== 'function') return result;
+    let disposed = false;
+    const once = () => {
+      if (disposed) return;
+      disposed = true;
+      result();
+    };
+    options.trackDisposer?.(once);
+    return once as unknown as T;
+  };
   return Object.freeze({
     ...scope,
-    ...(options.container ? { [pluginInternalCapabilities]: Object.freeze({ container: options.container, eventMode: options.eventMode ?? 'legacy' }) } : {}),
+    ...(options.grants ? { grants: options.grants } : {}),
+    eventMode: options.eventMode ?? 'legacy',
     signal,
     logger: Object.freeze({
       log: (level: string, message: string, metadata?: unknown) => services.logger(scope).log(level, message, serializeMetadata(metadata)),
@@ -51,13 +82,13 @@ export function createPluginContext(manifest: PluginManifest, services: PluginCo
     config: Object.freeze({
       get: (key: string) => { requireDeclaration('settings', key); return services.config(ownerId, key, options.guildId); },
     }),
-    events: Object.freeze({ on: (event: string, handler: (...args: unknown[]) => unknown) => { requireDeclaration('events', event); return services.event(ownerId, event, handler, options.guildId); } }),
-    commands: Object.freeze({ register: (command: string, handler: (...args: unknown[]) => unknown) => { requireDeclaration('commands', command); return services.command(ownerId, command, handler, options.guildId); } }),
-    api: Object.freeze({ register: (route: string, handler: (...args: unknown[]) => unknown) => { requireDeclaration('routes', route); return services.api(ownerId, route, handler, options.guildId); } }),
-    health: Object.freeze({ register: (check: string, handler: () => unknown) => { requireDeclaration('permissions', check); return services.health(ownerId, check, handler, options.guildId); } }),
+    events: Object.freeze({ on: (event: string, handler: (...args: unknown[]) => unknown) => { requireDeclaration('events', event); return tracked(services.event(ownerId, event, handler, options.guildId)); } }),
+    commands: Object.freeze({ register: (command: string, handler: (...args: unknown[]) => unknown) => { requireDeclaration('commands', command); return tracked(services.command(ownerId, command, handler, options.guildId)); } }),
+    api: Object.freeze({ register: (route: string, handler: (...args: unknown[]) => unknown) => { requireDeclaration('routes', route); return tracked(services.api(ownerId, route, handler, options.guildId)); } }),
+    health: Object.freeze({ register: (check: string, handler: () => unknown) => { requireDeclaration('permissions', check); return tracked(services.health(ownerId, check, handler, options.guildId)); } }),
     lifecycle: Object.freeze({ onConfigChange: (handler: HotReloadHandler) => {
       if (!services.hotReload) throw new Error('Hot reload capability is unavailable.');
-      return services.hotReload(ownerId, handler, options.guildId);
+      return tracked(services.hotReload(ownerId, handler, options.guildId));
     } }),
   });
 }

@@ -1,5 +1,4 @@
-import { TOKENS } from '../../core/container/tokens.js';
-import { pluginInternalCapabilities, type PluginFactory } from '../../plugin-core/index.js';
+import { builtInGrantName, type BuiltInCapabilityGrant, type PluginFactory } from '../../plugin-core/index.js';
 import type { CommandDescriptor } from '../../shared/command/define-command.js';
 import { createModerationCommandDescriptors } from '../../shared/command/builtin-commands.js';
 import type { IModule } from '../module.interface.js';
@@ -19,8 +18,8 @@ export const moderationPluginParity = Object.freeze({
 });
 
 export const createModerationPlugin: PluginFactory = (context) => {
-  const container = context[pluginInternalCapabilities]?.container;
-  if (!container) throw new Error('Moderation plugin requires the built-in capability bridge.');
+  const grant = context.grants?.[builtInGrantName] as BuiltInCapabilityGrant | undefined;
+  if (!grant) throw new Error('Moderation plugin requires an explicit built-in capability grant.');
   let started = false;
   let commands: CommandDescriptor[] = [];
   const publications = ['moderation.action', 'moderation.warningIssued'] as const;
@@ -31,22 +30,22 @@ export const createModerationPlugin: PluginFactory = (context) => {
     publications,
     start: () => {
       if (started) return;
-      const registry = container.resolve(TOKENS.CommandRegistry);
-      const config = container.resolve(TOKENS.ConfigurationService).current();
-      const metrics = container.resolve(TOKENS.MetricsService);
-      const warningService = new WarningService(new WarningRepository(container.resolve(TOKENS.DatabaseAdapter)), container.resolve(TOKENS.Logger), container.resolve(TOKENS.EventBus), metrics);
+      const registry = grant.commands;
+      const config = grant.configuration.current();
+      const metrics = grant.metrics;
+      const warningService = new WarningService(new WarningRepository(grant.database), grant.logger, grant.events, metrics);
       commands = [...createModerationCommandDescriptors({ metrics, warningService })];
-      if (container.has(TOKENS.SettingsRegistry)) container.resolve(TOKENS.SettingsRegistry).register('moderation', createModerationSettings(config));
+      if (grant.settings) grant.settings.register('moderation', createModerationSettings(config));
       registry.registerMany(commands);
       started = true;
       metrics.counter('plugin_migration_moderation_cutover').increment();
     },
     stop: () => {
       if (!started) return;
-      const registry = container.resolve(TOKENS.CommandRegistry);
+      const registry = grant.commands;
       for (const descriptor of commands) if (registry.find(descriptor.metadata.name) === descriptor.command) registry.unregister(descriptor.metadata.name);
       commands = [];
-      if (container.has(TOKENS.SettingsRegistry)) container.resolve(TOKENS.SettingsRegistry).unregister('moderation');
+      if (grant.settings) grant.settings.unregister('moderation');
       started = false;
     },
   };

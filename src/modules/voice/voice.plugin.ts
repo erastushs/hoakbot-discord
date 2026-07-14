@@ -2,11 +2,10 @@ import { Events, type Client, type VoiceState as DiscordVoiceState } from 'disco
 import { defineEvent } from '@hoakbot/plugin-contracts';
 import { z } from 'zod';
 import type { ConfigurationChangedEvent } from '../../core/event-bus/configuration.events.js';
-import { TOKENS } from '../../core/container/tokens.js';
 import type { ILogger } from '../../core/logger/logger.service.js';
 import type { Subscription } from '../../core/event-bus/types.js';
 import type { VoiceMemberJoinedEvent } from '../../core/event-bus/events.js';
-import { pluginInternalCapabilities, type PluginFactory } from '../../plugin-core/index.js';
+import { builtInGrantName, type BuiltInCapabilityGrant, type PluginFactory } from '../../plugin-core/index.js';
 import type { IModule } from '../module.interface.js';
 import { voiceManifest } from './manifest.js';
 import { createVoiceSettings } from './settings.js';
@@ -27,8 +26,8 @@ export const voicePluginParity = Object.freeze({
 });
 
 export const createVoicePlugin: PluginFactory = (context) => {
-  const container = context[pluginInternalCapabilities]?.container;
-  if (!container) throw new Error('Voice plugin requires the built-in capability bridge.');
+  const grant = context.grants?.[builtInGrantName] as BuiltInCapabilityGrant | undefined;
+  if (!grant) throw new Error('Voice plugin requires an explicit built-in capability grant.');
   let started = false;
   let stopping: Promise<void> | undefined;
   let generation = 0;
@@ -44,7 +43,7 @@ export const createVoicePlugin: PluginFactory = (context) => {
   let volume = 1;
   let cooldownMs = 5000;
   let joinDelayMs = 2000;
-  const declarative = context[pluginInternalCapabilities]?.eventMode === 'declarative';
+  const declarative = context.eventMode === 'declarative';
   let readyHandler: (() => void) | undefined;
   let configHandler: ((event: ConfigurationChangedEvent) => void) | undefined;
   let joinedHandler: ((event: VoiceMemberJoinedEvent) => Promise<void>) | undefined;
@@ -67,13 +66,13 @@ export const createVoicePlugin: PluginFactory = (context) => {
     start: async () => {
       if (started) return;
       const run = ++generation;
-      const configuration = container.resolve(TOKENS.ConfigurationService);
+      const configuration = grant.configuration;
       const config = configuration.current();
-      const logger = container.resolve(TOKENS.Logger);
-      const metrics = container.resolve(TOKENS.MetricsService);
-      const client = container.resolve(TOKENS.DiscordClient);
-      const eventBus = container.resolve(TOKENS.EventBus);
-      const settings = container.has(TOKENS.SettingsRegistry) ? container.resolve(TOKENS.SettingsRegistry) : undefined;
+      const logger = grant.logger;
+      const metrics = grant.metrics;
+      const client = grant.client;
+      const eventBus = grant.events;
+      const settings = grant.settings;
       const voice = config.bot.voice;
       defaultSound = voice.defaultSound; volume = voice.volume; cooldownMs = voice.cooldownMs; joinDelayMs = voice.joinDelayMs;
       connection = new ConnectionManager(client, logger, voice.maxReconnectRetries, voice.reconnectDelayMs);
@@ -115,7 +114,7 @@ export const createVoicePlugin: PluginFactory = (context) => {
       started = false; generation++; state = VoiceState.IDLE;
       stopping = (async () => {
         subscriptions.splice(0).forEach((subscription) => subscription.unsubscribe());
-        const client = container.resolve(TOKENS.DiscordClient) as Client;
+        const client = grant.client as Client;
         if (!declarative && voiceListener) client.off(Events.VoiceStateUpdate, voiceListener);
         voiceListener = undefined; readyHandler = undefined; configHandler = undefined; joinedHandler = undefined; stateHandler = undefined;
         if (joinTimer) clearTimeout(joinTimer); joinTimer = undefined; cancelWait?.(); cancelWait = undefined;
@@ -123,7 +122,7 @@ export const createVoicePlugin: PluginFactory = (context) => {
         audio?.stop();
         await connection?.disconnect();
         audio = undefined; connection = undefined;
-        if (container.has(TOKENS.SettingsRegistry)) container.resolve(TOKENS.SettingsRegistry).unregister('voice');
+        if (grant.settings) grant.settings.unregister('voice');
       })().finally(() => { stopping = undefined; });
       return stopping;
     },

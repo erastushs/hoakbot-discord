@@ -275,11 +275,22 @@ try {
   let pluginLifecycle: PluginLifecycleCoordinator | undefined;
   let builtInModules: IModule[];
   const pluginRegistry = new PluginRegistry();
+  const builtInGrant = Object.freeze({
+    configuration: configurationService,
+    logger,
+    events: eventBus,
+    metrics: metricsService,
+    client,
+    commands: sharedRegistry,
+    settings: settingsRegistry,
+    database: databaseAdapter,
+  });
+  const builtInGrants = Object.fromEntries(generatedBuiltInPluginCatalog.map(({ legacyManifest }) => [legacyManifest.id, Object.freeze({ builtIn: builtInGrant })]));
   const migrationRunner = new PluginMigrationRunner(new PostgresMigrationStore(databaseAdapter.getClient()));
   const eventLifecycle = new PluginLifecycleCoordinator({ events: eventCoordinator, sources: sourceCoordinator, eventMode: appConfig.featureFlags.pluginEventsRollback ? 'legacy' : 'declarative' });
   if (appConfig.featureFlags.pluginCoreBootstrap) {
     const started = await loadAndStartPluginCatalog(generatedBuiltInPluginCatalog, pluginRegistry, {
-      container,
+      grants: builtInGrants,
       migrationRunner,
       lifecycle: eventLifecycle,
       eventMode: appConfig.featureFlags.pluginEventsRollback ? 'legacy' : 'declarative',
@@ -292,7 +303,7 @@ try {
     const started = await loadAndStartPluginCatalog(
       createBuiltInRuntimeCatalog(appConfig.featureFlags),
       pluginRegistry,
-      { container, migrationRunner, lifecycle: eventLifecycle, eventMode: appConfig.featureFlags.pluginEventsRollback ? 'legacy' : 'declarative', services: pluginContextServices },
+      { grants: builtInGrants, migrationRunner, lifecycle: eventLifecycle, eventMode: appConfig.featureFlags.pluginEventsRollback ? 'legacy' : 'declarative', services: pluginContextServices },
     );
     pluginLifecycle = started.lifecycle;
     builtInModules = projectPluginModules(started.snapshot);

@@ -10,7 +10,7 @@
 
 ## Current Phase
 
-Hardening Phase H3 — Guild-scoped logging is complete. REST history and SSE streams now require one server-authorized guild and exclude cross-guild and platform-only entries before pagination or transport; stream reconnects reauthorize and subscriptions clean up deterministically. H1, H2, Phase 07, and Phase 10 remain complete.
+Hardening Phase H4 — Transactional plugin initialization is complete. Factory and lifecycle failures now unwind capability registrations exactly once in reverse order, contain cleanup failures, restore registry state, and leave no partial ownership. Built-ins use explicit frozen capability grants instead of unrestricted container access. H1–H3, Phase 07, and Phase 10 remain complete.
 
 ## Completed Phases
 
@@ -28,15 +28,15 @@ Hardening Phase H3 — Guild-scoped logging is complete. REST history and SSE st
 
 ## Current Objective
 
-Preserve the completed H1 dashboard-isolation, H2 transactional-configuration, and H3 guild-log-isolation fixes with all completed plugin-platform behavior. Do not begin another hardening phase or promote the SDK/CLI prerelease without separate authorization and complete release gates.
+Preserve the completed H1–H4 hardening fixes and all completed plugin-platform behavior. Do not begin another hardening phase or promote the SDK/CLI prerelease without separate authorization and complete release gates.
 
 ## Known Issues
 
-The Engineering Audit Review's cross-guild dashboard state-isolation, transactional/versioned configuration, and platform-wide logging findings are resolved. Remaining audit release blockers are recorded below.
+The Engineering Audit Review's dashboard isolation, transactional configuration, guild logging, reversible plugin loading, and unrestricted built-in DI findings are resolved. Remaining audit release blockers are recorded below.
 
 ## Blockers
 
-The remaining Engineering Audit Review release blockers are the Phase 10 SDK acceptance failure, SDK harness capability enforcement, high-severity dependency vulnerabilities, reversible plugin factory loading, and honest release gates. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
+The remaining Engineering Audit Review release blockers are the Phase 10 SDK acceptance failure, SDK harness capability enforcement, high-severity dependency vulnerabilities, and honest release gates. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
 
 ## Pending TODO
 
@@ -55,7 +55,7 @@ The remaining Engineering Audit Review release blockers are the Phase 10 SDK acc
 
 ## Next Recommended Task
 
-Define and authorize the next hardening phase separately. Do not begin another audit blocker as part of H3.
+Define and authorize the next hardening phase separately. Do not begin SDK, dependency, or release-gate work as part of H4.
 
 ## Relevant ADRs
 
@@ -72,4 +72,4 @@ Phase 02 implements ADR-011 core behavior without changing later-phase contracts
 
 ## Files Recently Changed
 
-Hardening Phase H3 added canonical guild-scoped log REST/SSE routes, centralized membership and permission authorization, strict pre-pagination and pre-transport guild filtering, platform-log exclusion, idempotent stream cleanup, dashboard guild-switch/reconnect isolation, and focused REST/SSE/service/client regressions. Build, typecheck, 715 backend tests, 33 dashboard tests, and lint completed successfully on Node 26; lint reports one pre-existing `no-explicit-any` warning in `src/plugin-core/contracts.ts`. The Engineering Audit Review and changelog were updated. No commit was created.
+Hardening Phase H4 added per-plugin capability ownership, exactly-once disposer wrappers, reverse-order catalog rollback, failing/optional lifecycle cleanup, registry restoration, cleanup-failure diagnostics, and explicit frozen built-in capability grants across all seven migrated plugins. Build, typecheck, 722 backend tests, 33 dashboard tests, and lint completed successfully on Node 26; lint reports one pre-existing `no-explicit-any` warning in `src/plugin-core/contracts.ts`. The Engineering Audit Review and changelog were updated. No commit was created.

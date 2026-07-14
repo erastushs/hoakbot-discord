@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Standardized safe Discord content truncation and mention escaping and recorded the approved Phase 01 surface inventory, presentation matrix, and golden regression map.
 
 ### Security
+- Made plugin initialization transactional with exactly-once reverse-order capability rollback, failure-contained cleanup, registry restoration, and explicit least-privilege built-in capability grants replacing unrestricted container access.
 - Scoped dashboard log history and live SSE streams to one server-authorized guild, excluding cross-guild and platform-only entries before pagination or transport and cleaning up reconnect subscriptions safely.
 - Made guild configuration writes atomic and versioned with optimistic concurrency, transactional durable audit records, rollback on failure, post-commit cache and hot-reload updates, and dashboard conflict handling.
 - Fixed cross-guild dashboard form isolation by discarding stale dirty state whenever the active module or loaded settings values change, with guild-switch and save regression coverage.

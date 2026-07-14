@@ -1,7 +1,6 @@
-import { TOKENS } from '../../core/container/tokens.js';
 import { defineEvent } from '@hoakbot/plugin-contracts';
 import type { GuildMember, PartialGuildMember } from 'discord.js';
-import { pluginInternalCapabilities, type PluginFactory } from '../../plugin-core/index.js';
+import { builtInGrantName, type BuiltInCapabilityGrant, type PluginFactory } from '../../plugin-core/index.js';
 import { ImageService } from '../../shared/image/image.service.js';
 import { TemplateService } from '../../shared/template/template.service.js';
 import type { IModule } from '../module.interface.js';
@@ -20,11 +19,11 @@ export const goodbyePluginParity = Object.freeze({
 });
 
 export const createGoodbyePlugin: PluginFactory = (context) => {
-  const container = context[pluginInternalCapabilities]?.container;
-  if (!container) throw new Error('Goodbye plugin requires the built-in capability bridge.');
+  const grant = context.grants?.[builtInGrantName] as BuiltInCapabilityGrant | undefined;
+  if (!grant) throw new Error('Goodbye plugin requires an explicit built-in capability grant.');
   let started = false;
   let service: GoodbyeService | undefined;
-  const declarative = context[pluginInternalCapabilities]?.eventMode === 'declarative';
+  const declarative = context.eventMode === 'declarative';
   const events = [defineEvent({ id: 'discord.guild_member_remove', owner: goodbyeManifest.id, source: 'discord', payload: { parse: (value) => value as GuildMember | PartialGuildMember }, handler: (member) => service?.handleMemberLeave(member) })];
   const module: IModule = Object.freeze({ name: 'goodbye', version: '1.0.0', enabled: true, manifest: goodbyeManifest, register: () => undefined });
   return {
@@ -33,23 +32,23 @@ export const createGoodbyePlugin: PluginFactory = (context) => {
     events,
     start: () => {
       if (started) return;
-      const configurationService = container.resolve(TOKENS.ConfigurationService);
+      const configurationService = grant.configuration;
       const config = configurationService.current();
-      const settings = container.has(TOKENS.SettingsRegistry) ? container.resolve(TOKENS.SettingsRegistry) : undefined;
+      const settings = grant.settings;
       settings?.register('goodbye', createGoodbyeSettings(config));
-      const logger = container.resolve(TOKENS.Logger);
-      service = new GoodbyeService(container.resolve(TOKENS.DiscordClient), configurationService, new ImageService(logger), new TemplateService(), logger, container.resolve(TOKENS.MetricsService));
+      const logger = grant.logger;
+      service = new GoodbyeService(grant.client, configurationService, new ImageService(logger), new TemplateService(), logger, grant.metrics);
       if (!declarative) service.register();
       else service.activate();
       started = true;
-      container.resolve(TOKENS.MetricsService).counter('plugin_migration_goodbye_cutover').increment();
+      grant.metrics.counter('plugin_migration_goodbye_cutover').increment();
       logger.info({ enabled: config.bot.goodbye.enabled }, 'Goodbye plugin registered');
     },
     stop: () => {
       if (!started) return;
       service?.dispose();
       service = undefined;
-      if (container.has(TOKENS.SettingsRegistry)) container.resolve(TOKENS.SettingsRegistry).unregister('goodbye');
+      if (grant.settings) grant.settings.unregister('goodbye');
       started = false;
     },
   };

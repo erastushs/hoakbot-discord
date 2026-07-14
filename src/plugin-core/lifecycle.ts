@@ -17,6 +17,7 @@ export class PluginLifecycleCoordinator {
   private stopped = false;
   private diagnostics: PluginDiagnostic[] = [];
   private readonly eventStops = new Map<string, () => void>();
+  private cleanup: ReadonlyMap<string, () => Promise<void>> | undefined;
   private readonly timeoutMs: number;
   private readonly events?: EventCoordinator;
   private readonly sources?: EventSourceCoordinator;
@@ -46,12 +47,19 @@ export class PluginLifecycleCoordinator {
           installation = this.events.install(plugin.instance.events);
           try { stopSources = this.sources?.start(plugin.instance.events); } catch (error) { installation.stop(); throw error; }
         }
-        try { await this.invoke(plugin, 'start', signal); } catch (error) { stopSources?.(); installation?.stop(); throw error; }
+        try { await this.invoke(plugin, 'start', signal); } catch (error) {
+          await this.cleanupFailedPlugin(plugin, stopSources, installation);
+          throw error;
+        }
         installation?.activate();
         if (installation) this.eventStops.set(plugin.manifest.id, () => { stopSources?.(); installation.stop(); });
         this.started.push(plugin);
       } catch (error) {
         this.diagnostics.push(this.toDiagnostic(plugin.manifest.id, error));
+        if ((requirements.get(plugin.manifest.id) ?? 'required') === 'optional') {
+          await this.cleanupOwner(plugin.manifest.id);
+          continue;
+        }
         if ((requirements.get(plugin.manifest.id) ?? 'required') === 'required') {
           await this.stop(signal);
           throw new PluginCoreError(this.diagnostics);
@@ -61,17 +69,36 @@ export class PluginLifecycleCoordinator {
     return Object.freeze({ ready: true, diagnostics: Object.freeze([...this.diagnostics]), started: Object.freeze(this.started.map(({ manifest }) => manifest.id)) });
   }
 
+  own(cleanup: ReadonlyMap<string, () => Promise<void>>): void {
+    this.cleanup = cleanup;
+  }
+
   async stop(signal?: AbortSignal): Promise<LifecycleResult> {
     if (!this.stopped) {
       this.stopped = true;
       for (const plugin of [...this.started].reverse()) {
-        this.eventStops.get(plugin.manifest.id)?.();
+        const eventStop = this.eventStops.get(plugin.manifest.id);
         this.eventStops.delete(plugin.manifest.id);
+        try { eventStop?.(); } catch (error) { this.diagnostics.push(this.toDiagnostic(plugin.manifest.id, error)); }
         try { await this.invoke(plugin, 'stop', signal); } catch (error) { this.diagnostics.push(this.toDiagnostic(plugin.manifest.id, error)); }
       }
       this.started = [];
+      for (const ownerId of [...(this.cleanup?.keys() ?? [])].reverse()) await this.cleanupOwner(ownerId);
+      this.cleanup = undefined;
     }
     return Object.freeze({ ready: false, diagnostics: Object.freeze([...this.diagnostics]), started: Object.freeze([]) });
+  }
+
+  private async cleanupFailedPlugin(plugin: RegisteredPlugin, stopSources?: () => void, installation?: ReturnType<EventCoordinator['install']>): Promise<void> {
+    try { await this.invoke(plugin, 'stop'); } catch (error) { this.diagnostics.push(this.toDiagnostic(plugin.manifest.id, error)); }
+    try { stopSources?.(); } catch (error) { this.diagnostics.push(this.toDiagnostic(plugin.manifest.id, error)); }
+    try { installation?.stop(); } catch (error) { this.diagnostics.push(this.toDiagnostic(plugin.manifest.id, error)); }
+  }
+
+  private async cleanupOwner(ownerId: string): Promise<void> {
+    const cleanup = this.cleanup?.get(ownerId);
+    if (!cleanup) return;
+    try { await cleanup(); } catch (error) { this.diagnostics.push(this.toDiagnostic(ownerId, error)); }
   }
 
   private async invoke(plugin: RegisteredPlugin, hook: 'start' | 'stop', parentSignal?: AbortSignal): Promise<void> {

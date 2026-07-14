@@ -51,8 +51,8 @@ Complexity and regression risk use **Low / Medium / High / Very High**.
 
 | Issue                                                                                            | Severity | Complexity | Regression risk | Evidence                                                                                                                                                                                                                                                                   |
 | ------------------------------------------------------------------------------------------------ | -------: | ---------: | --------------: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in plugins can access the unrestricted DI container                                        | **High** |  Very High |            High | The container is embedded in internal plugin capabilities at `src/plugin-core/context.ts:21-25`, forwarded by `src/plugin-core/loader.ts:10-16`, `:34-40`, and supplied by bootstrap. Built-ins resolve arbitrary tokens, e.g. `src/modules/general/general.plugin.ts:31`. |
-| Factory failure does not undo earlier factory capability registrations or arbitrary side effects | **High** |       High |            High | Factories execute sequentially at `src/plugin-core/loader.ts:34-41`; failure only rolls back the registry stage at `:44-46`. Context registration disposers are returned but not collected at `src/plugin-core/context.ts:54-60`.                                          |
+| Built-in plugins can access the unrestricted DI container — **resolved H4**                        | **High** |  Very High |            High | All seven migrated built-ins now receive explicit frozen capability grants. Plugin contexts expose no container, token resolver, token map, `has`, or `clear` capability. |
+| Factory failure does not undo earlier factory capability registrations — **resolved H4**           | **High** |       High |            High | Production loading now owns exactly-once capability disposers per plugin, unwinds partial factories globally in reverse order, restores registry state, and retains cleanup diagnostics. |
 | Explicit `any` remains in the plugin event contract                                              |  **Low** |        Low |             Low | `EventDefinition<any>` appears at `src/plugin-core/contracts.ts:14`; current lint reports one warning.                                                                                                                                                                     |
 
 ### Other classifications
@@ -254,9 +254,9 @@ Asset owner namespaces differ from event/plugin ownership, but no current contra
 | Issue                                                                       |     Severity | Complexity | Regression risk | Evidence                                                                                                                                        |
 | --------------------------------------------------------------------------- | -----------: | ---------: | --------------: | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | Configuration persistence violates transactional/audit/version requirements | **Critical** |       High |            High | `src/core/config/guild-settings.repository.ts:44-54`, `:85-88`; audit follows persistence at `src/core/api/module-config.endpoints.ts:150-164`. |
-| Plugin capability isolation is bypassed by unrestricted container access    |     **High** |  Very High |            High | `src/plugin-core/context.ts:21-25`; `src/plugin-core/loader.ts:34-40`.                                                                          |
+| Plugin capability isolation is bypassed by unrestricted container access — **resolved H4** |     **High** |  Very High |            High | Explicit frozen per-plugin grants replace the container bridge; reflective regressions reject generic resolution and token access. |
 | Core event layer imports all concrete module event maps                     |     **High** |       High |            High | `src/core/event-bus/events.ts:3-52`.                                                                                                            |
-| Factory-side registration rollback is incomplete                            |     **High** |       High |            High | `src/plugin-core/loader.ts:34-46`; `src/plugin-core/context.ts:54-60`.                                                                          |
+| Factory-side registration rollback is incomplete — **resolved H4**          |     **High** |       High |            High | Capability registration ownership is tracked per plugin and unwound globally in reverse order on factory, publish, and lifecycle failure. |
 | Legacy `ModuleLoader` ignores dependency graph validation                   |     **High** |     Medium |          Medium | `src/modules/module-loader.ts:21-52`.                                                                                                           |
 | Persisted dashboard module state does not govern runtime activation         |     **High** |  Very High |            High | `src/core/api/module-config.endpoints.ts:174-215`.                                                                                              |
 | Validated asset paths remain bypassable                                     |   **Medium** |     Medium |          Medium | Voice, Shrine, and member-card fallback paths bypass resolver checks.                                                                           |
@@ -433,6 +433,7 @@ The repository should not be accepted as a final 4.0 baseline until the release 
 - **Scope:** Collect capability disposers, unwind in reverse order, handle partial factory/resource initialization.
 - **Complexity:** High.
 - **Regression risk:** High.
+- **Disposition:** Resolved in Hardening Phase H4. Production plugin loading now tracks every capability disposer in per-plugin scopes, wraps manual and host cleanup exactly once, unwinds registrations in global reverse order, restores registry state, and continues cleanup after disposer failures. Required and optional lifecycle failures clean partial ownership without affecting healthy plugins. All seven migrated built-ins use explicit frozen capability grants and cannot resolve arbitrary DI tokens. Build, typecheck, 755 tests, and lint passed on 2026-07-14; lint retained one pre-existing warning.
 
 ### 8. Establish honest release gates
 
@@ -445,8 +446,8 @@ The repository should not be accepted as a final 4.0 baseline until the release 
 
 ## High Priority
 
-1. **Replace unrestricted built-in DI access with explicit capability adapters.**  
-   Complexity: Very High; regression risk: High.
+1. **Replace unrestricted built-in DI access with explicit capability adapters — resolved H4.**  
+   Explicit frozen grants now replace arbitrary container/token resolution across all seven migrated built-ins.
 
 2. **Make dashboard module state govern actual runtime commands, events, schedulers, and lifecycle—or redefine the feature contract.**  
    Complexity: Very High; regression risk: High.

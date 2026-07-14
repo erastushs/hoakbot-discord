@@ -426,6 +426,22 @@ The repository should not be accepted as a final 4.0 baseline until the release 
 - **Scope:** Upgrade/remove affected Discord/media dependencies where possible; document unavoidable exceptions and exposure.
 - **Complexity:** High.
 - **Regression risk:** High.
+- **Disposition:** Resolved in Release Phase R1. The pre-R1 production audit reported six high findings across two dependency chains: `undici <6.27.0` through Discord REST/WebSocket clients and `tar <=7.5.15` through `@discordjs/opus -> @discordjs/node-pre-gyp`. R1 pins transitive `undici` to `^6.27.0`, removes the obsolete `@discordjs/opus` native dependency and its install-time `tar` exposure, and retains the existing `opusscript` encoder fallback used by `@discordjs/voice`. `npm audit --omit=dev --audit-level=high` reports zero vulnerabilities after the lockfile update. No accepted production dependency risks remain.
+
+#### Release Phase R1 dependency vulnerability classification
+
+| Package | CVE/advisory | Pre-R1 exposure | R1 classification | Resolution |
+| --- | --- | --- | --- | --- |
+| `undici` | GHSA-vxpw-j846-p89q, GHSA-p88m-4jfj-68fv, GHSA-35p6-xmwp-9g52, GHSA-g8m3-5g58-fq7m | Runtime HTTP/WebSocket client through `discord.js` and `@discordjs/rest`; exploitable only through affected Undici client behavior in outbound Discord traffic handling. | Fixed | Added a production `overrides.undici` pin to `^6.27.0`, which is outside the vulnerable ranges reported by npm audit. |
+| `@discordjs/rest` | Transitive `undici` advisories above | Runtime Discord REST client inherited vulnerable Undici versions before the override. | Fixed | Resolved by the transitive `undici >=6.27.0` override without downgrading Discord packages. |
+| `@discordjs/ws` | Transitive `@discordjs/rest` and `undici` advisories above | Runtime Discord gateway/WebSocket support inherited vulnerable Undici versions before the override. | Fixed | Resolved by the transitive `undici >=6.27.0` override without downgrading Discord packages. |
+| `discord.js` | Transitive `@discordjs/rest`, `@discordjs/ws`, and `undici` advisories above | Runtime Discord SDK inherited vulnerable Undici versions before the override. | Fixed | Resolved by the transitive `undici >=6.27.0` override while preserving the current Discord.js major version. |
+| `tar` | GHSA-34x7-hfp2-rc4v, GHSA-8qq5-rm4j-mr97, GHSA-83g3-92jg-28cx, GHSA-qffp-2rhf-9h96, GHSA-9ppj-qmqm-q256, GHSA-r6q2-hw4h-h46w, GHSA-vmf3-w455-68vh | Install-time archive extraction through `@discordjs/opus -> @discordjs/node-pre-gyp`; not needed at bot runtime after dependency removal. | Fixed | Removed `@discordjs/opus`, which removes `@discordjs/node-pre-gyp`, vulnerable `tar`, and related install helper dependencies from the production lockfile. |
+| `@discordjs/node-pre-gyp` | Transitive vulnerable `tar` advisories above | Install-time native package helper used only by `@discordjs/opus`; not needed at bot runtime after dependency removal. | Fixed | Removed with `@discordjs/opus`. |
+| `@discordjs/opus` | Transitive `@discordjs/node-pre-gyp` and `tar` advisories above | Optional/native Discord voice encoder package; the project still has `opusscript` as an encoder dependency for `@discordjs/voice`. | Fixed | Removed from production dependencies and lockfile. |
+| `prism-media` | Transitive `@discordjs/opus` advisory path | Voice media stack was flagged only because `@discordjs/opus` was present in the dependency tree. | Fixed | The vulnerable path is removed with `@discordjs/opus`; `@discordjs/voice` remains installed. |
+
+No vulnerabilities are classified as **Mitigated** or **Accepted Risk** in R1 because every production audit finding is removed from the audited tree. Future accepted risks must include package, CVE/advisory, exploitability, runtime exposure, upstream status, and review recommendation before baseline promotion.
 
 ### 7. Make plugin factory loading transactionally reversible
 

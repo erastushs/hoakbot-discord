@@ -10,7 +10,7 @@
 
 ## Current Phase
 
-Hardening Phase H6 — Release pipeline hardening is complete. Every tagged release candidate is validated on Node 22, 24, and 26 with workspace-wide build, typecheck, lint, backend/dashboard tests, SDK acceptance, API drift, coverage, parity, and workspace policy gates before the publication job can create an artifact. Dependency upgrades remain out of scope.
+Release Phase R1 — Production dependency hardening is complete locally for the v4 baseline promotion candidate. The production audit has zero high or critical vulnerabilities after removing the obsolete `@discordjs/opus` native dependency chain and pinning transitive `undici` to a fixed release. Full local validation has passed on the available Node runtime; the hosted Node 22/24/26 release matrix still must run before prerelease promotion.
 
 ## Completed Phases
 
@@ -28,15 +28,15 @@ Hardening Phase H6 — Release pipeline hardening is complete. Every tagged rele
 
 ## Current Objective
 
-Preserve the completed H1–H6 hardening fixes and all completed plugin-platform behavior. Do not begin dependency upgrades without separate authorization.
+Preserve the completed H1–H6 hardening fixes, R1 dependency hardening, and all completed plugin-platform behavior. Do not expand dependency work beyond production vulnerability remediation without separate authorization.
 
 ## Known Issues
 
-The Engineering Audit Review's dashboard isolation, transactional configuration, guild logging, reversible plugin loading, and unrestricted built-in DI findings are resolved. Remaining audit release blockers are recorded below.
+The Engineering Audit Review's dashboard isolation, transactional configuration, guild logging, reversible plugin loading, unrestricted built-in DI, release-pipeline, and high-severity production dependency findings are resolved. Remaining audit release blockers are recorded below.
 
 ## Blockers
 
-The H5 SDK and H6 release-pipeline blockers are resolved in repository configuration. Remaining blockers are the separately scoped high-severity dependency vulnerabilities and successful execution of the Node 22/24/26 matrix in GitHub Actions before prerelease promotion. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
+The H5 SDK, H6 release-pipeline, and R1 production dependency blockers are resolved in repository configuration. The remaining blocker is successful execution of the Node 22/24/26 matrix in GitHub Actions before prerelease promotion. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
 
 ## Pending TODO
 
@@ -50,12 +50,13 @@ The H5 SDK and H6 release-pipeline blockers are resolved in repository configura
 - Keep Phase 08 manifest, generator, containment, integrity, ownership, cache/disposal, build integration, consumer compatibility, and rollback regressions green.
 - Keep Phase 09 harness, shared-fixture, integration/parity, failure/cleanup, security, coverage, upgrade/rollback, and release-evidence checks green.
 - Keep Phase 10 schema parity, exact exports, generator, harness, CLI, packaging, documentation, and consumer checks green.
+- Keep `npm audit --omit=dev --audit-level=high` green; any future production advisory must be fixed, mitigated, or documented as an accepted risk with exploitability, runtime exposure, upstream status, and review recommendation.
 - Execute the declared Node 22/24/26 release matrix in GitHub Actions before prerelease promotion; only Node 26 was available for local validation.
 - Create Phase 07 and Phase 10 commits only with explicit authorization.
 
 ## Next Recommended Task
 
-Define and authorize dependency remediation separately. Do not continue dependency work as part of H6.
+Run the hosted Node 22/24/26 release matrix and review the R1 dependency-hardening diff for prerelease promotion readiness.
 
 ## Relevant ADRs
 
@@ -72,4 +73,4 @@ Phase 02 implements ADR-011 core behavior without changing later-phase contracts
 
 ## Files Recently Changed
 
-Hardening Phase H6 added a Node 22/24/26 release-candidate matrix and blocked publication on workspace-wide build, typecheck, lint, backend/dashboard tests, SDK acceptance, API drift, coverage, parity, and workspace policy validation. Validation jobs use read-only permissions; release write permission is isolated to the dependent publication job. Dependency work was not performed. No commit was created.
+Release Phase R1 removed `@discordjs/opus` and its vulnerable native install helper chain from production dependencies while retaining `opusscript` for Discord voice encoding, and added an `undici` override to keep Discord REST/WebSocket clients on `>=6.27.0`. `npm audit --omit=dev --audit-level=high` reports zero vulnerabilities. No accepted production dependency risks remain. No commit was created.

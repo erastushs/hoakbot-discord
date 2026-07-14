@@ -4,11 +4,8 @@ Supported exports are exact; all other paths are internal and unavailable.
 
 ## `@hoakbot/plugin-sdk`
 
-- `pluginManifestSchema`: canonical runtime schema object.
-- `defineManifest(value)`: parses and freezes a manifest.
-- `parseManifest(value)`: parses a manifest.
-- `definePlugin(factory)`: side-effect-free typed factory identity builder.
-- Types: `CapabilityKind`, `PluginContext`, `PluginDiagnostic`, `PluginFactory`, `PluginInstance`, `PluginLogger`, `PluginManifest`.
+- Values: `capabilityKinds`, `defineEvent`, `defineManifest`, `definePlugin`, `eventFailurePolicies`, `eventSources`, `parseManifest`, `pluginAssetSchema`, `pluginCommandSchema`, `pluginConfigSchema`, `pluginDependencySchema`, `pluginEventSchema`, `pluginManifestSchema`, `semverSchema`.
+- Types: `CapabilityKind`, `EventContext`, `EventDefinition`, `EventDefinitionInput`, `EventFailurePolicy`, `EventPayloadSchema`, `EventSource`, `PluginContext`, `PluginDiagnostic`, `PluginFactory`, `PluginInstance`, `PluginLogger`, `PluginManifest`.
 
 ## `@hoakbot/plugin-sdk/manifest-schema`
 

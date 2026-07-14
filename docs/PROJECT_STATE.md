@@ -10,7 +10,7 @@
 
 ## Current Phase
 
-Hardening Phase H4 — Transactional plugin initialization is complete. Factory and lifecycle failures now unwind capability registrations exactly once in reverse order, contain cleanup failures, restore registry state, and leave no partial ownership. Built-ins use explicit frozen capability grants instead of unrestricted container access. H1–H3, Phase 07, and Phase 10 remain complete.
+Hardening Phase H5 — SDK release-blocker remediation is complete. The public harness now enforces manifest capabilities, installs declarative events, and matches production cleanup and rollback semantics. Generated plugins are accepted through clean install, typecheck, build, test, and pack; documentation snippets compile; API drift is part of the SDK gate. Dependency and release-pipeline work remain out of scope.
 
 ## Completed Phases
 
@@ -28,7 +28,7 @@ Hardening Phase H4 — Transactional plugin initialization is complete. Factory 
 
 ## Current Objective
 
-Preserve the completed H1–H4 hardening fixes and all completed plugin-platform behavior. Do not begin another hardening phase or promote the SDK/CLI prerelease without separate authorization and complete release gates.
+Preserve the completed H1–H5 hardening fixes and all completed plugin-platform behavior. Do not begin dependency or release-pipeline work without separate authorization.
 
 ## Known Issues
 
@@ -36,7 +36,7 @@ The Engineering Audit Review's dashboard isolation, transactional configuration,
 
 ## Blockers
 
-The remaining Engineering Audit Review release blockers are the Phase 10 SDK acceptance failure, SDK harness capability enforcement, high-severity dependency vulnerabilities, and honest release gates. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
+The H5 SDK release blockers are resolved. Remaining blockers are the separately scoped high-severity dependency vulnerabilities, honest release-pipeline gates, and execution of the supported Node 22/24 matrix before prerelease promotion. Human approval remains required for scope changes, contract/ADR changes, destructive operations, releases, deployments, migrations against shared data, and commits unless session policy explicitly authorizes them.
 
 ## Pending TODO
 
@@ -55,7 +55,7 @@ The remaining Engineering Audit Review release blockers are the Phase 10 SDK acc
 
 ## Next Recommended Task
 
-Define and authorize the next hardening phase separately. Do not begin SDK, dependency, or release-gate work as part of H4.
+Define and authorize dependency remediation and release-pipeline hardening separately. Do not continue either as part of H5.
 
 ## Relevant ADRs
 
@@ -72,4 +72,4 @@ Phase 02 implements ADR-011 core behavior without changing later-phase contracts
 
 ## Files Recently Changed
 
-Hardening Phase H4 added per-plugin capability ownership, exactly-once disposer wrappers, reverse-order catalog rollback, failing/optional lifecycle cleanup, registry restoration, cleanup-failure diagnostics, and explicit frozen built-in capability grants across all seven migrated plugins. Build, typecheck, 722 backend tests, 33 dashboard tests, and lint completed successfully on Node 26; lint reports one pre-existing `no-explicit-any` warning in `src/plugin-core/contracts.ts`. The Engineering Audit Review and changelog were updated. No commit was created.
+Hardening Phase H5 aligned the public SDK harness with production declarative events, capability denial, exactly-once reverse cleanup, and failure rollback. Acceptance now compiles documentation snippets and verifies a generated plugin through clean install, typecheck, build, test, and pack using public SDK APIs; SDK API drift is included in `plugin-sdk:check`. Dependency and release-pipeline work was not performed. No commit was created.

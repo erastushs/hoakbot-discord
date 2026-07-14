@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the `4.0.0-next.0` developer prereleases of `@hoakbot/plugin-contracts` and `@hoakbot/plugin-sdk`, including reviewed ESM contracts, shared schemas and harness exports, a safe plugin generator and template, the `hoak-plugin` create/validate/inspect/preflight/check/pack CLI, an example plugin, and contributor documentation.
 
 ### Changed
+- Hardened the public plugin SDK harness with declarative event installation, manifest capability enforcement, exactly-once reverse cleanup, and startup rollback matching production behavior.
+- Expanded SDK acceptance to compile documentation snippets and verify generated plugins through clean install, typecheck, build, test, and pack using only public APIs; API-reference drift is now part of `plugin-sdk:check`.
 - Added deterministic asset generation to the production build and migrated Shrine textures, the default Welcome background, and Voice sounds to validated namespaced resolution with a direct-path compatibility rollback.
 - Polished the 3.2.3 user-facing Discord presentation baseline across general commands, Welcome, Goodbye, Shrine, moderation, and logging while preserving public behavior.
 - Standardized safe Discord content truncation and mention escaping and recorded the approved Phase 01 surface inventory, presentation matrix, and golden regression map.

@@ -11,7 +11,7 @@
     "plugin-sdk:matrix": "tsx scripts/check-plugin-sdk-node-matrix.ts",
     "plugin-sdk:typecheck": "npm run build --workspace @hoakbot/plugin-contracts && npm run typecheck --workspace @hoakbot/plugin-sdk",
     "plugin-sdk:test": "npm run plugin-sdk:build && npm run build --workspace @hoakbot/example-plugin && tsc && node --test tests/plugin-sdk/*.test.js",
-    "plugin-sdk:check": "npm run plugin-sdk:typecheck && npm run plugin-sdk:test",
+    "plugin-sdk:check": "npm run plugin-sdk:typecheck && npm run plugin-sdk:test && npm run plugin-sdk:api:check",
     "plugin-sdk:api:check": "tsx scripts/generate-plugin-sdk-api.ts --check",
     "generate:assets": "tsx scripts/generate-assets.ts",
     "dev": "tsx watch src/bootstrap.ts",

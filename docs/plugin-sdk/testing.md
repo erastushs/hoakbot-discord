@@ -13,7 +13,20 @@ const manifest = {
   description: 'Example plugin',
   version: '1.0.0',
   dependencies: [],
-  capabilities: { settings: [], commands: ['hello'], events: [], routes: [], permissions: [] },
+  capabilities: {
+    settings: [],
+    commands: ['hello'],
+    events: [],
+    routes: [],
+    permissions: [],
+    ownership: {
+      routes: { owners: [], contributors: [] },
+      events: { publishers: [], subscribers: [] },
+      commands: ['hello'],
+      schedulers: [],
+      assets: [],
+    },
+  },
 };
 const plugin = definePlugin((context) => ({ id: context.ownerId, start() { context.commands.register('hello', () => 'hello'); } }));
 const harness = createPluginTestHarness(manifest);

@@ -5,7 +5,20 @@
   "description": "{{DESCRIPTION}}",
   "version": "0.1.0",
   "dependencies": [{ "id": "hoakbot:core", "range": "^4.0.0" }],
-  "capabilities": { "settings": ["greeting"], "commands": ["hello", "hello:autocomplete"], "events": ["ready:priority:100"], "routes": [], "permissions": [] },
+  "capabilities": {
+    "settings": ["greeting"],
+    "commands": ["hello", "hello:autocomplete"],
+    "events": ["ready:priority:100"],
+    "routes": [],
+    "permissions": [],
+    "ownership": {
+      "routes": { "owners": [], "contributors": [] },
+      "events": { "publishers": ["ready"], "subscribers": [] },
+      "commands": ["hello", "hello:autocomplete"],
+      "schedulers": [],
+      "assets": ["assets/icon.txt"]
+    }
+  },
   "contracts": {
     "config": [{ "key": "greeting", "secret": false }],
     "commands": [{ "id": "hello", "autocomplete": true }],
